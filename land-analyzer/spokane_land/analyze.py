@@ -1,5 +1,7 @@
 """Turn listing text + GIS facts into a verdict per category and a score."""
 
+import math
+
 from . import geo, remarks
 from .config import ROAD_FRONTAGE_TOLERANCE_M, SPOKANE_LAT, SPOKANE_LON
 from .models import HIGH, LOW, MEDIUM, Evidence, Finding, conf_rank
@@ -83,9 +85,34 @@ def gis_evidence(listing, facts):
     state = facts.get("state")
     acres = listing.lot_acres or (parcel.acres if parcel else None)
 
+    # A listing much smaller than its county parcel is usually a new lot being
+    # split off; county data then describes the whole parent parcel.
+    split = _split_lot(listing, parcel)
+    if split:
+        flags.append(f"Listing is {listing.lot_acres:.2f} ac but sits on a {split:.1f}-ac county parcel — "
+                     "likely a new lot split from it; parcel-level facts describe the whole parcel")
+
     # ---- water ---------------------------------------------------------------
     wells = facts.get("wells")
     src_w = "WA Ecology well reports" if state == "WA" else "Idaho IDWR well database"
+    if wells and split:
+        reach = math.sqrt(listing.lot_acres * 4046.86 / math.pi) * 1.6 + 30
+        on_lot, parent = [], []
+        for w in wells["on_parcel"]:
+            if w.get("x") is None or listing.lat is None:
+                parent.append(w)
+                continue
+            d = geo.haversine_m(listing.lat, listing.lon, w["y"], w["x"])
+            (on_lot if d <= reach else parent).append(w)
+        for w in parent[:1]:
+            d = (geo.haversine_m(listing.lat, listing.lon, w["y"], w["x"]) / FT
+                 if w.get("x") is not None and listing.lat is not None else None)
+            ev["water"].append(Evidence(
+                "well_possible", LOW,
+                f"A well is recorded on the larger parent parcel"
+                + (f", about {d:,.0f} ft from this lot's map pin" if d else "")
+                + " — ask whether this lot has its own well or a share", src_w))
+        wells = dict(wells, on_parcel=on_lot)
     if wells:
         for w in wells["on_parcel"][:3]:
             bits = [f"well {w['tag']}" if w.get("tag") else "water well"]
@@ -243,6 +270,19 @@ def _improved(land_use):
     'Vacant Land', 'Cur - Use - Ag' or 'Timber' do not."""
     lu = (land_use or "").lower()
     return bool(lu) and "vacant" not in lu and any(w in lu for w in IMPROVED_USE_WORDS)
+
+
+def _split_lot(listing, parcel):
+    """Parent parcel acres when the listing looks like a lot carved out of it."""
+    if not parcel or not listing.lot_acres:
+        return None
+    pa = None
+    if parcel.geometry and parcel.geometry.get("rings"):
+        pa = geo.polygon_area_acres(parcel.geometry["rings"])
+    pa = pa or parcel.acres
+    if pa and pa > max(2.5 * listing.lot_acres, listing.lot_acres + 1):
+        return pa
+    return None
 
 
 def _well_stats(wells):

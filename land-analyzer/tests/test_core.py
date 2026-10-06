@@ -153,6 +153,23 @@ class AnalyzeTests(unittest.TestCase):
         self.assertIn("under 1 acre", flags)
         self.assertIn("flood", flags)
 
+    def test_split_lot_well_on_parent_parcel(self):
+        # 5-acre county parcel; the listing is a 0.12-acre lot whose pin is
+        # ~80 m from the recorded well.
+        well = {"tag": "W1", "year": 1997, "depth": 75, "gpm": None,
+                "x": LON + DLON * 0.95, "y": LAT + DLAT * 0.95}
+        f = facts(wells=dict(facts()["wells"], on_parcel=[well]))
+        f["parcel"].geometry = None
+        l = Listing(source="t", id="s", price=50000, lot_acres=0.12, lat=LAT + DLAT * 0.05, lon=LON + DLON * 0.05)
+        r = analyze(l, f)
+        self.assertNotEqual(r["water"]["status"], "well")
+        self.assertTrue(any("split from it" in x for x in r["flags"]))
+        # Same lot, well right next to the pin: still counts.
+        well2 = dict(well, x=LON + DLON * 0.07, y=LAT + DLAT * 0.07)
+        f = facts(wells=dict(facts()["wells"], on_parcel=[well2]))
+        f["parcel"].geometry = None
+        self.assertEqual(analyze(l, f)["water"]["status"], "well")
+
     def test_score_range(self):
         best = analyze(self.listing(water_source="Public", electric="On Property",
                                     sewer="Public Sewer", road_access="County Road"), facts())
