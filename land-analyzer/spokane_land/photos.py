@@ -1,7 +1,7 @@
 """Aerial photo of each parcel for the app (USDA NAIP via USGS The National Map,
 public domain), with the parcel outline and best house site as overlay paths.
 
-Photos are small WebP images stored in the app database, ~20 per document
+Photos are small WebP images stored in the app database, ~14 per document
 ("photos" collection), so a whole refresh is a handful of uploads. Each listing
 gets r["photo"] = {"doc": "p-012", "path": "M..Z", "site": [x, y], "credit": ...}
 with coordinates in 0-100 image units.
@@ -18,7 +18,7 @@ from .config import USER_AGENT
 
 EXPORT = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/export"
 SIZE = 320
-PER_DOC = 20
+PER_DOC = 14  # keeps each document under the app database's 256 KB limit
 CREDIT = "USDA NAIP / USGS"
 
 

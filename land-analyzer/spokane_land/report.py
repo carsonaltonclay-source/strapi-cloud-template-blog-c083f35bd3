@@ -102,7 +102,7 @@ def doc_id(listing_id):
 
 def _slim(r):
     """Drop what the app doesn't need (it rebuilds the cost breakdown and knows the sources)."""
-    doc = dict(r, remarks=(r.get("remarks") or "")[:2000])
+    doc = dict(r, remarks=(r.get("remarks") or "")[:1500])
     for k in ("errors", "notes"):
         doc.pop(k, None)
     if doc.get("cost"):
@@ -110,6 +110,9 @@ def _slim(r):
     if doc.get("soil"):
         doc["soil"] = {k: v for k, v in doc["soil"].items() if k not in ("share", "worst", "source")}
         doc["soil"]["soils"] = doc["soil"].get("soils", [])[:1]
+    # "Nothing found" checks only need their label in the app.
+    doc["checks"] = [c if c["level"] != "ok" else {"key": c["key"], "level": "ok", "label": c["label"]}
+                     for c in doc.get("checks") or []]
     if doc.get("rules"):  # offices and notes live once per county in meta.county_rules
         doc["rules"] = {k: v for k, v in doc["rules"].items() if k in ("county", "wria", "wria_note")}
     for k in ("wildfire", "internet", "power_company", "cell", "assessed"):
@@ -118,7 +121,7 @@ def _slim(r):
     return doc
 
 
-def export_db(results, out_dir, meta, chunk_size=40):
+def export_db(results, out_dir, meta, chunk_size=32):
     """Database export for the hosted app.
 
     Bulk market listings go into collection "chunks" (one document per
