@@ -132,6 +132,7 @@ def building_site(shape, roads, setbacks, state=None):
     out = {
         "buildable_acres": buildable_ac,
         "buildable_pct": round(len(pts) / counts["inside"] * 100),
+        "parcel_acres": round(counts["inside"] * cell_ac, 2),
         "lost_to": {k: round(v * cell_ac, 2) for k, v in counts.items() if k != "inside" and v},
         "setbacks_ft": {"front": setbacks.get("front_ft") or 50, "side": setbacks.get("side_ft") or 20,
                         "source": setbacks.get("source") or "typical rural setbacks"},

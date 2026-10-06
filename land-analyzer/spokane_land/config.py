@@ -52,6 +52,9 @@ LAYERS = {
     "us_electric_territories": "https://services3.arcgis.com/OYP7N6mAJJCyH6hd/arcgis/rest/services/Electric_Retail_Service_Territories_HIFLD/FeatureServer/0",
     "ookla_fixed_tiles": "https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/Speedtest_by_Ookla_Global_Fixed_and_Mobile_Network_Performance_Map_Tiles/FeatureServer/0",
     "ookla_mobile_tiles": "https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/Speedtest_by_Ookla_Global_Fixed_and_Mobile_Network_Performance_Map_Tiles/FeatureServer/1",
+    "wa_wria": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/ECY/MapServer/11",
+    "sc_permits_open": f"{SPOKANE_GIS}/BPPublic/BPPublic/MapServer/5",
+    "sc_permits_2023": f"{SPOKANE_GIS}/ISDSDE/LandCapacityAnalysis/MapServer/13",
     # FEMA National Flood Hazard Layer, flood hazard zones (both states).
     "fema_flood": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28",
     # Deal-breaker checks.

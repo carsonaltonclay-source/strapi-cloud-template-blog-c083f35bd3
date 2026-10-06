@@ -71,7 +71,10 @@ def wetlands(shape, lat, lon):
                 "detail": f"{what}; wetlands and their buffers can't be built on or filled", "source": src,
                 "ask": "Has a wetland delineation been done? Where is the buildable area outside the wetland buffer?"}
     pct = f"about {round(share * 100)}% of the parcel" if share else "touches the parcel"
-    return {"key": "wetlands", "level": "warn", "label": "Mapped wetland or stream on the parcel" if not only_streams else "Stream on the parcel",
+    if share is not None and share < 0.03:
+        return {"key": "wetlands", "level": "ok", "label": "Only a sliver of mapped wetland/stream at the edge",
+                "detail": f"{what}, {pct}", "source": src, "streams_only": only_streams}
+    return {"key": "wetlands", "level": "warn", "streams_only": only_streams, "label": "Mapped wetland or stream on the parcel" if not only_streams else "Stream on the parcel",
             "detail": f"{what} — {pct}; expect buffers (often 100–250 ft) where you can't build", "source": src,
             "ask": "Where would the house, well and septic go given the wetland or stream buffer?"}
 
@@ -142,6 +145,9 @@ def streams(shape, lat, lon, in_spokane):
     a = feats[0]["attributes"]
     share = _share(shape["rings"], feats) if shape else None
     big = share is not None and share >= 0.6
+    if share is not None and share < 0.05:
+        return {"key": "streams", "level": "ok", "label": "Stream buffer only clips the edge",
+                "detail": f"{(a.get('DESCRIPTIO') or 'stream').lower()} buffer, about {round(share * 100)}% of the parcel", "source": src}
     return {"key": "streams", "level": "bad" if big else "warn",
             "label": f"{'Most of the parcel is in' if big else 'Parcel is partly in'} a stream buffer",
             "detail": f"{(a.get('DESCRIPTIO') or 'stream').lower()} buffer of {a.get('BUFF_DIST') or '?'} ft"
@@ -253,5 +259,12 @@ def run_all(shape, lat, lon, state, in_spokane, remarks_text, soil=None):
             c = None
         if c:
             checks.append(c)
+    # A stream already covered by the county's stream-buffer check isn't a second warning.
+    if any(c["key"] == "streams" for c in checks):
+        for c in checks:
+            if c["key"] == "wetlands" and c.get("streams_only") and c["level"] == "warn":
+                c.update(level="ok", label="Stream mapped on the parcel (see stream buffer)")
+    for c in checks:
+        c.pop("streams_only", None)
     checks += remarks.red_flags(remarks_text)
     return checks

@@ -418,15 +418,20 @@ def derived_checks(findings, zcheck, facts):
     if site and site.get("buildable_acres") is not None:
         ba = site["buildable_acres"]
         lost = ", ".join(f"{k} {v} ac" for k, v in (site.get("lost_to") or {}).items())
-        if ba < 0.1:
+        # On sewer + public water only the house needs room; otherwise also a well and a drainfield.
+        utilities = (findings["septic"].status in ("sewer", "sewer_area")
+                     and findings["water"].status in ("public", "public_area"))
+        need_min, need_ok = (0.03, 0.06) if utilities else (0.1, 0.35)
+        if ba < need_min:
             out.append({"key": "room", "level": "bad", "label": "No room for a house after setbacks, slopes and hazards",
                         "detail": f"lost to {lost}" if lost else "", "source": "parcel shape, elevation and hazard maps"})
-        elif ba < 0.35:
+        elif ba < need_ok:
             out.append({"key": "room", "level": "warn", "label": f"Tight building area: about {ba} acre",
-                        "detail": "house, well (100 ft from the drainfield) and septic need roughly half an acre"
+                        "detail": ("a house footprint plus yard" if utilities else
+                                   "house, well (100 ft from the drainfield) and septic need roughly half an acre")
                                   + (f"; lost to {lost}" if lost else ""), "source": "parcel shape, elevation and hazard maps"})
-    for rule in (facts.get("rules") or {}).get("water_limits") or []:
-        out.append(rule)
+    if findings["water"].status not in ("well", "public", "shared_well", "public_area"):
+        out += (facts.get("rules") or {}).get("water_limits") or []
     return out
 
 
