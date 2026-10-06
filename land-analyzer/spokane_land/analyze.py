@@ -347,11 +347,49 @@ def analyze(listing, facts):
         **{cat: dict(findings[cat].to_dict(), points=_points(cat, findings[cat])) for cat in CATEGORIES},
         "score": score,
         "rating": "Build-ready" if score >= 80 else "Needs work" if score >= 50 else "High risk",
+        "shape": parcel_sketch(parcel),
         "flags": flags,
         "errors": facts.get("errors", []),
         "notes": facts.get("notes", []),
         "remarks": listing.remarks,
     }
+
+
+def parcel_sketch(parcel, max_points=48):
+    """Parcel outline for the app's card thumbnail: the largest ring as
+    integer meters (x east, y north) around its centroid, simplified."""
+    if not parcel or not parcel.geometry or not parcel.geometry.get("rings"):
+        return None
+    ring = max(parcel.geometry["rings"], key=len)
+    lat0, lon0 = geo.polygon_centroid([ring])
+    k = math.cos(math.radians(lat0)) * 111320.0
+    pts = [((x - lon0) * k, (y - lat0) * 111320.0) for x, y in ring]
+    span = max(max(p[0] for p in pts) - min(p[0] for p in pts),
+               max(p[1] for p in pts) - min(p[1] for p in pts)) or 1.0
+    tol = span * 0.01
+    while True:
+        out = _dp(pts, tol)
+        if len(out) <= max_points:
+            break
+        tol *= 1.6
+    return [[round(x), round(y)] for x, y in out]
+
+
+def _dp(pts, tol):
+    if len(pts) < 3:
+        return pts
+    (x1, y1), (x2, y2) = pts[0], pts[-1]
+    dx, dy = x2 - x1, y2 - y1
+    norm = math.hypot(dx, dy)
+    best, idx = -1.0, 0
+    for i in range(1, len(pts) - 1):
+        x, y = pts[i]
+        d = (abs(dy * x - dx * y + x2 * y1 - y2 * x1) / norm) if norm else math.hypot(x - x1, y - y1)
+        if d > best:
+            best, idx = d, i
+    if best <= tol:
+        return [pts[0], pts[-1]]
+    return _dp(pts[: idx + 1], tol)[:-1] + _dp(pts[idx:], tol)
 
 
 _CONFLICTS = {

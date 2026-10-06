@@ -170,6 +170,12 @@ class AnalyzeTests(unittest.TestCase):
         f["parcel"].geometry = None
         self.assertEqual(analyze(l, f)["water"]["status"], "well")
 
+    def test_parcel_sketch(self):
+        r = analyze(self.listing(), facts())
+        xs = [p[0] for p in r["shape"]]
+        self.assertTrue(4 <= len(r["shape"]) <= 48)
+        self.assertAlmostEqual(max(xs) - min(xs), 64, delta=3)  # ~1-acre square, 63.6 m sides
+
     def test_score_range(self):
         best = analyze(self.listing(water_source="Public", electric="On Property",
                                     sewer="Public Sewer", road_access="County Road"), facts())

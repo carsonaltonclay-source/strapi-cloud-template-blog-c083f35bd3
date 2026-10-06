@@ -3,130 +3,219 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: field-survey workbench. Plat-style map on the left, ranked parcels on the right; stacks on phones. */
+/* Layout: field-survey workbench. Topo masthead, market bars, then a plat-style map beside ranked parcel cards; stacks on phones. */
 :root {
   --bg: #edf0eb; --panel: #fafbf8; --ink: #18211d; --muted: #58665f; --line: #d3dad3; --soft: #e3e8e1;
-  --accent: #2c5b46; --accent-ink: #ffffff;
-  --good: #1d6f43; --good-bg: #dcefe2; --warn: #8a5800; --warn-bg: #f7ebcc; --bad: #a12f26; --bad-bg: #f6deda;
-  --unk: #5b6660; --unk-bg: #e6e9e4;
+  --accent: #2c5b46; --accent-ink: #ffffff; --accent-soft: #d6e6dc; --topo: #9fb5a5;
+  --good: #1d6f43; --good-bg: #dcefe2; --warn: #9a6200; --warn-bg: #f7ebcc; --bad: #a12f26; --bad-bg: #f6deda;
+  --unk: #5b6660; --unk-bg: #e6e9e4; --star: #d39b1c;
   --map-land: #e9ece2; --map-water: #b7d0df; --map-water-line: #8fb3c8; --map-road: #c08a3e; --map-road2: #d5b27a;
-  --map-county: #8d978f; --map-town: #d9ddd2; --map-label: #4c5852; --map-ring: #2c5b46;
+  --map-county: #8d978f; --map-town: #d9ddd2; --map-label: #3f4b45; --map-ring: #2c5b46;
+  --shield-i: #24508f; --shield-us: #ffffff; --shield-us-ink: #18211d;
   --f-display: "Barlow Semi Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --f-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 12px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #121714; --panel: #1a201c; --ink: #e5ebe6; --muted: #9aa8a0; --line: #2d3530; --soft: #232a25;
-    --accent: #7fc4a2; --accent-ink: #10201a;
+    --accent: #7fc4a2; --accent-ink: #10201a; --accent-soft: #1f3a2d; --topo: #34473b;
     --good: #8fd6ac; --good-bg: #1c3427; --warn: #efc36b; --warn-bg: #362c19; --bad: #f19a8f; --bad-bg: #3b2320;
-    --unk: #a6b0aa; --unk-bg: #262d28;
+    --unk: #a6b0aa; --unk-bg: #262d28; --star: #f0c04a;
     --map-land: #1d2420; --map-water: #24384a; --map-water-line: #3c5a72; --map-road: #b98a4c; --map-road2: #7d6646;
-    --map-county: #4f5a53; --map-town: #2a322d; --map-label: #a9b5ae; --map-ring: #7fc4a2;
+    --map-county: #4f5a53; --map-town: #2a322d; --map-label: #c3cdc7; --map-ring: #7fc4a2;
+    --shield-i: #3a6fb8; --shield-us: #e5ebe6; --shield-us-ink: #121714;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #121714; --panel: #1a201c; --ink: #e5ebe6; --muted: #9aa8a0; --line: #2d3530; --soft: #232a25;
-  --accent: #7fc4a2; --accent-ink: #10201a;
+  --accent: #7fc4a2; --accent-ink: #10201a; --accent-soft: #1f3a2d; --topo: #34473b;
   --good: #8fd6ac; --good-bg: #1c3427; --warn: #efc36b; --warn-bg: #362c19; --bad: #f19a8f; --bad-bg: #3b2320;
-  --unk: #a6b0aa; --unk-bg: #262d28;
+  --unk: #a6b0aa; --unk-bg: #262d28; --star: #f0c04a;
   --map-land: #1d2420; --map-water: #24384a; --map-water-line: #3c5a72; --map-road: #b98a4c; --map-road2: #7d6646;
-  --map-county: #4f5a53; --map-town: #2a322d; --map-label: #a9b5ae; --map-ring: #7fc4a2;
+  --map-county: #4f5a53; --map-town: #2a322d; --map-label: #c3cdc7; --map-ring: #7fc4a2;
+  --shield-i: #3a6fb8; --shield-us: #e5ebe6; --shield-us-ink: #121714;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-body); margin: 0; }
-.wrap { max-width: 1440px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 40px; display: flex; flex-direction: column; gap: 14px; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 40px; display: flex; flex-direction: column; gap: 14px; }
 h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
-h1 { font-size: 30px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.1; }
 h2 { font-size: 19px; font-weight: 600; }
 .mono { font-family: var(--f-mono); font-size: 12.5px; }
 .muted { color: var(--muted); }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 24px; }
-.top .sub { color: var(--muted); font-size: 13px; }
-.radius-tag { font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--accent); border: 1.5px solid currentColor; border-radius: 4px; padding: 2px 8px; }
-.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 12px; font-weight: 500; }
-.btn:hover { border-color: var(--muted); }
-.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+/* 1. Topographic masthead */
+.mast { position: relative; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+  padding: 22px 22px 20px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px 28px; align-items: end; }
+@media (max-width: 760px) { .mast { grid-template-columns: 1fr; padding: 18px 16px; } }
+.mast .topo { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 22%, #000 62%); mask-image: linear-gradient(90deg, transparent 22%, #000 62%); }
+@media (max-width: 760px) { .mast .topo { -webkit-mask-image: linear-gradient(180deg, #000, transparent 70%); mask-image: linear-gradient(180deg, #000, transparent 70%); opacity: 0.7; } }
+.mast .topo path { fill: none; stroke: var(--topo); stroke-width: 1; }
+.mast > *:not(.topo) { position: relative; }
+.eyebrow { font: 600 12px/1 var(--f-display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
+  display: inline-flex; align-items: center; gap: 8px; }
+.eyebrow::before { content: ""; width: 18px; height: 2px; background: currentColor; }
+.mast h1 { font-size: clamp(32px, 5vw, 50px); font-weight: 700; line-height: 0.98; letter-spacing: -0.005em; margin-top: 10px; }
+.mast .lede { color: var(--muted); max-width: 60ch; margin-top: 8px; }
+.headline { display: flex; gap: 22px; flex-wrap: wrap; }
+.headline div { display: flex; flex-direction: column; }
+.headline b { font: 700 40px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.headline span { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+.headline .hl-acc b { color: var(--accent); }
 
-.tally { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--line);
-  border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-.tally div { background: var(--panel); padding: 10px 14px; min-width: 0; }
-.tally b { display: block; font: 600 24px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
-.tally span { font-size: 12px; color: var(--muted); }
+/* 2. Market at a glance */
+.glance { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; }
+@media (max-width: 760px) { .glance { grid-template-columns: 1fr; } }
+.g-row { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 4px 12px; align-items: center; }
+.g-row .g-k { display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--f-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); grid-row: span 2; }
+.g-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--soft); gap: 2px; }
+.g-bar button { border: none; padding: 0; min-width: 4px; height: 100%; }
+.g-bar button.good, .g-leg .good i { background: var(--good); } .g-bar button.ok, .g-leg .ok i { background: var(--warn); }
+.g-bar button.bad, .g-leg .bad i { background: var(--bad); } .g-bar button.unk, .g-leg .unk i { background: var(--unk); }
+.g-bar button[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: 1px; }
+.g-bar.dim button[aria-pressed="false"] { opacity: 0.35; }
+.g-leg { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--muted); }
+.g-leg button { border: none; background: none; padding: 0; color: inherit; display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+.g-leg button:hover { color: var(--ink); }
+.g-leg i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
 
-.controls { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+/* 10. Sticky glass filter bar */
+.controls { position: relative; z-index: 20; display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center;
+  padding-block: 10px; margin-block: -4px; background: color-mix(in srgb, var(--bg) 84%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2); }
+@media (min-width: 901px) { .controls { position: sticky; top: env(safe-area-inset-top, 0px); } }
 .controls input[type=search] { flex: 1 1 220px; min-width: 0; }
-.controls input, .controls select { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 10px; }
-.controls input[type=number] { width: 120px; }
-.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+.controls input, .controls select { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 7px 14px; }
+.controls input[type=number] { width: 124px; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+.chip:hover { border-color: var(--muted); }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chip.active-glance { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.count-pill { font: 600 13px/1 var(--f-display); letter-spacing: 0.04em; color: var(--muted); margin-left: auto; white-space: nowrap; }
 
 .main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; align-items: start; }
 @media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
-.mapbox { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 10px); background: var(--map-land); border: 1px solid var(--line);
-  border-radius: 12px; overflow: hidden; }
+
+/* Map */
+.mapbox { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 72px); background: var(--map-land); border: 1px solid var(--line);
+  border-radius: var(--radius); overflow: hidden; }
 @media (max-width: 900px) { .mapbox { position: relative; top: 0; } }
-#map { display: block; width: 100%; height: min(72vh, 680px); touch-action: none; cursor: grab; }
-@media (max-width: 900px) { #map { height: 380px; } }
+#map { display: block; width: 100%; height: min(calc(100vh - 110px), 700px); touch-action: none; cursor: grab; }
+@media (max-width: 900px) { #map { height: 400px; } }
 #map.dragging { cursor: grabbing; }
-.map-tools { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; }
-.map-tools button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font-size: 18px; line-height: 1; }
-.legend { position: absolute; left: 10px; bottom: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
-  padding: 6px 10px; font-size: 12px; display: flex; gap: 10px; flex-wrap: wrap; max-width: calc(100% - 20px); }
+.map-tools { position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 6px; }
+.map-tools button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font-size: 18px; line-height: 1;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+.legend { position: absolute; left: 10px; top: 10px; background: color-mix(in srgb, var(--panel) 90%, transparent); border: 1px solid var(--line); border-radius: 8px;
+  padding: 6px 10px; font-size: 12px; display: flex; gap: 4px 10px; flex-wrap: wrap; align-items: center; max-width: calc(100% - 20px); }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+.legend .sz { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); }
+.legend .sz i { background: var(--muted); margin: 0; }
 .m-county { fill: none; stroke: var(--map-county); stroke-width: 1; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
 .m-town { fill: var(--map-town); stroke: none; }
 .m-water { fill: var(--map-water); stroke: var(--map-water-line); stroke-width: 0.6; vector-effect: non-scaling-stroke; }
 .m-river { fill: none; stroke: var(--map-water-line); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
-.m-road { fill: none; stroke: var(--map-road); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.m-road { fill: none; stroke: var(--map-road); stroke-width: 2.2; vector-effect: non-scaling-stroke; stroke-linecap: round; }
 .m-road2 { fill: none; stroke: var(--map-road2); stroke-width: 1.3; vector-effect: non-scaling-stroke; }
 .m-ring { fill: none; stroke: var(--map-ring); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .m-ring.minor { stroke-width: 0.8; stroke-dasharray: 2 4; opacity: 0.7; }
-.m-label { fill: var(--map-label); font-family: var(--f-display); font-weight: 600; paint-order: stroke; stroke: var(--map-land); stroke-width: 3px; stroke-linejoin: round; }
-.m-label.county { font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.8; }
-.m-dot { stroke: var(--panel); vector-effect: non-scaling-stroke; cursor: pointer; }
-.m-dot.sel { stroke: var(--ink); }
+#labels, #shields { pointer-events: none; }
+.m-label { fill: var(--map-label); font-family: var(--f-display); font-weight: 600; paint-order: stroke; stroke: var(--map-land); stroke-width: 3.5px; stroke-linejoin: round; }
+.m-label.county { font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
+.m-dot { stroke: var(--panel); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; fill-opacity: 0.86; }
+.m-dot:hover, .m-dot.hl { fill-opacity: 1; stroke: var(--ink); stroke-width: 2; }
+.m-dot.dim { fill-opacity: 0.18; stroke-opacity: 0.3; }
+.m-halo { fill: none; stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) { .m-halo { animation: halo 1.6s ease-out infinite; } }
+@keyframes halo { from { transform: scale(1); opacity: 0.9; } to { transform: scale(2.4); opacity: 0; } }
+.tip { position: absolute; z-index: 5; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.16); padding: 8px 10px; width: 220px; font-size: 12.5px; }
+.tip b { font: 700 18px/1.1 var(--f-display); }
+.tip .t-addr { color: var(--muted); overflow-wrap: anywhere; }
+.tip .utils { margin-top: 6px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.tip .utils li { font-size: 11.5px; padding: 4px 6px; }
 
+/* Cards */
 .list, #cards { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .list-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0;
+  transition: border-color .15s, box-shadow .15s; }
+.card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
 .card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.card-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; }
-.score { width: 52px; text-align: center; border-radius: 8px; padding: 4px 0; font: 700 22px/1 var(--f-display); font-variant-numeric: tabular-nums; }
-.score small { display: block; font: 500 10px/1.4 var(--f-body); letter-spacing: 0.04em; text-transform: uppercase; }
-.price { font: 600 22px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
-.facts { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
-.addr { font-weight: 500; overflow-wrap: anywhere; }
-.star { border: none; background: none; font-size: 22px; line-height: 1; color: var(--muted); padding: 2px 4px; }
-.star[aria-pressed="true"] { color: #d39b1c; }
-.status { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
-@media (max-width: 520px) { .status { grid-template-columns: 1fr; } }
-.st { display: flex; gap: 8px; align-items: flex-start; min-width: 0; }
-.st .k { font: 600 11px/21px var(--f-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); width: 50px; flex: none; }
-.pill { display: inline-block; border-radius: 6px; padding: 1px 7px; font-size: 12.5px; line-height: 1.5; }
+@media (prefers-reduced-motion: no-preference) {
+  .card.rise { animation: rise .35s ease-out both; animation-delay: calc(var(--i, 0) * 35ms); }
+}
+@keyframes rise { from { opacity: 0.001; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.c-head { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+/* 6. Plat sketch */
+.plat { width: 72px; height: 72px; border-radius: 10px; background: var(--soft); display: block; }
+.plat .lot { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.plat .north { fill: var(--muted); font: 600 9px var(--f-display); }
+.plat .none { fill: var(--muted); font: 500 9px var(--f-body); }
+.price { font: 700 24px/1.05 var(--f-display); font-variant-numeric: tabular-nums; }
+.addr { font-weight: 500; overflow-wrap: anywhere; margin-top: 2px; }
+.facts { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; margin-top: 1px; }
+/* 8. Score ring */
+.ring { --p: 50; --c: var(--accent); width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--soft) 0); }
+.ring span { width: 42px; height: 42px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; text-align: center;
+  font: 700 18px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.ring small { display: block; font: 600 8.5px/1.2 var(--f-body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ring.good { --c: var(--good); } .ring.ok { --c: var(--warn); } .ring.bad { --c: var(--bad); }
+/* 7. Utility icon row */
+.utils { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; list-style: none; margin: 0; padding: 0; }
+@media (max-width: 520px) { .utils { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.utils li { display: flex; align-items: center; gap: 6px; border-radius: 8px; padding: 6px 8px; font-size: 12.5px; font-weight: 500; min-width: 0; line-height: 1.2; }
+.utils li span { min-width: 0; overflow-wrap: anywhere; }
 .good { color: var(--good); background: var(--good-bg); } .ok { color: var(--warn); background: var(--warn-bg); }
 .bad { color: var(--bad); background: var(--bad-bg); } .unk { color: var(--unk); background: var(--unk-bg); }
-.conf { font-size: 11px; color: var(--muted); margin-left: 4px; white-space: nowrap; }
+/* 9. Value meter */
+.value { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.v-track { grid-column: 1 / -1; position: relative; height: 6px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--good) 0%, var(--good-bg) 42%, var(--soft) 50%, var(--warn-bg) 58%, var(--bad) 100%); }
+.v-track::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
+.v-mark { position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--panel); border: 2.5px solid var(--ink); transform: translate(-50%, -50%); }
+.v-tag { font-weight: 600; }
+.v-tag.below { color: var(--good); } .v-tag.above { color: var(--bad); }
 .flags { display: flex; flex-wrap: wrap; gap: 6px; }
-.flag { font-size: 12px; color: var(--bad); background: var(--bad-bg); border-radius: 6px; padding: 1px 7px; }
-.more { border: none; background: none; color: var(--accent); font-weight: 600; padding: 0; align-self: flex-start; }
-.detail { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }
-.ev h3 { font-size: 14px; margin-bottom: 4px; }
+.flag { font-size: 12px; color: var(--bad); background: var(--bad-bg); border-radius: 6px; padding: 2px 8px; }
+.c-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.more { border: none; background: none; color: var(--accent); font-weight: 600; padding: 0; display: inline-flex; gap: 4px; align-items: center; }
+.star { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; font-size: 13px; line-height: 1; color: var(--muted); padding: 6px 10px; display: inline-flex; gap: 5px; align-items: center; }
+.star[aria-pressed="true"] { color: var(--star); border-color: var(--star); }
+.detail { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+.ev h3 { font-size: 14px; margin-bottom: 4px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.pill { display: inline-block; border-radius: 6px; padding: 1px 7px; font: 500 12.5px/1.5 var(--f-body); }
+.conf { font: 400 11px var(--f-body); color: var(--muted); }
 .ev ul { margin: 0; padding-left: 18px; } .ev li { margin: 3px 0; overflow-wrap: anywhere; }
 .src { color: var(--muted); font-size: 12px; }
 .remarks { color: var(--muted); font-size: 13px; white-space: pre-wrap; background: var(--soft); border-radius: 8px; padding: 8px 10px; max-height: 180px; overflow: auto; }
 .links { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
 a { color: var(--accent); }
 .note { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 7px 9px; min-height: 60px; resize: vertical; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 8px 16px; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+/* Skeleton */
+.skel { pointer-events: none; }
+.skel .bone { background: var(--soft); border-radius: 6px; }
+@media (prefers-reduced-motion: no-preference) {
+  .skel .bone { background: linear-gradient(90deg, var(--soft) 0%, var(--line) 50%, var(--soft) 100%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.empty { text-align: center; color: var(--muted); padding: 32px 16px; border: 1px dashed var(--line); border-radius: var(--radius); background: var(--panel); display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.empty svg { width: 54px; height: 54px; color: var(--topo); }
 
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .addform { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 0.7fr) minmax(0, 1.3fr) auto; gap: 8px; align-items: end; }
 @media (max-width: 760px) { .addform { grid-template-columns: 1fr; } }
 .addform label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); min-width: 0; }
@@ -135,63 +224,68 @@ a { color: var(--accent); }
 .req { display: flex; gap: 10px; align-items: center; justify-content: space-between; border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
 .req span { overflow-wrap: anywhere; min-width: 0; }
 .req button { border: none; background: none; color: var(--muted); }
-.empty { text-align: center; color: var(--muted); padding: 28px 12px; border: 1px dashed var(--line); border-radius: 12px; background: var(--panel); }
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 30;
   background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; }
 footer { color: var(--muted); font-size: 12px; max-width: 80ch; }
-@media (prefers-reduced-motion: no-preference) { .card { transition: border-color .15s; } }
 </style>
 
 <div class="wrap">
-  <header class="top">
+  <header class="mast">
+    <svg class="topo" id="topo" aria-hidden="true"></svg>
     <div>
+      <span class="eyebrow" id="radiusTag">Spokane, WA · 25-mile radius</span>
       <h1>Spokane Land Finder</h1>
-      <div class="sub" id="sub">Vacant land for sale, checked for water, power, septic and road access.</div>
+      <p class="lede" id="sub">Every lot and acreage for sale near Spokane, checked against public records for water, power, septic and road access.</p>
     </div>
-    <span class="radius-tag" id="radiusTag">25 mi of downtown</span>
+    <div class="headline" id="headline" aria-live="polite"></div>
   </header>
 
-  <section class="tally" id="tally" aria-label="Summary"></section>
+  <section class="glance" id="glance" aria-label="Market at a glance"></section>
 
   <section class="controls" aria-label="Filters">
     <input id="q" type="search" placeholder="Search address, town, parcel #" aria-label="Search">
     <input id="maxPrice" type="number" min="0" step="5000" placeholder="Max price" aria-label="Max price">
     <input id="minAcres" type="number" min="0" step="0.5" placeholder="Min acres" aria-label="Min acres">
-    <button class="chip" id="fWater" aria-pressed="false">Has water</button>
-    <button class="chip" id="fPower" aria-pressed="false">Power close</button>
-    <button class="chip" id="fAccess" aria-pressed="false">Not landlocked</button>
+    <button class="chip" id="fWater" aria-pressed="false"></button>
+    <button class="chip" id="fPower" aria-pressed="false"></button>
+    <button class="chip" id="fAccess" aria-pressed="false"></button>
     <button class="chip" id="fStar" aria-pressed="false">★ Starred</button>
+    <span id="glanceChip"></span>
     <select id="sort" aria-label="Sort">
       <option value="score">Best score</option>
+      <option value="value">Best value ($/acre vs. similar)</option>
       <option value="price">Lowest price</option>
       <option value="ppa">Lowest $/acre</option>
       <option value="acres">Most acres</option>
       <option value="miles">Closest to Spokane</option>
     </select>
+    <span class="count-pill" id="countPill"></span>
   </section>
 
   <div class="main">
-    <div class="mapbox">
+    <div class="mapbox" id="mapbox">
       <svg id="map" viewBox="-420 -420 840 840" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of listings around Spokane">
-        <g id="base"></g><g id="labels"></g><g id="dots"></g>
+        <g id="base"></g><g id="dots"></g><g id="shields"></g><g id="labels"></g>
       </svg>
+      <div class="legend"><span><i style="background:var(--good)"></i>Build-ready</span><span><i style="background:var(--warn)"></i>Needs work</span><span><i style="background:var(--bad)"></i>High risk</span>
+        <span class="sz"><i style="width:5px;height:5px"></i><i style="width:9px;height:9px"></i><i style="width:13px;height:13px"></i>&nbsp;acres</span></div>
       <div class="map-tools">
         <button id="zin" aria-label="Zoom in">+</button>
         <button id="zout" aria-label="Zoom out">−</button>
         <button id="zreset" aria-label="Reset map" style="font-size:13px">⤢</button>
       </div>
-      <div class="legend"><span><i style="background:var(--good)"></i>Build-ready</span><span><i style="background:var(--warn)"></i>Needs work</span><span><i style="background:var(--bad)"></i>High risk</span><span class="muted">rings: 10 / 25 mi</span></div>
+      <div class="tip" id="tip" hidden></div>
     </div>
 
     <section class="list" aria-label="Listings">
       <div class="list-head"><h2 id="countLabel">Listings</h2><span class="src" id="updated"></span></div>
-      <div id="cards"><div class="empty">Loading listings…</div></div>
+      <div id="cards"></div>
     </section>
   </div>
 
   <section class="panel" id="addPanel">
     <h2>Add a property to check</h2>
-    <div class="src">Found land on Zillow, LandWatch, Facebook or a roadside sign? Paste its parcel number (best for vacant land), its address, a listing link, or its coordinates. Then ask Claude to "analyze my added properties" and it will show up above with full results.</div>
+    <div class="src">Found land on Facebook, Craigslist or a roadside sign? Paste its parcel number (best for vacant land), its address, a listing link, or its coordinates. Then ask Claude to "analyze my added properties" and it will show up above with full results.</div>
     <form class="addform" id="addForm">
       <label for="addText">Parcel #, address, link or lat, lon<input id="addText" required placeholder="e.g. 39352.9067"></label>
       <label for="addPrice">Asking price<input id="addPrice" inputmode="numeric" placeholder="$"></label>
@@ -202,9 +296,9 @@ footer { color: var(--muted); font-size: 12px; max-width: 80ch; }
   </section>
 
   <footer>
-    Status comes from the MLS listing fields, the listing description, and public records: county parcels, WA Ecology and Idaho IDWR well logs,
-    water-district and city boundaries, road centerlines and addressed buildings. "High" confidence means the seller or a recorded well log says so;
-    "low" is an educated guess. Confirm with the seller, a title report, the health district (septic) and the power company before you buy.
+    Status comes from the listing, and from public records: county parcels, WA Ecology and Idaho IDWR well logs, water-district and city
+    boundaries, road centerlines and addressed buildings. "High" confidence means the seller or a recorded well log says so; "low" is an
+    educated guess. Confirm with the seller, a title report, the health district (septic) and the power company before you buy.
   </footer>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -219,13 +313,74 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const docId = id => String(id).replace(/[^A-Za-z0-9_\-.~:@+]/g, "_").slice(0, 180);
 const money = v => v == null ? "—" : "$" + Math.round(v).toLocaleString();
+const kmoney = v => v == null ? "—" : v >= 1e6 ? "$" + (v / 1e6).toFixed(v >= 1e7 ? 0 : 1) + "M" : v >= 1e3 ? "$" + Math.round(v / 1e3) + "K" : "$" + Math.round(v);
 const px = (lon, lat) => [(lon - LON0) * K * 1000, (LAT0 - lat) * 1000];
 const tone = f => !f || f.status === "unknown" ? "unk" : f.points >= 19 ? "good" : f.points >= 12 ? "ok" : "bad";
 const ratingTone = r => r === "Build-ready" ? "good" : r === "Needs work" ? "ok" : "bad";
+const toneVar = t => t === "ok" ? "var(--warn)" : `var(--${t})`;
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const PAGE = 50;
-const S = { listings: [], meta: null, requests: [], marks: {}, sel: null, open: new Set(), shown: PAGE,
-            f: { water: false, power: false, access: false, star: false }, db: null, canWrite: true };
+const ICON = {
+  water: '<path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/>',
+  electric: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  septic: '<rect x="3" y="9" width="18" height="10" rx="5"/><path d="M8 9V5h8v4"/>',
+  access: '<path d="M8 3 5 21M16 3l3 18M12 4v3M12 11v3M12 18v3"/>',
+  star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+  chev: '<path d="m6 9 6 6 6-6"/>',
+};
+const icon = (k, cls = "i") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
+
+// Short, scannable labels for the icon row; full labels live in the details.
+const SHORT = {
+  water: { well: "Well on site", public: "Public water", shared_well: "Shared well", none: "No water", public_area: "Water district",
+           district_wells: "Likely needs well", needs_well: "Needs well", well_possible: "Needs well" },
+  electric: { on_site: "Power on site", at_road: "Power at road", none: "Off-grid", likely_near: "Power close",
+              possible: "Power maybe", far: "Power far", solar: "Solar" },
+  septic: { failed: "Failed perc", sewer: "Sewer", installed: "Septic in", approved: "Perc approved", needed: "Perc needed",
+            sewer_area: "Sewer possible", required: "Septic needed", mentioned: "Septic unclear" },
+  access: { landlocked: "Landlocked?", easement: "Easement", private_road: "Private road", seasonal: "Seasonal road",
+            public_road: "Public road", road_frontage: "Road frontage" },
+};
+const short = (c, f) => (f && SHORT[c][f.status]) || "Unknown";
+
+// Market-at-a-glance groups per category: [key, label, tone, statuses]
+const GROUPS = {
+  water: [["has", "Water on site", "good", ["well", "public", "shared_well"]], ["district", "Water district", "ok", ["public_area", "district_wells"]],
+          ["needs", "Needs well", "bad", ["needs_well", "none", "well_possible"]]],
+  electric: [["has", "On site / at road", "good", ["on_site", "at_road"]], ["close", "Close by", "ok", ["likely_near"]],
+             ["far", "Maybe / far", "bad", ["possible", "far", "none", "solar"]]],
+  septic: [["has", "Sewer / perc OK", "good", ["sewer", "approved", "installed"]], ["maybe", "Sewer possible", "ok", ["sewer_area"]],
+           ["needs", "Septic needed", "bad", ["required", "needed", "mentioned", "failed"]]],
+  access: [["has", "Public road", "good", ["public_road", "road_frontage"]], ["private", "Private / easement", "ok", ["private_road", "easement", "seasonal"]],
+           ["lock", "Landlocked?", "bad", ["landlocked"]]],
+};
+
+const PAGE = 40;
+const S = { listings: [], meta: null, requests: [], marks: {}, sel: null, hover: null, open: new Set(), shown: PAGE, glance: null,
+            f: { water: false, power: false, access: false, star: false }, db: null, canWrite: true, loaded: false, medians: {} };
+
+$("fWater").innerHTML = icon("water") + "Has water";
+$("fPower").innerHTML = icon("electric") + "Power close";
+$("fAccess").innerHTML = icon("access") + "Not landlocked";
+
+/* ---------- 1. topo masthead ---------- */
+function drawTopo() {
+  const t = $("topo"), r = t.getBoundingClientRect(), w = Math.max(r.width, 300), h = Math.max(r.height, 160);
+  t.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  const hills = [[0.86, 0.15, 0.55, 1.3], [0.64, 1.05, 0.42, 2.1], [0.97, 0.95, 0.3, 0.4], [0.3, 1.25, 0.35, 3.3]];
+  let d = "";
+  for (const [cx, cy, size, seed] of hills) {
+    for (let i = 1; i <= 11; i++) {
+      const base = size * h * i * 0.2;
+      for (let k = 0; k <= 96; k++) {
+        const a = k / 96 * Math.PI * 2;
+        const rr = base * (1 + 0.11 * Math.sin(3 * a + seed + i * 0.35) + 0.06 * Math.sin(5 * a - seed * 1.7) + 0.03 * Math.sin(9 * a + i));
+        d += (k ? "L" : "M") + (cx * w + rr * Math.cos(a) * 1.5).toFixed(1) + " " + (cy * h + rr * Math.sin(a)).toFixed(1);
+      }
+    }
+  }
+  t.innerHTML = `<path d="${d}"/>`;
+}
 
 /* ---------- map ---------- */
 const svg = $("map");
@@ -243,7 +398,7 @@ const pathD = (parts, close) => parts.map(p => p.map(([x, y], i) => {
 }).join("") + (close ? "Z" : "")).join("");
 
 function drawBase() {
-  const g = $("base"), L = $("labels");
+  const g = $("base"), L = $("labels"), SH = $("shields");
   if (!BASEMAP) return;
   BASEMAP.towns.forEach(t => el("path", { d: pathD(t.rings, true), class: "m-town", "fill-rule": "evenodd" }, g));
   BASEMAP.water.forEach(w => el("path", { d: pathD(w.rings, true), class: "m-water", "fill-rule": "evenodd" }, g));
@@ -253,9 +408,8 @@ function drawBase() {
   BASEMAP.roads.filter(r => r.kind === "primary").forEach(r => el("path", { d: pathD(r.paths), class: "m-road" }, g));
   [10, 25].forEach(m => el("circle", { cx: 0, cy: 0, r: m * MI, class: "m-ring" + (m === 10 ? " minor" : "") }, g));
   el("path", { d: "M-7 0H7M0 -7V7", stroke: "var(--map-ring)", "stroke-width": 2, "vector-effect": "non-scaling-stroke" }, g);
-  // County names at a point inside the search area
   const countyPts = { Spokane: [-117.2, 47.47], Stevens: [-117.75, 48.0], Lincoln: [-117.9, 47.45], Kootenai: [-116.9, 47.55],
-                      "Pend Oreille": [-117.12, 48.03], Whitman: [-117.4, 47.29], Bonner: [-116.86, 48.04] };
+                      "Pend Oreille": [-117.12, 48.03], Whitman: [-117.4, 47.29] };
   for (const [name, [lon, lat]] of Object.entries(countyPts)) {
     const [x, y] = px(lon, lat); const t = el("text", { x, y, class: "m-label county", "data-s": 0.85, "text-anchor": "middle" }, L); t.textContent = name;
   }
@@ -266,19 +420,41 @@ function drawBase() {
     if (!keep.has(name)) return;
     const [x, y] = px(t.lon, t.lat);
     const big = name === "Spokane" || name === "Spokane Valley" || name === "Coeur d'Alene";
-    const n = el("text", { x, y, class: "m-label", "data-s": big ? 1.25 : 0.95, "text-anchor": "middle" }, L); n.textContent = name;
+    const n = el("text", { x, y, class: "m-label", "data-s": big ? 1.3 : 0.95, "text-anchor": "middle" }, L); n.textContent = name;
   });
   const [sx] = px(-117.0399, 0);
   [["WA", sx - 14], ["ID", sx + 14]].forEach(([s, x]) => { const n = el("text", { x, y: 300, class: "m-label county", "data-s": 0.9, "text-anchor": "middle" }, L); n.textContent = s; });
+
+  // 5. Highway shields, snapped onto the highway nearest each anchor
+  const anchors = [["I- 90", "90", -117.72, 47.54], ["I- 90", "90", -117.06, 47.69], ["US Hwy 2", "2", -117.80, 47.645],
+                   ["US Hwy 2", "2", -117.33, 47.87], ["US Hwy 395", "395", -117.44, 47.92], ["US Hwy 195", "195", -117.41, 47.50]];
+  for (const [name, num, lon, lat] of anchors) {
+    const [ax, ay] = px(lon, lat); let best = null, bd = Infinity;
+    BASEMAP.roads.filter(r => r.name === name || r.name.startsWith(name + " ")).forEach(r => r.paths.forEach(p => p.forEach(([x, y]) => {
+      const [qx, qy] = px(x, y), d = (qx - ax) ** 2 + (qy - ay) ** 2; if (d < bd) { bd = d; best = [qx, qy]; }
+    })));
+    if (!best) continue;
+    const gS = el("g", { "data-x": best[0], "data-y": best[1] }, SH);
+    const wdt = num.length > 2 ? 26 : 20;
+    if (name.startsWith("I-")) {
+      el("path", { d: `M${-wdt / 2} -9 H${wdt / 2} V2 Q${wdt / 2} 9 0 12 Q${-wdt / 2} 9 ${-wdt / 2} 2 Z`, fill: "var(--shield-i)", stroke: "var(--panel)", "stroke-width": 1.5 }, gS);
+      const t = el("text", { y: 3.5, "text-anchor": "middle", fill: "#fff", "font-size": 10, "font-weight": 700, "font-family": "var(--f-display)" }, gS); t.textContent = num;
+    } else {
+      el("rect", { x: -wdt / 2, y: -9, width: wdt, height: 18, rx: 4, fill: "var(--shield-us)", stroke: "var(--shield-us-ink)", "stroke-width": 1.3 }, gS);
+      const t = el("text", { y: 4, "text-anchor": "middle", fill: "var(--shield-us-ink)", "font-size": 10.5, "font-weight": 700, "font-family": "var(--f-display)" }, gS); t.textContent = num;
+    }
+  }
   scaleMarks();
 }
 
+function unitPx() { const r = svg.getBoundingClientRect(); return r.width ? Math.min(r.width, r.height) / vb.w : 0.8; }
+// 3. dot size grows with acreage
+const dotPx = r => Math.min(9, 3.2 + Math.sqrt(Math.max(r.acres || 0.2, 0.05)) * 0.95);
 function scaleMarks() {
-  const z = vb.w / VB0.w, rect = svg.getBoundingClientRect(), unitPx = rect.width ? Math.min(rect.width, rect.height) / vb.w : 0.8;
-  const fs = 12 / (unitPx || 0.8);
+  const u = unitPx() || 0.8, fs = 12 / u;
   $("labels").querySelectorAll("text").forEach(t => t.setAttribute("font-size", (fs * +t.dataset.s).toFixed(2)));
-  $("dots").querySelectorAll("circle").forEach(c => c.setAttribute("r", ((c.classList.contains("sel") ? 9 : 6.5) / (unitPx || 0.8)).toFixed(2)));
-  return z;
+  $("shields").querySelectorAll("g").forEach(g => g.setAttribute("transform", `translate(${g.dataset.x} ${g.dataset.y}) scale(${(1 / u).toFixed(3)})`));
+  $("dots").querySelectorAll("circle").forEach(c => c.setAttribute("r", (+c.dataset.px / u).toFixed(2)));
 }
 
 function svgPoint(evt) {
@@ -295,7 +471,7 @@ function zoom(f, cx, cy) {
 }
 svg.addEventListener("wheel", e => { e.preventDefault(); const [x, y] = svgPoint(e); zoom(e.deltaY > 0 ? 1.18 : 1 / 1.18, x, y); }, { passive: false });
 let drag = null;
-svg.addEventListener("pointerdown", e => { if (e.target.classList.contains("m-dot")) return; drag = { x: e.clientX, y: e.clientY, vb: { ...vb } }; svg.setPointerCapture(e.pointerId); svg.classList.add("dragging"); });
+svg.addEventListener("pointerdown", e => { if (e.target.classList.contains("m-dot")) return; drag = { x: e.clientX, y: e.clientY, vb: { ...vb } }; svg.setPointerCapture(e.pointerId); svg.classList.add("dragging"); hideTip(); });
 svg.addEventListener("pointermove", e => {
   if (!drag) return;
   const r = svg.getBoundingClientRect(), s = Math.max(vb.w / r.width, vb.h / r.height);
@@ -303,23 +479,76 @@ svg.addEventListener("pointermove", e => {
 });
 ["pointerup", "pointercancel"].forEach(t => svg.addEventListener(t, () => { drag = null; svg.classList.remove("dragging"); }));
 $("zin").onclick = () => zoom(1 / 1.5); $("zout").onclick = () => zoom(1.5); $("zreset").onclick = () => { vb = { ...VB0 }; setVB(); };
-new ResizeObserver(scaleMarks).observe(svg);
+new ResizeObserver(() => { scaleMarks(); drawTopo(); }).observe(document.body);
 
+const byId = new Map();
 function drawDots(list) {
   const g = $("dots"); g.textContent = "";
-  list.filter(r => r.lat != null).sort((a, b) => (a.id === S.sel) - (b.id === S.sel)).forEach(r => {
+  const order = list.filter(r => r.lat != null).sort((a, b) => (b.acres || 0) - (a.acres || 0)); // small dots on top
+  for (const r of order) {
     const [x, y] = px(r.lon, r.lat);
-    const c = el("circle", { cx: x, cy: y, r: 6, class: "m-dot" + (r.id === S.sel ? " sel" : ""), fill: `var(--${ratingTone(r.rating) === "ok" ? "warn" : ratingTone(r.rating)})` }, g);
-    const t = el("title", {}, c); t.textContent = `${money(r.price)} · ${r.acres ?? "?"} ac · ${r.address || r.parcel_id || ""}`;
-    c.addEventListener("click", () => select(r.id, true));
-  });
+    el("circle", { cx: x, cy: y, r: 4, "data-px": dotPx(r).toFixed(1), "data-id": r.id, class: "m-dot", fill: toneVar(ratingTone(r.rating)) }, g);
+  }
+  const sel = S.sel && byId.get(S.sel);
+  if (sel && sel.lat != null) {
+    const [x, y] = px(sel.lon, sel.lat);
+    el("circle", { cx: x, cy: y, r: 4, "data-px": (dotPx(sel) + 2).toFixed(1), class: "m-dot hl", fill: toneVar(ratingTone(sel.rating)), "data-id": sel.id }, g);
+    el("circle", { cx: x, cy: y, r: 4, "data-px": (dotPx(sel) + 2).toFixed(1), class: "m-halo" }, g);
+  }
   scaleMarks();
+}
+// 4. hover preview card
+const tip = $("tip");
+function showTip(r, evt) {
+  tip.innerHTML = `<b>${money(r.price)}</b> <span class="muted">· ${r.acres ?? "?"} ac</span><div class="t-addr">${esc(r.address || r.parcel_id || "")}${r.city ? ", " + esc(r.city) : ""}</div>${utils(r)}`;
+  tip.hidden = false;
+  const box = $("mapbox").getBoundingClientRect(), tw = 220, th = tip.offsetHeight;
+  let x = evt.clientX - box.left + 14, y = evt.clientY - box.top + 14;
+  if (x + tw > box.width - 8) x = evt.clientX - box.left - tw - 14;
+  if (y + th > box.height - 8) y = evt.clientY - box.top - th - 14;
+  tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+}
+function hideTip() { tip.hidden = true; }
+$("dots").addEventListener("pointerover", e => {
+  const id = e.target.dataset?.id; if (!id) return;
+  const r = byId.get(id); if (!r) return;
+  showTip(r, e); highlightCard(id, true);
+});
+$("dots").addEventListener("pointerout", e => { const id = e.target.dataset?.id; hideTip(); if (id) highlightCard(id, false); });
+$("dots").addEventListener("click", e => { const id = e.target.dataset?.id; if (id) select(id, true); });
+
+/* 10. card <-> map hover linking */
+function highlightCard(id, on) {
+  document.querySelector(`.card[data-id="${CSS.escape(id)}"]`)?.classList.toggle("sel", on || id === S.sel);
+}
+function highlightDot(id, on) {
+  const c = $("dots").querySelector(`circle.m-dot[data-id="${CSS.escape(id)}"]`);
+  if (!c) return;
+  c.classList.toggle("hl", on);
+  if (on) $("dots").appendChild(c);
+}
+
+/* ---------- value vs. similar-size lots ---------- */
+const BUCKETS = [[0, 1, "under 1 ac"], [1, 5, "1–5 ac"], [5, 20, "5–20 ac"], [20, 1e9, "20+ ac"]];
+const bucketOf = a => BUCKETS.find(([lo, hi]) => a >= lo && a < hi);
+function computeMedians() {
+  S.medians = {};
+  for (const b of BUCKETS) {
+    const v = S.listings.filter(r => r.acres != null && r.price_per_acre != null && r.acres >= b[0] && r.acres < b[1]).map(r => r.price_per_acre).sort((x, y) => x - y);
+    if (v.length >= 5) S.medians[b[2]] = v[Math.floor(v.length / 2)];
+  }
+}
+function valueRatio(r) {
+  if (r.price_per_acre == null || r.acres == null) return null;
+  const b = bucketOf(r.acres), m = b && S.medians[b[2]];
+  return m ? { ratio: r.price_per_acre / m, label: b[2], median: m } : null;
 }
 
 /* ---------- list ---------- */
 const has = (f, set) => f && set.includes(f.status);
 function filtered() {
   const q = $("q").value.trim().toLowerCase(), maxP = parseFloat($("maxPrice").value), minA = parseFloat($("minAcres").value);
+  const g = S.glance && GROUPS[S.glance.cat].find(x => x[0] === S.glance.key);
   const list = S.listings.filter(r => {
     if (q && ![r.address, r.city, r.parcel_id, r.zip, r.county, r.mls].join(" ").toLowerCase().includes(q)) return false;
     if (!isNaN(maxP) && r.price != null && r.price > maxP) return false;
@@ -328,41 +557,74 @@ function filtered() {
     if (S.f.power && !has(r.electric, ["on_site", "at_road", "likely_near"])) return false;
     if (S.f.access && has(r.access, ["landlocked"])) return false;
     if (S.f.star && !S.marks[r._doc]?.star) return false;
+    if (g && !has(r[S.glance.cat], g[3])) return false;
     return true;
   });
   const key = { score: r => -r.score, price: r => r.price ?? 1e12, ppa: r => r.price_per_acre ?? 1e12,
-                acres: r => -(r.acres ?? 0), miles: r => r.miles_from_spokane ?? 1e9 }[$("sort").value];
-  return list.sort((a, b) => key(a) - key(b));
+                acres: r => -(r.acres ?? 0), miles: r => r.miles_from_spokane ?? 1e9,
+                value: r => valueRatio(r)?.ratio ?? 1e9 }[$("sort").value];
+  return list.sort((a, b) => key(a) - key(b) || (b.score - a.score));
 }
 
-function statusRow([c, name], r) {
-  const f = r[c] || { status: "unknown", label: "Unknown" };
-  return `<div class="st"><span class="k">${name}</span><span><span class="pill ${tone(f)}">${esc(f.label)}</span>${f.status !== "unknown" ? `<span class="conf">${esc(f.confidence)}</span>` : ""}</span></div>`;
+function utils(r) {
+  return `<ul class="utils">${CATS.map(([c, name]) => {
+    const f = r[c] || { status: "unknown" };
+    return `<li class="${tone(f)}" title="${esc(name)}: ${esc(f.label || "Unknown")}">${icon(c)}<span>${esc(short(c, f))}</span></li>`;
+  }).join("")}</ul>`;
 }
 
-function card(r) {
+// 6. parcel outline thumbnail
+function plat(r) {
+  const s = r.shape;
+  if (!s || s.length < 3) return `<svg class="plat" viewBox="0 0 72 72" aria-hidden="true"><text class="none" x="36" y="40" text-anchor="middle">no parcel</text></svg>`;
+  const xs = s.map(p => p[0]), ys = s.map(p => p[1]);
+  const minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
+  const span = Math.max(maxx - minx, maxy - miny) || 1, sc = 44 / span;
+  const ox = 34 - (minx + maxx) / 2 * sc, oy = 32 + (miny + maxy) / 2 * sc;
+  const d = s.map(([x, y], i) => (i ? "L" : "M") + (ox + x * sc).toFixed(1) + " " + (oy - y * sc).toFixed(1)).join("") + "Z";
+  const ft = Math.round(span / 0.3048);
+  return `<svg class="plat" viewBox="0 0 72 72" role="img" aria-label="Parcel outline, about ${ft.toLocaleString()} ft across"><path class="lot" d="${d}"/>` +
+         `<text class="north" x="64" y="11" text-anchor="middle">N</text><path d="M64 13v6" stroke="var(--muted)" stroke-width="1.2"/>` +
+         `<text class="north" x="36" y="68" text-anchor="middle" style="font-weight:500">${ft >= 5280 ? (ft / 5280).toFixed(1) + " mi" : ft.toLocaleString() + " ft"}</text></svg>`;
+}
+
+// 9. value meter
+function valueMeter(r) {
+  const v = valueRatio(r); if (!v) return "";
+  const pct = Math.round((v.ratio - 1) * 100);
+  const pos = Math.max(3, Math.min(97, 50 + Math.max(-1, Math.min(1, Math.log2(v.ratio))) * 47));
+  const tag = Math.abs(pct) < 8 ? `<span class="v-tag">About typical</span>` :
+    pct < 0 ? `<span class="v-tag below">${-pct}% below typical</span>` : `<span class="v-tag above">${pct}% above typical</span>`;
+  return `<div class="value">${tag}<span>${money(r.price_per_acre)}/ac vs ${money(v.median)} for ${v.label}</span>
+    <div class="v-track" aria-hidden="true"><span class="v-mark" style="left:${pos}%"></span></div></div>`;
+}
+
+function card(r, i) {
   const mark = S.marks[r._doc] || {};
   const loc = [r.address, r.city].filter(Boolean).join(", ") || (r.parcel_id ? "Parcel " + r.parcel_id : "Unknown location");
-  const facts = [r.acres != null && `${r.acres} ac`, r.price_per_acre != null && `${money(r.price_per_acre)}/ac`,
-                 r.miles_from_spokane != null && `${r.miles_from_spokane} mi`, r.county && `${r.county} Co.`].filter(Boolean).join(" · ");
-  const open = S.open.has(r.id);
-  let html = `<article class="card${r.id === S.sel ? " sel" : ""}" id="c-${esc(r._doc)}" data-id="${esc(r.id)}">
-    <div class="card-top">
-      <div class="score ${ratingTone(r.rating)}">${r.score}<small>${esc(r.rating === "Build-ready" ? "Ready" : r.rating === "Needs work" ? "Work" : "Risk")}</small></div>
+  const facts = [r.acres != null && `${r.acres} ac`, r.miles_from_spokane != null && `${r.miles_from_spokane} mi out`, r.county && `${r.county} Co.`].filter(Boolean).join(" · ");
+  const open = S.open.has(r.id), rt = ratingTone(r.rating);
+  let html = `<article class="card${r.id === S.sel ? " sel" : ""}${i < 12 && !reduceMotion ? " rise" : ""}" style="--i:${i}" id="c-${esc(r._doc)}" data-id="${esc(r.id)}">
+    <div class="c-head">
+      ${plat(r)}
       <div style="min-width:0"><div class="price">${money(r.price)}</div><div class="addr">${esc(loc)}</div><div class="facts">${esc(facts)}</div></div>
-      ${S.db && S.canWrite ? `<button class="star" data-star="${esc(r._doc)}" aria-pressed="${!!mark.star}" aria-label="Star this property">${mark.star ? "★" : "☆"}</button>` : ""}
+      <div class="ring ${rt}" style="--p:${r.score}" title="${esc(r.rating)} — score ${r.score} of 100"><span>${r.score}<small>${rt === "good" ? "ready" : rt === "ok" ? "work" : "risk"}</small></span></div>
     </div>
-    <div class="status">${CATS.map(c => statusRow(c, r)).join("")}</div>
-    ${r.flags?.length ? `<div class="flags">${r.flags.slice(0, open ? 99 : 2).map(f => `<span class="flag">${esc(f)}</span>`).join("")}${!open && r.flags.length > 2 ? `<span class="src">+${r.flags.length - 2} more</span>` : ""}</div>` : ""}
+    ${utils(r)}
+    ${valueMeter(r)}
+    ${r.flags?.length ? `<div class="flags">${r.flags.slice(0, open ? 99 : 1).map(f => `<span class="flag">${esc(f)}</span>`).join("")}${!open && r.flags.length > 1 ? `<span class="src">+${r.flags.length - 1} more</span>` : ""}</div>` : ""}
     ${mark.note && !open ? `<div class="src">📝 ${esc(mark.note)}</div>` : ""}
-    <button class="more" data-open="${esc(r.id)}" aria-expanded="${open}">${open ? "Hide details" : "Why? Show the evidence"}</button>`;
+    <div class="c-foot">
+      <button class="more" data-open="${esc(r.id)}" aria-expanded="${open}">${open ? "Hide details" : "Why? Show the evidence"}</button>
+      ${S.db && S.canWrite ? `<button class="star" data-star="${esc(r._doc)}" aria-pressed="${!!mark.star}">${mark.star ? "★ Starred" : "☆ Star"}</button>` : ""}
+    </div>`;
   if (open) {
     const scout = r.county === "Spokane" && r.parcel_id
       ? `<a target="_blank" rel="noopener" href="https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=${encodeURIComponent(r.parcel_id)}">County parcel record</a>` : "";
     html += `<div class="detail">
       ${CATS.map(([c, name]) => {
         const f = r[c] || { evidence: [] };
-        return `<div class="ev"><h3>${name}: <span class="pill ${tone(f)}">${esc(f.label || "Unknown")}</span></h3><ul>${
+        return `<div class="ev"><h3>${icon(c)} ${name}: <span class="pill ${tone(f)}">${esc(f.label || "Unknown")}</span>${f.status && f.status !== "unknown" ? `<span class="conf">${esc(f.confidence)} confidence</span>` : ""}</h3><ul>${
           (f.evidence || []).length ? f.evidence.map(e => `<li>${esc(e.detail)} <span class="src">— ${esc(e.source)}, ${esc(e.confidence)}</span></li>`).join("")
           : "<li>Nothing found. Ask the seller.</li>"}</ul></div>`;
       }).join("")}
@@ -381,6 +643,13 @@ function card(r) {
   return html + "</article>";
 }
 
+const skeleton = () => Array.from({ length: 3 }, () => `<div class="card skel" aria-hidden="true">
+  <div class="c-head"><div class="bone" style="width:72px;height:72px;border-radius:10px"></div>
+  <div style="display:flex;flex-direction:column;gap:6px"><div class="bone" style="width:110px;height:22px"></div><div class="bone" style="width:70%;height:13px"></div><div class="bone" style="width:45%;height:11px"></div></div>
+  <div class="bone" style="width:54px;height:54px;border-radius:50%"></div></div>
+  <div class="utils">${'<div class="bone" style="height:30px"></div>'.repeat(4)}</div></div>`).join("");
+const LAND_ICON = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 50c10-8 18-8 28 0s18 8 28 0"/><path d="M4 40c10-8 18-8 28 0s18 8 28 0"/><path d="M14 30 24 14l10 16M30 30l10-12 10 12"/></svg>';
+
 let renderPending = false;
 function liveRender() {  // data arrived; don't rebuild a note the viewer is typing in
   if (document.activeElement?.dataset?.note !== undefined) { renderPending = true; return; }
@@ -390,41 +659,68 @@ document.addEventListener("focusout", e => { if (e.target.dataset?.note !== unde
 
 function render() {
   const list = filtered();
-  $("countLabel").textContent = S.listings.length ? `${list.length} of ${S.listings.length} listings` : "Listings";
+  $("countLabel").textContent = S.listings.length ? `${list.length.toLocaleString()} of ${S.listings.length.toLocaleString()} parcels` : "Parcels";
+  $("countPill").textContent = S.listings.length ? `${list.length.toLocaleString()} shown` : "";
   if (!S.listings.length) {
-    $("cards").innerHTML = `<div class="empty">${S.db === false
-      ? "Listings are stored with this app and can't load here. Open it from claude.ai while signed in."
-      : S.loaded ? "No listings yet. Add a property below, or ask Claude to refresh the land listings." : "Loading listings…"}</div>`;
+    $("cards").innerHTML = S.db === false
+      ? `<div class="empty">${LAND_ICON}<b>Listings live inside this app</b><span>Open it from claude.ai while signed in to see them.</span></div>`
+      : S.loaded ? `<div class="empty">${LAND_ICON}<b>No listings yet</b><span>Add a property below, or ask Claude to refresh the land listings.</span></div>` : skeleton();
   } else {
     const selIdx = list.findIndex(r => r.id === S.sel);
     if (selIdx >= S.shown) S.shown = Math.ceil((selIdx + 1) / PAGE) * PAGE;
     const rest = list.length - S.shown;
     $("cards").innerHTML = list.length
       ? list.slice(0, S.shown).map(card).join("") +
-        (rest > 0 ? `<button class="btn" id="showMore" style="align-self:center">Show ${Math.min(rest, PAGE)} more (${rest} left)</button>` : "")
-      : `<div class="empty">No listings match these filters.</div>`;
+        (rest > 0 ? `<button class="btn" id="showMore" style="align-self:center">Show ${Math.min(rest, PAGE)} more · ${rest.toLocaleString()} left</button>` : "")
+      : `<div class="empty">${LAND_ICON}<b>Nothing matches these filters</b><span>Try a higher max price or clear a filter.</span></div>`;
   }
   drawDots(list);
-  tally(list);
+  renderGlance(list);
+  renderHeadline();
+  renderGlanceChip();
 }
 
-function tally(list) {
-  const ppa = list.map(r => r.price_per_acre).filter(v => v != null).sort((a, b) => a - b);
-  const n = (c, s) => list.filter(r => has(r[c], s)).length;
-  const items = [
-    [list.length, "listings shown"],
-    [ppa.length ? money(ppa[Math.floor(ppa.length / 2)]) : "—", "median price per acre"],
-    [n("water", ["well", "public", "shared_well"]), "have water (well or public)"],
-    [n("electric", ["on_site", "at_road"]), "power on site or at road"],
-    [n("septic", ["sewer", "approved", "installed"]), "sewer or perc approved"],
-    [n("access", ["landlocked"]), "possibly landlocked"],
-  ];
-  $("tally").innerHTML = items.map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join("");
+/* 2. market-at-a-glance bars (counts reflect the current filters) */
+function renderGlance(list) {
+  if (!S.listings.length) { $("glance").innerHTML = CATS.map(([c, n]) => `<div class="g-row"><span class="g-k">${icon(c)}${n}</span><div class="g-bar"></div><div class="g-leg">&nbsp;</div></div>`).join(""); return; }
+  const base = S.glance ? list : list; // bars always describe what's shown
+  $("glance").innerHTML = CATS.map(([c, name]) => {
+    const total = base.length || 1;
+    const groups = GROUPS[c].map(([key, label, t, st]) => ({ key, label, t, n: base.filter(r => has(r[c], st)).length }));
+    const pressed = g => S.glance && S.glance.cat === c && S.glance.key === g.key;
+    const anyPressed = S.glance && S.glance.cat === c;
+    return `<div class="g-row"><span class="g-k">${icon(c)}${name}</span>
+      <div class="g-bar${anyPressed ? " dim" : ""}">${groups.filter(g => g.n).map(g => `<button class="${g.t}" style="flex:${g.n}" data-gc="${c}" data-gk="${g.key}" aria-pressed="${pressed(g)}" title="${esc(g.label)}: ${g.n}"></button>`).join("")}</div>
+      <div class="g-leg">${groups.map(g => `<button class="${g.t}" data-gc="${c}" data-gk="${g.key}"><i></i>${esc(g.label)} <b>${g.n}</b> <span>(${Math.round(g.n / total * 100)}%)</span></button>`).join("")}</div></div>`;
+  }).join("");
+}
+function renderGlanceChip() {
+  if (!S.glance) { $("glanceChip").innerHTML = ""; return; }
+  const g = GROUPS[S.glance.cat].find(x => x[0] === S.glance.key);
+  const name = CATS.find(c => c[0] === S.glance.cat)[1];
+  $("glanceChip").innerHTML = `<button class="chip active-glance" id="clearGlance" aria-label="Clear ${esc(name)} filter">${icon(S.glance.cat)}${esc(name)}: ${esc(g[1])} ✕</button>`;
+}
+$("glance").addEventListener("click", e => {
+  const b = e.target.closest("[data-gc]"); if (!b) return;
+  const cat = b.dataset.gc, key = b.dataset.gk;
+  S.glance = S.glance && S.glance.cat === cat && S.glance.key === key ? null : { cat, key };
+  S.shown = PAGE; render();
+});
+$("glanceChip").addEventListener("click", e => { if (e.target.closest("#clearGlance")) { S.glance = null; S.shown = PAGE; render(); } });
+
+function renderHeadline() {
+  const L = S.listings;
+  if (!L.length) { $("headline").innerHTML = ""; return; }
+  const ppa = L.map(r => r.price_per_acre).filter(v => v != null).sort((a, b) => a - b);
+  const ready = L.filter(r => r.rating === "Build-ready").length;
+  $("headline").innerHTML = `<div class="hl-acc"><b>${L.length.toLocaleString()}</b><span>parcels for sale</span></div>
+    <div><b>${kmoney(ppa[Math.floor(ppa.length / 2)])}</b><span>median per acre</span></div>
+    <div><b>${ready}</b><span>build-ready</span></div>`;
 }
 
 function select(id, scroll) {
   S.sel = id; S.open.add(id); render();
-  if (scroll) document.querySelector(`.card[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  if (scroll) document.querySelector(`.card[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
 }
 
 /* ---------- events ---------- */
@@ -432,6 +728,8 @@ function select(id, scroll) {
 [["fWater", "water"], ["fPower", "power"], ["fAccess", "access"], ["fStar", "star"]].forEach(([id, k]) =>
   $(id).addEventListener("click", e => { S.f[k] = !S.f[k]; S.shown = PAGE; e.currentTarget.setAttribute("aria-pressed", S.f[k]); render(); }));
 
+$("cards").addEventListener("pointerover", e => { const c = e.target.closest(".card[data-id]"); if (c && !c.contains(e.relatedTarget)) highlightDot(c.dataset.id, true); });
+$("cards").addEventListener("pointerout", e => { const c = e.target.closest(".card[data-id]"); if (c && !c.contains(e.relatedTarget)) highlightDot(c.dataset.id, false); });
 $("cards").addEventListener("click", async e => {
   if (e.target.id === "showMore") { S.shown += PAGE; render(); return; }
   const o = e.target.closest("[data-open]");
@@ -490,7 +788,7 @@ let toastTimer;
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 3200); }
 
 /* ---------- data ---------- */
-drawBase(); render();
+drawTopo(); drawBase(); render();
 (async () => {
   const db = window.claude?.use ? await window.claude.use("db") : null;
   if (!db) { S.db = false; $("addPanel").hidden = true; render(); return; }
@@ -499,7 +797,11 @@ drawBase(); render();
   if (user && (await user.can("data.write")) === false) { S.canWrite = false; $("addPanel").hidden = true; }
   // Market listings arrive in bundles ("chunks"); hand-added ones one per doc ("listings").
   let bulk = [], single = [];
-  const merge = () => { S.loaded = true; S.listings = [...bulk, ...single]; liveRender(); };
+  const merge = () => {
+    S.loaded = true; S.listings = [...bulk, ...single];
+    byId.clear(); S.listings.forEach(r => byId.set(r.id, r));
+    computeMedians(); liveRender();
+  };
   db.collection("chunks").limit(500).onSnapshot(snap => {
     bulk = snap.docs.flatMap(d => (d.data().items || []).map(r => ({ ...r, _doc: docId(r.id) })));
     merge();
@@ -512,8 +814,8 @@ drawBase(); render();
     const m = d.exists ? d.data() : null; S.meta = m;
     if (m) {
       $("updated").textContent = `Updated ${m.generated}`;
-      $("sub").textContent = `Vacant land for sale, checked for water, power, septic and road access. Sources: ${(m.sources || []).join(", ")}.`;
-      $("radiusTag").textContent = `${m.radius_miles ?? 25} mi of downtown`;
+      $("radiusTag").textContent = `Spokane, WA · ${m.radius_miles ?? 25}-mile radius`;
+      $("sub").textContent = `Every lot and acreage for sale near Spokane, checked against public records for water, power, septic and road access. Source: ${(m.sources || []).join(", ")}.`;
     }
   });
   db.collection("marks").onSnapshot(snap => {
