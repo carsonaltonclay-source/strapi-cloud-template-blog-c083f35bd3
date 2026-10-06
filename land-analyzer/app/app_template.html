@@ -324,7 +324,93 @@ a { color: var(--accent); }
 .req button { border: none; background: none; color: var(--muted); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 30;
   background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; }
-footer { color: var(--muted); font-size: 12px; max-width: 80ch; }
+/* 1. evidence panels */
+.ev-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 620px) { .ev-grid { grid-template-columns: 1fr; } }
+.evc { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: color-mix(in srgb, var(--bg) 55%, var(--panel)); min-width: 0; }
+.evc.wide { grid-column: 1 / -1; }
+.evc header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.evc header b { font: 600 14px/1.2 var(--f-display); letter-spacing: 0.02em; }
+.cm { display: inline-flex; gap: 2px; margin-left: auto; align-items: flex-end; }
+.cm i { width: 4px; border-radius: 1px; background: var(--line); }
+.cm i:nth-child(1) { height: 6px; } .cm i:nth-child(2) { height: 9px; } .cm i:nth-child(3) { height: 12px; }
+.cm[data-l="1"] i:nth-child(-n+1), .cm[data-l="2"] i:nth-child(-n+2), .cm[data-l="3"] i { background: var(--accent); }
+.cm-l { font-size: 11px; color: var(--muted); }
+.evc ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.evc li { font-size: 13px; overflow-wrap: anywhere; line-height: 1.45; }
+.tag { display: inline-block; font-size: 10.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; margin-left: 4px; white-space: nowrap; vertical-align: 1px; }
+/* 2. pull quote */
+.quote { margin: 0; padding: 10px 14px 10px 16px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 10px 10px 0;
+  font-size: 14px; font-style: italic; color: var(--ink); white-space: pre-wrap; max-height: 200px; overflow: auto; }
+.quote cite { display: block; font-style: normal; font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+/* 3. actions */
+.facts-line { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
+.facts-line b { color: var(--ink); font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.act { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); text-decoration: none;
+  border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 500; }
+.act:hover { border-color: var(--accent); color: var(--accent); }
+.act.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+/* 4. notes */
+.notebox { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+.nb-head { display: flex; align-items: center; gap: 6px; padding: 6px 10px; font: 600 12px/1 var(--f-display); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--line); background: var(--soft); }
+.nb-head .saved { margin-left: auto; text-transform: none; letter-spacing: 0; font: 500 12px var(--f-body); color: var(--good); opacity: 0; transition: opacity .3s; }
+.nb-head .saved.on { opacity: 1; }
+.notebox .note { border: none; border-radius: 0; background: transparent; min-height: 70px; }
+/* 5. score breakdown */
+.scorecol { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.sb { display: flex; gap: 2px; width: 54px; }
+.sb i { flex: 1; height: 4px; border-radius: 2px; background: var(--soft); position: relative; overflow: hidden; }
+.sb i::after { content: ""; position: absolute; inset: 0; width: var(--w); background: var(--c); }
+/* 6. infinite scroll */
+.more-row { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0 2px; color: var(--muted); font-size: 12.5px; }
+.prog { width: 160px; height: 4px; border-radius: 2px; background: var(--soft); overflow: hidden; }
+.prog i { display: block; height: 100%; background: var(--accent); }
+/* 7. add panel */
+.add-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); gap: 18px 28px; align-items: start; }
+@media (max-width: 860px) { .add-grid { grid-template-columns: 1fr; } }
+.steps { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; counter-reset: st; }
+.steps li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; font-size: 13px; color: var(--muted); counter-increment: st; }
+.steps li::before { content: counter(st); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent);
+  font: 700 14px/1 var(--f-display); }
+.steps b { color: var(--ink); display: block; font-weight: 600; }
+.addform2 { display: flex; flex-direction: column; gap: 8px; }
+.addform2 .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto; gap: 8px; align-items: end; }
+@media (max-width: 520px) { .addform2 .row { grid-template-columns: 1fr; } }
+.addform2 label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+.addform2 input { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; min-width: 0; font-size: 14px; }
+.addform2 .big input { padding: 12px 14px; font-size: 15px; }
+.reqchip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 10px; font-size: 13px; background: var(--bg); max-width: 100%; }
+.reqchip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bar-ok); flex: none; }
+.reqchip .dot.err { background: var(--bar-bad); }
+.reqchip span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reqchip button { border: none; background: var(--soft); color: var(--muted); border-radius: 50%; width: 22px; height: 22px; line-height: 1; flex: none; }
+.reqs { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-start; }
+/* 8. explainer footer */
+.explain { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.pts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 620px) { .pts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pts div { border-radius: 10px; padding: 10px 12px; background: var(--soft); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pts b { display: flex; align-items: center; gap: 6px; font: 600 14px/1.2 var(--f-display); }
+.pts b em { margin-left: auto; font-style: normal; color: var(--accent); }
+.pts span { font-size: 12px; color: var(--muted); }
+.bands { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); }
+.bands i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.disclaimer { color: var(--muted); font-size: 12px; max-width: 90ch; }
+/* 9. floating button */
+.fab { position: fixed; right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 25; border: none; border-radius: 999px; padding: 10px 16px;
+  background: var(--ink); color: var(--bg); font-weight: 600; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; box-shadow: 0 6px 18px rgb(0 0 0 / 0.2); }
+.fab svg { width: 15px; height: 15px; }
+/* 10. price per acre histogram */
+.hist { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 4px 12px; align-items: end; grid-column: 1 / -1; }
+.hist .g-k { align-self: center; }
+.hist > svg { width: 100%; height: 64px; display: block; overflow: visible; }
+.hist rect { fill: var(--accent); opacity: 0.75; } .hist rect.hi { opacity: 1; }
+.hist line { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.hist text { fill: var(--muted); font: 500 10.5px var(--f-body); }
+.hist text.m { fill: var(--ink); font-weight: 600; }
+.g-leg button.zero { opacity: 0.45; }
 </style>
 
 <div class="wrap">
@@ -409,24 +495,45 @@ footer { color: var(--muted); font-size: 12px; max-width: 80ch; }
   </div>
 
   <section class="panel" id="addPanel">
-    <h2>Add a property to check</h2>
-    <div class="src">Found land on Facebook, Craigslist or a roadside sign? Paste its parcel number (best for vacant land), its address, a listing link, or its coordinates. Then ask Claude to "analyze my added properties" and it will show up above with full results.</div>
-    <form class="addform" id="addForm">
-      <label for="addText">Parcel #, address, link or lat, lon<input id="addText" required placeholder="e.g. 39352.9067"></label>
-      <label for="addPrice">Asking price<input id="addPrice" inputmode="numeric" placeholder="$"></label>
-      <label for="addNote">Note (optional)<input id="addNote" placeholder="seller says power at road"></label>
-      <button class="btn primary" type="submit">Add</button>
-    </form>
-    <div class="reqs" id="reqs"></div>
+    <div class="add-grid">
+      <div>
+        <h2>Add a property to check</h2>
+        <ol class="steps">
+          <li><span><b>Paste what you have</b>Parcel number (best for vacant land), address, listing link, or "lat, lon".</span></li>
+          <li><span><b>Ask Claude</b>Say "analyze my added properties".</span></li>
+          <li><span><b>It appears above</b>With water, power, septic, access and terrain, like every other listing.</span></li>
+        </ol>
+      </div>
+      <div class="addform2">
+        <form id="addForm" class="addform2">
+          <label class="big" for="addText">Parcel #, address, link or coordinates<input id="addText" required placeholder="e.g. 39352.9067 or https://www.zillow.com/homedetails/…"></label>
+          <div class="row">
+            <label for="addPrice">Asking price<input id="addPrice" inputmode="numeric" placeholder="$"></label>
+            <label for="addNote">Note (optional)<input id="addNote" placeholder="seller says power at road"></label>
+            <button class="btn primary" type="submit">Add property</button>
+          </div>
+        </form>
+        <div class="reqs" id="reqs"></div>
+      </div>
+    </div>
   </section>
 
-  <footer>
-    Status comes from the listing, and from public records: county parcels, WA Ecology and Idaho IDWR well logs, water-district and city
-    boundaries, road centerlines and addressed buildings. "High" confidence means the seller or a recorded well log says so; "low" is an
-    educated guess. Confirm with the seller, a title report, the health district (septic) and the power company before you buy.
-  </footer>
+  <section class="explain" aria-label="How the score works">
+    <h2>How the score works</h2>
+    <div class="pts">
+      <div><b>${WATER}Water<em>25</em></b><span>Well logs on the parcel, water districts, nearby well depth and yield.</span></div>
+      <div><b>${POWER}Power<em>25</em></b><span>Listing details, then how close the nearest home or building is.</span></div>
+      <div><b>${SEPTIC}Septic<em>25</em></b><span>Perc and septic notes, city sewer areas, health district rules.</span></div>
+      <div><b>${ACCESS}Access<em>25</em></b><span>Whether a public road touches the parcel boundary.</span></div>
+    </div>
+    <div class="bands"><span><i style="background:var(--bar-good)"></i>80–100 Build-ready</span><span><i style="background:var(--bar-ok)"></i>50–79 Needs work</span><span><i style="background:var(--bar-bad)"></i>0–49 High risk</span><span>Terrain is shown but doesn't change the score.</span></div>
+    <p class="disclaimer">Sources: Zillow listings; county parcels, roads and address points; WA Ecology and Idaho IDWR well logs; USGS 3DEP elevation.
+      "High" confidence means the seller or a recorded well log says so; "low" is an educated guess. Confirm with the seller, a title report,
+      the health district (septic) and the power company before you buy.</p>
+  </section>
 </div>
 <div class="toast" id="toast" hidden></div>
+<button class="fab" id="fab" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg><span id="fabLabel">Top</span></button>
 
 <script>
 const BASEMAP = /*__BASEMAP__*/null;
@@ -492,6 +599,8 @@ const S = { listings: [], meta: null, requests: [], marks: {}, sel: null, hover:
 try { const v = +localStorage.getItem("landfinder.radius"); if (v > 0) S.radius = v; } catch (e) {}
 
 $("fWater").innerHTML = icon("water") + "Has water";
+document.querySelector(".pts").innerHTML = document.querySelector(".pts").innerHTML
+  .replace("${WATER}", icon("water")).replace("${POWER}", icon("electric")).replace("${SEPTIC}", icon("septic")).replace("${ACCESS}", icon("access"));
 $("fPower").innerHTML = icon("electric") + "Power close";
 $("fAccess").innerHTML = icon("access") + "Not landlocked";
 
@@ -828,7 +937,8 @@ function card(r, i) {
     <div class="c-head">
       ${plat(r)}
       <div style="min-width:0"><div class="price">${money(r.price)}</div><div class="addr">${esc(loc)}</div><div class="facts">${esc(facts)}</div></div>
-      <div class="ring ${rt}" style="--p:${r.score}" title="${esc(r.rating)} — score ${r.score} of 100"><span>${r.score}<small>${rt === "good" ? "ready" : rt === "ok" ? "work" : "risk"}</small></span></div>
+      <div class="scorecol"><div class="ring ${rt}" style="--p:${r.score}" title="${esc(r.rating)} — score ${r.score} of 100"><span>${r.score}<small>${rt === "good" ? "ready" : rt === "ok" ? "work" : "risk"}</small></span></div>
+        <div class="sb" aria-label="Score breakdown">${CATS.map(([c, n]) => { const pt = r[c]?.points ?? 8; return `<i title="${n}: ${pt} of 25" style="--w:${Math.round(pt / 25 * 100)}%;--c:${toneVar(tone(r[c]))}"></i>`; }).join("")}</div></div>
     </div>
     ${spec}
     ${utils(r)}
@@ -843,29 +953,43 @@ function card(r, i) {
   if (open) {
     const scout = r.county === "Spokane" && r.parcel_id
       ? `<a target="_blank" rel="noopener" href="https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=${encodeURIComponent(r.parcel_id)}">County parcel record</a>` : "";
+    const confL = c => ({ high: 3, medium: 2, low: 1 }[c] || 0);
+    const panel = (c, name, f, items, wide) => `<section class="evc${wide ? " wide" : ""}"><header>${icon(c)}<b>${name}</b><span class="pill ${c === "_terrain" ? f.tone : tone(f)}">${esc(f.label || "Unknown")}</span>
+      ${f.confidence ? `<span class="cm" data-l="${confL(f.confidence)}" title="${esc(f.confidence)} confidence"><i></i><i></i><i></i></span><span class="cm-l">${esc(f.confidence)}</span>` : ""}</header><ul>${items}</ul></section>`;
+    const t = r.terrain;
+    const terrainPanel = t ? panel("_terrain", "Terrain", { label: t.position_label, confidence: "high",
+        tone: ["steep", "very_steep"].includes(t.slope_class) ? "bad" : t.slope_class === "rolling" ? "ok" : "good" },
+      `<li>${esc(t.slope_label)}: average slope <b>${t.slope_mean_pct}%</b> (${t.slope_mean_deg}°), steepest spot ${t.slope_max_deg}°</li>
+       ${t.flat_pct != null ? `<li><b>${t.flat_pct}%</b> of the parcel is under 14% slope, easy to build on</li>` : ""}
+       <li>About <b>${t.elevation_ft.toLocaleString()} ft</b> elevation; ${t.relief_ft.toLocaleString()} ft from low to high point</li>
+       ${t.above_surroundings_ft != null ? `<li>${Math.abs(t.above_surroundings_ft)} ft ${t.above_surroundings_ft >= 0 ? "higher" : "lower"} than the ground within half a mile<span class="tag">USGS 3DEP</span></li>` : ""}`) : "";
+    const copyBtn = r.parcel_id ? `<button class="act" data-copy="${esc(r.parcel_id)}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>Copy parcel #</button>` : "";
+    const ext = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4 10 14M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
     html += `<div class="detail">
-      ${CATS.map(([c, name]) => {
-        const f = r[c] || { evidence: [] };
-        return `<div class="ev"><h3>${icon(c)} ${name}: <span class="pill ${tone(f)}">${esc(f.label || "Unknown")}</span>${f.status && f.status !== "unknown" ? `<span class="conf">${esc(f.confidence)} confidence</span>` : ""}</h3><ul>${
-          (f.evidence || []).length ? f.evidence.map(e => `<li>${esc(e.detail)} <span class="src">— ${esc(e.source)}, ${esc(e.confidence)}</span></li>`).join("")
-          : "<li>Nothing found. Ask the seller.</li>"}</ul></div>`;
-      }).join("")}
-      ${r.terrain ? `<div class="ev"><h3>${icon("_terrain")} Terrain: <span class="pill ${["steep", "very_steep"].includes(r.terrain.slope_class) ? "bad" : r.terrain.slope_class === "rolling" ? "ok" : "good"}">${esc(r.terrain.position_label)}</span></h3><ul>
-        <li>${esc(r.terrain.slope_label)}: average slope ${r.terrain.slope_mean_pct}% (${r.terrain.slope_mean_deg}°), steepest spot ${r.terrain.slope_max_deg}°</li>
-        ${r.terrain.flat_pct != null ? `<li>${r.terrain.flat_pct}% of the parcel is under 14% slope (easy to build on)</li>` : ""}
-        <li>Elevation about ${r.terrain.elevation_ft.toLocaleString()} ft; ${r.terrain.relief_ft.toLocaleString()} ft from the lowest to highest point on the lot</li>
-        ${r.terrain.above_surroundings_ft != null ? `<li>${Math.abs(r.terrain.above_surroundings_ft)} ft ${r.terrain.above_surroundings_ft >= 0 ? "higher" : "lower"} than the average ground within half a mile</li>` : ""}
-        <li class="src">Source: USGS 3DEP elevation model</li></ul></div>` : ""}
-      <div class="links">
-        ${r.parcel_id ? `<span>Parcel <span class="mono">${esc(r.parcel_id)}</span>${r.parcel_match ? ` <span class="src">(${esc(r.parcel_match)})</span>` : ""}</span>` : ""}
-        ${r.zoning ? `<span>Zoning: ${esc(r.zoning)}</span>` : ""}
-        ${r.days_on_market != null ? `<span>${r.days_on_market} days on market</span>` : ""}
-        ${r.url ? `<a target="_blank" rel="noopener" href="${esc(r.url)}">Open listing</a>` : ""}
-        ${scout}
-        ${r.lat != null ? `<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lon}">Google Maps</a>` : ""}
+      <div class="ev-grid">
+        ${CATS.map(([c, name]) => {
+          const f = r[c] || { evidence: [] };
+          const items = (f.evidence || []).length
+            ? f.evidence.map(e => `<li>${esc(e.detail)}<span class="tag">${esc(e.source.replace(/ \(proxy:.*\)/, ""))}</span></li>`).join("")
+            : "<li>Nothing found. Ask the seller.</li>";
+          return panel(c, name, f, items);
+        }).join("")}
+        ${terrainPanel ? terrainPanel.replace('class="evc"', 'class="evc wide"') : ""}
       </div>
-      ${r.remarks ? `<div class="remarks">${esc(r.remarks)}</div>` : ""}
-      ${S.db && S.canWrite ? `<label class="src" for="n-${esc(r._doc)}">Your notes</label><textarea class="note" id="n-${esc(r._doc)}" data-note="${esc(r._doc)}" placeholder="Called the county about the easement…">${esc(mark.note || "")}</textarea>` : ""}
+      ${r.remarks ? `<blockquote class="quote">“${esc(r.remarks)}”<cite>Listing description</cite></blockquote>` : ""}
+      <div class="facts-line">
+        ${r.parcel_id ? `<span>Parcel <b class="mono">${esc(r.parcel_id)}</b>${r.parcel_match && r.parcel_match !== "map pin inside parcel" ? ` (${esc(r.parcel_match)})` : ""}</span>` : ""}
+        ${r.zoning ? `<span>Zoning <b>${esc(r.zoning)}</b></span>` : ""}
+        ${r.days_on_market != null ? `<span><b>${r.days_on_market}</b> days on market</span>` : ""}
+      </div>
+      <div class="actions">
+        ${r.url ? `<a class="act primary" target="_blank" rel="noopener" href="${esc(r.url)}">${ext}Open listing</a>` : ""}
+        ${r.county === "Spokane" && r.parcel_id ? `<a class="act" target="_blank" rel="noopener" href="https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=${encodeURIComponent(r.parcel_id)}">${ext}County record</a>` : ""}
+        ${r.lat != null ? `<a class="act" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lon}">${ext}Google Maps</a>` : ""}
+        ${copyBtn}
+      </div>
+      ${S.db && S.canWrite ? `<div class="notebox"><div class="nb-head"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></svg><label for="n-${esc(r._doc)}">Your notes</label><span class="saved" data-saved="${esc(r._doc)}">Saved ✓</span></div>
+        <textarea class="note" id="n-${esc(r._doc)}" data-note="${esc(r._doc)}" placeholder="Called the county about the easement…">${esc(mark.note || "")}</textarea></div>` : ""}
     </div>`;
   }
   return html + "</article>";
@@ -903,9 +1027,12 @@ function render() {
       : page.map(card).join("");
     $("cards").innerHTML = list.length
       ? body +
-        (rest > 0 ? `<button class="btn" id="showMore" style="align-self:center">Show ${Math.min(rest, PAGE)} more · ${rest.toLocaleString()} left</button>` : "")
+        `<div class="more-row" id="moreRow"><span>Showing ${Math.min(S.shown, list.length).toLocaleString()} of ${list.length.toLocaleString()}</span>
+          <span class="prog"><i style="width:${Math.round(Math.min(S.shown, list.length) / list.length * 100)}%"></i></span>
+          ${rest > 0 ? `<button class="btn" id="showMore">Load ${Math.min(rest, PAGE)} more</button>` : ""}</div>`
       : `<div class="empty">${LAND_ICON}<b>Nothing matches these filters</b><span>Try a higher max price or clear a filter.</span></div>`;
   }
+  observeMore();
   drawDist();
   drawDots(list);
   renderGlance(list);
@@ -928,8 +1055,25 @@ function renderGlance(list) {
     const anyPressed = S.glance && S.glance.cat === c;
     return `<div class="g-row${c === "_terrain" ? " wide" : ""}"><span class="g-k">${icon(c)}${name}</span>
       <div class="g-bar${anyPressed ? " dim" : ""}">${groups.filter(g => g.n).map(g => `<button class="${g.t}" style="flex:${g.n}" data-gc="${c}" data-gk="${g.key}" aria-pressed="${pressed(g)}" title="${esc(g.label)}: ${g.n}"></button>`).join("")}</div>
-      <div class="g-leg">${groups.map(g => `<button class="${g.t}" data-gc="${c}" data-gk="${g.key}"><i></i>${esc(g.label)} <b>${g.n}</b> <span>(${Math.round(g.n / total * 100)}%)</span></button>`).join("")}</div></div>`;
-  }).join("");
+      <div class="g-leg">${groups.map(g => `<button class="${g.t}${g.n ? "" : " zero"}" data-gc="${c}" data-gk="${g.key}"><i></i>${esc(g.label)} <b>${g.n}</b> <span>(${Math.round(g.n / total * 100)}%)</span></button>`).join("")}</div></div>`;
+  }).join("") + histogram(base);
+}
+// 10. price-per-acre spread (log-scale bins), median marked
+function histogram(list) {
+  const v = list.map(r => r.price_per_acre).filter(x => x > 0);
+  if (v.length < 5) return "";
+  const edges = [0, 2e3, 5e3, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5, Infinity];
+  const labels = ["<$2K", "$2–5K", "$5–10K", "$10–20K", "$20–50K", "$50–100K", "$100–200K", "$200–500K", "$500K+"];
+  const counts = edges.slice(0, -1).map((lo, i) => v.filter(x => x >= lo && x < edges[i + 1]).length);
+  const max = Math.max(...counts), sorted = [...v].sort((a, b) => a - b), med = sorted[Math.floor(sorted.length / 2)];
+  const mi = edges.findIndex((e, i) => med >= e && med < edges[i + 1]);
+  const W = 100 / counts.length;
+  const bars = counts.map((c, i) => `<rect class="${i === mi ? "hi" : ""}" x="${(i * W + 0.6).toFixed(2)}%" y="${(46 - (c / max) * 44).toFixed(1)}" width="${(W - 1.2).toFixed(2)}%" height="${((c / max) * 44).toFixed(1)}" rx="2"><title>${labels[i]} per acre: ${c} parcels</title></rect>`).join("");
+  const ticks = labels.map((l, i) => i % 2 === 0 ? `<text x="${(i * W + W / 2).toFixed(2)}%" y="60" text-anchor="middle">${l}</text>` : "").join("");
+  const mx = (mi * W + W / 2).toFixed(2);
+  return `<div class="hist"><span class="g-k">${icon("chev").replace("m6 9 6 6 6-6", "M4 20V10M10 20V4M16 20v-8M22 20H2")}Per acre</span>
+    <svg role="img" aria-label="Price per acre spread; median ${kmoney(med)}">${bars}
+      <line x1="${mx}%" x2="${mx}%" y1="0" y2="47"/><text class="m" x="${mx}%" y="-3" text-anchor="middle">median ${kmoney(med)}</text>${ticks}</svg></div>`;
 }
 function renderGlanceChip() {
   if (!S.glance) { $("glanceChip").innerHTML = ""; return; }
@@ -953,6 +1097,12 @@ $("clearAll").addEventListener("click", () => {
   S.glance = null; S.shown = PAGE; render();
 });
 $("glanceChip").addEventListener("click", e => { if (e.target.closest("#clearGlance")) { S.glance = null; S.shown = PAGE; render(); } });
+
+// 6. load the next page automatically when the end of the list scrolls into view
+const moreObs = "IntersectionObserver" in window ? new IntersectionObserver(es => {
+  if (es.some(e => e.isIntersecting) && $("showMore")) { S.shown += PAGE; render(); }
+}, { rootMargin: "600px 0px" }) : null;
+function observeMore() { if (!moreObs) return; moreObs.disconnect(); const b = $("showMore"); if (b) moreObs.observe(b); }
 
 function renderGlanceSum(list) {
   const n = list.length || 1, pct = (c, st) => Math.round(list.filter(r => has(r[c], st)).length / n * 100);
@@ -991,6 +1141,12 @@ function setView(v) {
 $("vCards").onclick = () => setView("cards"); $("vList").onclick = () => setView("list");
 $("cards").addEventListener("click", async e => {
   if (e.target.id === "showMore") { S.shown += PAGE; render(); return; }
+  const cp = e.target.closest("[data-copy]");
+  if (cp) {
+    const v = cp.dataset.copy;
+    navigator.clipboard?.writeText(v).then(() => toast(`Copied parcel ${v}`), () => toast(`Parcel number: ${v}`)) ?? toast(`Parcel number: ${v}`);
+    return;
+  }
   const row = e.target.closest("[data-row]");
   if (row) { const id = row.dataset.row; S.open.add(id); S.sel = id; render(); return; }
   const o = e.target.closest("[data-open]");
@@ -1012,7 +1168,11 @@ $("cards").addEventListener("input", e => {
     const cur = S.marks[doc] || {};
     if ((cur.note || "") === value) return;
     S.marks[doc] = { ...cur, note: value };
-    try { await S.db.doc("marks/" + doc).set({ star: !!cur.star, note: value }); toast("Note saved"); }
+    try {
+      await S.db.doc("marks/" + doc).set({ star: !!cur.star, note: value });
+      const ind = document.querySelector(`[data-saved="${CSS.escape(doc)}"]`);
+      if (ind) { ind.classList.add("on"); setTimeout(() => ind.classList.remove("on"), 1800); } else toast("Note saved");
+    }
     catch (err) { writeFailed(err); }
   }, 900);
 });
@@ -1036,7 +1196,7 @@ $("reqs").addEventListener("click", async e => {
 function renderRequests() {
   const pending = S.requests.filter(r => r.status !== "done");
   $("reqs").innerHTML = pending.length
-    ? `<div class="src">Waiting for analysis (${pending.length}):</div>` + pending.map(r => `<div class="req"><span><span class="mono">${esc(r.text)}</span>${r.price ? " · " + money(r.price) : ""}${r.note ? ` · <span class="muted">${esc(r.note)}</span>` : ""}${r.status === "error" ? ` · <span class="flag">${esc(r.error || "couldn't locate it — try the parcel number")}</span>` : ""}</span>${S.canWrite ? `<button data-del="${esc(r._id)}" aria-label="Remove">Remove</button>` : ""}</div>`).join("")
+    ? `<span class="src">Waiting for Claude (${pending.length}):</span>` + pending.map(r => `<span class="reqchip" title="${esc(r.status === "error" ? (r.error || "Couldn't locate it — try the parcel number") : "Waiting for analysis")}"><i class="dot${r.status === "error" ? " err" : ""}"></i><span><span class="mono">${esc(r.text)}</span>${r.price ? " · " + money(r.price) : ""}${r.note ? " · " + esc(r.note) : ""}</span>${S.canWrite ? `<button data-del="${esc(r._id)}" aria-label="Remove ${esc(r.text)}">✕</button>` : ""}</span>`).join("")
     : "";
 }
 
@@ -1055,6 +1215,18 @@ function setMaxRadius(max) {
   $("dist").value = S.radius;
   render(); fitRadius();
 }
+
+/* 9. floating Map / Top button */
+const narrow = matchMedia("(max-width: 900px)");
+$("fabLabel").textContent = narrow.matches ? "Map" : "Top";
+addEventListener("scroll", () => {
+  const past = narrow.matches ? $("mapbox").getBoundingClientRect().bottom < 0 : scrollY > 900;
+  $("fab").hidden = !past;
+}, { passive: true });
+$("fab").addEventListener("click", () => {
+  const target = narrow.matches ? $("mapbox").getBoundingClientRect().top + scrollY - 12 : 0;
+  scrollTo({ top: target, behavior: reduceMotion ? "auto" : "smooth" });
+});
 
 /* ---------- data ---------- */
 if (matchMedia("(max-width: 760px)").matches) $("glanceBox").open = false;
