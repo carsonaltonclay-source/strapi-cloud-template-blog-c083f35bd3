@@ -22,6 +22,33 @@ didn't land on a parcel.
 Output: `output/land_report.html` (interactive map + filterable table),
 `land_report.csv` (open in Excel/Sheets) and `land_report.json`.
 
+## The app
+
+**Spokane Land Finder:** https://claude.ai/artifact/Phe43Pu3ykK6Cnz3hVGuQD
+
+Open it on your phone or computer. It shows every analyzed listing on a map and
+in a ranked list with filters (price, acres, has water, power close, not
+landlocked, starred). Tap **Why? Show the evidence** on any listing to see where
+each answer came from. You can star listings and keep notes.
+
+To check a property you found somewhere else, use **Add a property to check**
+(parcel number, address, listing link, or coordinates), then ask Claude to
+"analyze my added properties". To pull fresh listings, ask Claude to "refresh my
+land listings".
+
+How a refresh works (for Claude or anyone maintaining it):
+
+1. Read the app's `requests` collection (ArtifactData `list`) and write the
+   pending ones to `requests.json` as `[{"id", "text", "price", "note"}]`.
+2. Run `python -m spokane_land --redfin --csv <exports> --requests requests.json --db-export dbx`.
+3. Upload `dbx/listings/*.json` to the `listings` collection and `dbx/meta.json`
+   to `meta/info` (ArtifactData `batch`), delete listings that are no longer
+   for sale, and mark processed requests `status: "done"`.
+
+The page is `app/land_finder.html`, built from `app/app_template.html` plus the
+vector base map `app/basemap.json`:
+`python -m spokane_land.basemap --app app/basemap.json app/land_finder.html`.
+
 ## Run it
 
 Python 3.9+ only; no packages to install.
@@ -35,7 +62,8 @@ python -m spokane_land --redfin
 # Import a CSV export of listings (MLS export, a spreadsheet, etc.)
 python -m spokane_land --csv my_listings.csv
 
-# Analyse specific parcels you found anywhere (FSBO signs, LandWatch, Zillow)
+# Analyse specific properties you found anywhere: one parcel #, address,
+# listing link or "lat, lon" per line (see sources/parcels.py)
 python -m spokane_land --parcels parcels.txt
 
 # Full MLS coverage through a RESO Web API feed

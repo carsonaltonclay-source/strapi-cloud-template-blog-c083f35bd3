@@ -1,0 +1,512 @@
+<title>Spokane Land Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: field-survey workbench. Plat-style map on the left, ranked parcels on the right; stacks on phones. */
+:root {
+  --bg: #edf0eb; --panel: #fafbf8; --ink: #18211d; --muted: #58665f; --line: #d3dad3; --soft: #e3e8e1;
+  --accent: #2c5b46; --accent-ink: #ffffff;
+  --good: #1d6f43; --good-bg: #dcefe2; --warn: #8a5800; --warn-bg: #f7ebcc; --bad: #a12f26; --bad-bg: #f6deda;
+  --unk: #5b6660; --unk-bg: #e6e9e4;
+  --map-land: #e9ece2; --map-water: #b7d0df; --map-water-line: #8fb3c8; --map-road: #c08a3e; --map-road2: #d5b27a;
+  --map-county: #8d978f; --map-town: #d9ddd2; --map-label: #4c5852; --map-ring: #2c5b46;
+  --f-display: "Barlow Semi Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121714; --panel: #1a201c; --ink: #e5ebe6; --muted: #9aa8a0; --line: #2d3530; --soft: #232a25;
+    --accent: #7fc4a2; --accent-ink: #10201a;
+    --good: #8fd6ac; --good-bg: #1c3427; --warn: #efc36b; --warn-bg: #362c19; --bad: #f19a8f; --bad-bg: #3b2320;
+    --unk: #a6b0aa; --unk-bg: #262d28;
+    --map-land: #1d2420; --map-water: #24384a; --map-water-line: #3c5a72; --map-road: #b98a4c; --map-road2: #7d6646;
+    --map-county: #4f5a53; --map-town: #2a322d; --map-label: #a9b5ae; --map-ring: #7fc4a2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121714; --panel: #1a201c; --ink: #e5ebe6; --muted: #9aa8a0; --line: #2d3530; --soft: #232a25;
+  --accent: #7fc4a2; --accent-ink: #10201a;
+  --good: #8fd6ac; --good-bg: #1c3427; --warn: #efc36b; --warn-bg: #362c19; --bad: #f19a8f; --bad-bg: #3b2320;
+  --unk: #a6b0aa; --unk-bg: #262d28;
+  --map-land: #1d2420; --map-water: #24384a; --map-water-line: #3c5a72; --map-road: #b98a4c; --map-road2: #7d6646;
+  --map-county: #4f5a53; --map-town: #2a322d; --map-label: #a9b5ae; --map-ring: #7fc4a2;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-body); margin: 0; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 40px; display: flex; flex-direction: column; gap: 14px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 30px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.1; }
+h2 { font-size: 19px; font-weight: 600; }
+.mono { font-family: var(--f-mono); font-size: 12.5px; }
+.muted { color: var(--muted); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 24px; }
+.top .sub { color: var(--muted); font-size: 13px; }
+.radius-tag { font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--accent); border: 1.5px solid currentColor; border-radius: 4px; padding: 2px 8px; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 12px; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+.tally { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--line);
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.tally div { background: var(--panel); padding: 10px 14px; min-width: 0; }
+.tally b { display: block; font: 600 24px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.tally span { font-size: 12px; color: var(--muted); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.controls input[type=search] { flex: 1 1 220px; min-width: 0; }
+.controls input, .controls select { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 10px; }
+.controls input[type=number] { width: 120px; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+.main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+.mapbox { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 10px); background: var(--map-land); border: 1px solid var(--line);
+  border-radius: 12px; overflow: hidden; }
+@media (max-width: 900px) { .mapbox { position: relative; top: 0; } }
+#map { display: block; width: 100%; height: min(72vh, 680px); touch-action: none; cursor: grab; }
+@media (max-width: 900px) { #map { height: 380px; } }
+#map.dragging { cursor: grabbing; }
+.map-tools { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; }
+.map-tools button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font-size: 18px; line-height: 1; }
+.legend { position: absolute; left: 10px; bottom: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 6px 10px; font-size: 12px; display: flex; gap: 10px; flex-wrap: wrap; max-width: calc(100% - 20px); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+.m-county { fill: none; stroke: var(--map-county); stroke-width: 1; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.m-town { fill: var(--map-town); stroke: none; }
+.m-water { fill: var(--map-water); stroke: var(--map-water-line); stroke-width: 0.6; vector-effect: non-scaling-stroke; }
+.m-river { fill: none; stroke: var(--map-water-line); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.m-road { fill: none; stroke: var(--map-road); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.m-road2 { fill: none; stroke: var(--map-road2); stroke-width: 1.3; vector-effect: non-scaling-stroke; }
+.m-ring { fill: none; stroke: var(--map-ring); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.m-ring.minor { stroke-width: 0.8; stroke-dasharray: 2 4; opacity: 0.7; }
+.m-label { fill: var(--map-label); font-family: var(--f-display); font-weight: 600; paint-order: stroke; stroke: var(--map-land); stroke-width: 3px; stroke-linejoin: round; }
+.m-label.county { font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.8; }
+.m-dot { stroke: var(--panel); vector-effect: non-scaling-stroke; cursor: pointer; }
+.m-dot.sel { stroke: var(--ink); }
+
+.list { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.list-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; }
+.score { width: 52px; text-align: center; border-radius: 8px; padding: 4px 0; font: 700 22px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.score small { display: block; font: 500 10px/1.4 var(--f-body); letter-spacing: 0.04em; text-transform: uppercase; }
+.price { font: 600 22px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.facts { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.addr { font-weight: 500; overflow-wrap: anywhere; }
+.star { border: none; background: none; font-size: 22px; line-height: 1; color: var(--muted); padding: 2px 4px; }
+.star[aria-pressed="true"] { color: #d39b1c; }
+.status { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+@media (max-width: 520px) { .status { grid-template-columns: 1fr; } }
+.st { display: flex; gap: 8px; align-items: flex-start; min-width: 0; }
+.st .k { font: 600 11px/21px var(--f-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); width: 50px; flex: none; }
+.pill { display: inline-block; border-radius: 6px; padding: 1px 7px; font-size: 12.5px; line-height: 1.5; }
+.good { color: var(--good); background: var(--good-bg); } .ok { color: var(--warn); background: var(--warn-bg); }
+.bad { color: var(--bad); background: var(--bad-bg); } .unk { color: var(--unk); background: var(--unk-bg); }
+.conf { font-size: 11px; color: var(--muted); margin-left: 4px; white-space: nowrap; }
+.flags { display: flex; flex-wrap: wrap; gap: 6px; }
+.flag { font-size: 12px; color: var(--bad); background: var(--bad-bg); border-radius: 6px; padding: 1px 7px; }
+.more { border: none; background: none; color: var(--accent); font-weight: 600; padding: 0; align-self: flex-start; }
+.detail { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+.ev h3 { font-size: 14px; margin-bottom: 4px; }
+.ev ul { margin: 0; padding-left: 18px; } .ev li { margin: 3px 0; overflow-wrap: anywhere; }
+.src { color: var(--muted); font-size: 12px; }
+.remarks { color: var(--muted); font-size: 13px; white-space: pre-wrap; background: var(--soft); border-radius: 8px; padding: 8px 10px; max-height: 180px; overflow: auto; }
+.links { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
+a { color: var(--accent); }
+.note { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 7px 9px; min-height: 60px; resize: vertical; }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.addform { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 0.7fr) minmax(0, 1.3fr) auto; gap: 8px; align-items: end; }
+@media (max-width: 760px) { .addform { grid-template-columns: 1fr; } }
+.addform label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); min-width: 0; }
+.addform input { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.reqs { display: flex; flex-direction: column; gap: 6px; }
+.req { display: flex; gap: 10px; align-items: center; justify-content: space-between; border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+.req span { overflow-wrap: anywhere; min-width: 0; }
+.req button { border: none; background: none; color: var(--muted); }
+.empty { text-align: center; color: var(--muted); padding: 28px 12px; border: 1px dashed var(--line); border-radius: 12px; background: var(--panel); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; }
+footer { color: var(--muted); font-size: 12px; max-width: 80ch; }
+@media (prefers-reduced-motion: no-preference) { .card { transition: border-color .15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Spokane Land Finder</h1>
+      <div class="sub" id="sub">Vacant land for sale, checked for water, power, septic and road access.</div>
+    </div>
+    <span class="radius-tag" id="radiusTag">25 mi of downtown</span>
+  </header>
+
+  <section class="tally" id="tally" aria-label="Summary"></section>
+
+  <section class="controls" aria-label="Filters">
+    <input id="q" type="search" placeholder="Search address, town, parcel #" aria-label="Search">
+    <input id="maxPrice" type="number" min="0" step="5000" placeholder="Max price" aria-label="Max price">
+    <input id="minAcres" type="number" min="0" step="0.5" placeholder="Min acres" aria-label="Min acres">
+    <button class="chip" id="fWater" aria-pressed="false">Has water</button>
+    <button class="chip" id="fPower" aria-pressed="false">Power close</button>
+    <button class="chip" id="fAccess" aria-pressed="false">Not landlocked</button>
+    <button class="chip" id="fStar" aria-pressed="false">★ Starred</button>
+    <select id="sort" aria-label="Sort">
+      <option value="score">Best score</option>
+      <option value="price">Lowest price</option>
+      <option value="ppa">Lowest $/acre</option>
+      <option value="acres">Most acres</option>
+      <option value="miles">Closest to Spokane</option>
+    </select>
+  </section>
+
+  <div class="main">
+    <div class="mapbox">
+      <svg id="map" viewBox="-420 -420 840 840" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of listings around Spokane">
+        <g id="base"></g><g id="labels"></g><g id="dots"></g>
+      </svg>
+      <div class="map-tools">
+        <button id="zin" aria-label="Zoom in">+</button>
+        <button id="zout" aria-label="Zoom out">−</button>
+        <button id="zreset" aria-label="Reset map" style="font-size:13px">⤢</button>
+      </div>
+      <div class="legend"><span><i style="background:var(--good)"></i>Build-ready</span><span><i style="background:var(--warn)"></i>Needs work</span><span><i style="background:var(--bad)"></i>High risk</span><span class="muted">rings: 10 / 25 mi</span></div>
+    </div>
+
+    <section class="list" aria-label="Listings">
+      <div class="list-head"><h2 id="countLabel">Listings</h2><span class="src" id="updated"></span></div>
+      <div id="cards"><div class="empty">Loading listings…</div></div>
+    </section>
+  </div>
+
+  <section class="panel" id="addPanel">
+    <h2>Add a property to check</h2>
+    <div class="src">Found land on Zillow, LandWatch, Facebook or a roadside sign? Paste its parcel number (best for vacant land), its address, a listing link, or its coordinates. Then ask Claude to "analyze my added properties" and it will show up above with full results.</div>
+    <form class="addform" id="addForm">
+      <label for="addText">Parcel #, address, link or lat, lon<input id="addText" required placeholder="e.g. 39352.9067"></label>
+      <label for="addPrice">Asking price<input id="addPrice" inputmode="numeric" placeholder="$"></label>
+      <label for="addNote">Note (optional)<input id="addNote" placeholder="seller says power at road"></label>
+      <button class="btn primary" type="submit">Add</button>
+    </form>
+    <div class="reqs" id="reqs"></div>
+  </section>
+
+  <footer>
+    Status comes from the MLS listing fields, the listing description, and public records: county parcels, WA Ecology and Idaho IDWR well logs,
+    water-district and city boundaries, road centerlines and addressed buildings. "High" confidence means the seller or a recorded well log says so;
+    "low" is an educated guess. Confirm with the seller, a title report, the health district (septic) and the power company before you buy.
+  </footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const BASEMAP = /*__BASEMAP__*/null;
+const LAT0 = 47.6588, LON0 = -117.4260, K = Math.cos(LAT0 * Math.PI / 180);
+const MI = 1000 / 69.05; // map units per mile (1 unit = 1/1000 degree latitude)
+const CATS = [["water", "Water"], ["electric", "Power"], ["septic", "Septic"], ["access", "Access"]];
+const SVGNS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money = v => v == null ? "—" : "$" + Math.round(v).toLocaleString();
+const px = (lon, lat) => [(lon - LON0) * K * 1000, (LAT0 - lat) * 1000];
+const tone = f => !f || f.status === "unknown" ? "unk" : f.points >= 19 ? "good" : f.points >= 12 ? "ok" : "bad";
+const ratingTone = r => r === "Build-ready" ? "good" : r === "Needs work" ? "ok" : "bad";
+
+const S = { listings: [], meta: null, requests: [], marks: {}, sel: null, open: new Set(),
+            f: { water: false, power: false, access: false, star: false }, db: null, canWrite: true };
+
+/* ---------- map ---------- */
+const svg = $("map");
+const VB0 = { x: -420, y: -420, w: 840, h: 840 };
+let vb = { ...VB0 };
+function setVB() { svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); scaleMarks(); }
+function el(tag, attrs, parent) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+const pathD = (parts, close) => parts.map(p => p.map(([x, y], i) => {
+  const [a, b] = px(x, y); return (i ? "L" : "M") + a.toFixed(1) + " " + b.toFixed(1);
+}).join("") + (close ? "Z" : "")).join("");
+
+function drawBase() {
+  const g = $("base"), L = $("labels");
+  if (!BASEMAP) return;
+  BASEMAP.towns.forEach(t => el("path", { d: pathD(t.rings, true), class: "m-town", "fill-rule": "evenodd" }, g));
+  BASEMAP.water.forEach(w => el("path", { d: pathD(w.rings, true), class: "m-water", "fill-rule": "evenodd" }, g));
+  BASEMAP.rivers.forEach(r => el("path", { d: pathD(r.paths), class: "m-river" }, g));
+  BASEMAP.counties.forEach(c => el("path", { d: pathD(c.rings, true), class: "m-county" }, g));
+  BASEMAP.roads.filter(r => r.kind !== "primary").forEach(r => el("path", { d: pathD(r.paths), class: "m-road2" }, g));
+  BASEMAP.roads.filter(r => r.kind === "primary").forEach(r => el("path", { d: pathD(r.paths), class: "m-road" }, g));
+  [10, 25].forEach(m => el("circle", { cx: 0, cy: 0, r: m * MI, class: "m-ring" + (m === 10 ? " minor" : "") }, g));
+  el("path", { d: "M-7 0H7M0 -7V7", stroke: "var(--map-ring)", "stroke-width": 2, "vector-effect": "non-scaling-stroke" }, g);
+  // County names at a point inside the search area
+  const countyPts = { Spokane: [-117.2, 47.47], Stevens: [-117.75, 48.0], Lincoln: [-117.9, 47.45], Kootenai: [-116.9, 47.55],
+                      "Pend Oreille": [-117.12, 48.03], Whitman: [-117.4, 47.29], Bonner: [-116.86, 48.04] };
+  for (const [name, [lon, lat]] of Object.entries(countyPts)) {
+    const [x, y] = px(lon, lat); const t = el("text", { x, y, class: "m-label county", "data-s": 0.85, "text-anchor": "middle" }, L); t.textContent = name;
+  }
+  const keep = new Set(["Spokane", "Spokane Valley", "Cheney", "Deer Park", "Airway Heights", "Medical Lake", "Liberty Lake",
+    "Post Falls", "Rathdrum", "Coeur d'Alene", "Hayden", "Spangle", "Rockford", "Fairfield", "Reardan", "Millwood", "Latah", "Waverly", "Spirit Lake"]);
+  BASEMAP.towns.forEach(t => {
+    const name = t.name.replace(/ (city|town)$/, "");
+    if (!keep.has(name)) return;
+    const [x, y] = px(t.lon, t.lat);
+    const big = name === "Spokane" || name === "Spokane Valley" || name === "Coeur d'Alene";
+    const n = el("text", { x, y, class: "m-label", "data-s": big ? 1.25 : 0.95, "text-anchor": "middle" }, L); n.textContent = name;
+  });
+  const [sx] = px(-117.0399, 0);
+  [["WA", sx - 14], ["ID", sx + 14]].forEach(([s, x]) => { const n = el("text", { x, y: 300, class: "m-label county", "data-s": 0.9, "text-anchor": "middle" }, L); n.textContent = s; });
+  scaleMarks();
+}
+
+function scaleMarks() {
+  const z = vb.w / VB0.w, rect = svg.getBoundingClientRect(), unitPx = rect.width ? Math.min(rect.width, rect.height) / vb.w : 0.8;
+  const fs = 12 / (unitPx || 0.8);
+  $("labels").querySelectorAll("text").forEach(t => t.setAttribute("font-size", (fs * +t.dataset.s).toFixed(2)));
+  $("dots").querySelectorAll("circle").forEach(c => c.setAttribute("r", ((c.classList.contains("sel") ? 9 : 6.5) / (unitPx || 0.8)).toFixed(2)));
+  return z;
+}
+
+function svgPoint(evt) {
+  const r = svg.getBoundingClientRect(), s = Math.max(vb.w / r.width, vb.h / r.height);
+  const ox = (r.width * s - vb.w) / 2, oy = (r.height * s - vb.h) / 2;
+  return [vb.x - ox + (evt.clientX - r.left) * s, vb.y - oy + (evt.clientY - r.top) * s];
+}
+function zoom(f, cx, cy) {
+  const nw = Math.min(Math.max(vb.w * f, 40), 1400);
+  const k = nw / vb.w;
+  cx ??= vb.x + vb.w / 2; cy ??= vb.y + vb.h / 2;
+  vb = { x: cx - (cx - vb.x) * k, y: cy - (cy - vb.y) * k, w: nw, h: vb.h * k };
+  setVB();
+}
+svg.addEventListener("wheel", e => { e.preventDefault(); const [x, y] = svgPoint(e); zoom(e.deltaY > 0 ? 1.18 : 1 / 1.18, x, y); }, { passive: false });
+let drag = null;
+svg.addEventListener("pointerdown", e => { if (e.target.classList.contains("m-dot")) return; drag = { x: e.clientX, y: e.clientY, vb: { ...vb } }; svg.setPointerCapture(e.pointerId); svg.classList.add("dragging"); });
+svg.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const r = svg.getBoundingClientRect(), s = Math.max(vb.w / r.width, vb.h / r.height);
+  vb = { ...drag.vb, x: drag.vb.x - (e.clientX - drag.x) * s, y: drag.vb.y - (e.clientY - drag.y) * s }; setVB();
+});
+["pointerup", "pointercancel"].forEach(t => svg.addEventListener(t, () => { drag = null; svg.classList.remove("dragging"); }));
+$("zin").onclick = () => zoom(1 / 1.5); $("zout").onclick = () => zoom(1.5); $("zreset").onclick = () => { vb = { ...VB0 }; setVB(); };
+new ResizeObserver(scaleMarks).observe(svg);
+
+function drawDots(list) {
+  const g = $("dots"); g.textContent = "";
+  list.filter(r => r.lat != null).sort((a, b) => (a.id === S.sel) - (b.id === S.sel)).forEach(r => {
+    const [x, y] = px(r.lon, r.lat);
+    const c = el("circle", { cx: x, cy: y, r: 6, class: "m-dot" + (r.id === S.sel ? " sel" : ""), fill: `var(--${ratingTone(r.rating) === "ok" ? "warn" : ratingTone(r.rating)})` }, g);
+    const t = el("title", {}, c); t.textContent = `${money(r.price)} · ${r.acres ?? "?"} ac · ${r.address || r.parcel_id || ""}`;
+    c.addEventListener("click", () => select(r.id, true));
+  });
+  scaleMarks();
+}
+
+/* ---------- list ---------- */
+const has = (f, set) => f && set.includes(f.status);
+function filtered() {
+  const q = $("q").value.trim().toLowerCase(), maxP = parseFloat($("maxPrice").value), minA = parseFloat($("minAcres").value);
+  const list = S.listings.filter(r => {
+    if (q && ![r.address, r.city, r.parcel_id, r.zip, r.county, r.mls].join(" ").toLowerCase().includes(q)) return false;
+    if (!isNaN(maxP) && r.price != null && r.price > maxP) return false;
+    if (!isNaN(minA) && r.acres != null && r.acres < minA) return false;
+    if (S.f.water && !has(r.water, ["well", "public", "shared_well", "public_area"])) return false;
+    if (S.f.power && !has(r.electric, ["on_site", "at_road", "likely_near"])) return false;
+    if (S.f.access && has(r.access, ["landlocked"])) return false;
+    if (S.f.star && !S.marks[r._doc]?.star) return false;
+    return true;
+  });
+  const key = { score: r => -r.score, price: r => r.price ?? 1e12, ppa: r => r.price_per_acre ?? 1e12,
+                acres: r => -(r.acres ?? 0), miles: r => r.miles_from_spokane ?? 1e9 }[$("sort").value];
+  return list.sort((a, b) => key(a) - key(b));
+}
+
+function statusRow([c, name], r) {
+  const f = r[c] || { status: "unknown", label: "Unknown" };
+  return `<div class="st"><span class="k">${name}</span><span><span class="pill ${tone(f)}">${esc(f.label)}</span>${f.status !== "unknown" ? `<span class="conf">${esc(f.confidence)}</span>` : ""}</span></div>`;
+}
+
+function card(r) {
+  const mark = S.marks[r._doc] || {};
+  const loc = [r.address, r.city].filter(Boolean).join(", ") || (r.parcel_id ? "Parcel " + r.parcel_id : "Unknown location");
+  const facts = [r.acres != null && `${r.acres} ac`, r.price_per_acre != null && `${money(r.price_per_acre)}/ac`,
+                 r.miles_from_spokane != null && `${r.miles_from_spokane} mi`, r.county && `${r.county} Co.`].filter(Boolean).join(" · ");
+  const open = S.open.has(r.id);
+  let html = `<article class="card${r.id === S.sel ? " sel" : ""}" id="c-${esc(r._doc)}" data-id="${esc(r.id)}">
+    <div class="card-top">
+      <div class="score ${ratingTone(r.rating)}">${r.score}<small>${esc(r.rating === "Build-ready" ? "Ready" : r.rating === "Needs work" ? "Work" : "Risk")}</small></div>
+      <div style="min-width:0"><div class="price">${money(r.price)}</div><div class="addr">${esc(loc)}</div><div class="facts">${esc(facts)}</div></div>
+      ${S.db && S.canWrite ? `<button class="star" data-star="${esc(r._doc)}" aria-pressed="${!!mark.star}" aria-label="Star this property">${mark.star ? "★" : "☆"}</button>` : ""}
+    </div>
+    <div class="status">${CATS.map(c => statusRow(c, r)).join("")}</div>
+    ${r.flags?.length ? `<div class="flags">${r.flags.slice(0, open ? 99 : 2).map(f => `<span class="flag">${esc(f)}</span>`).join("")}${!open && r.flags.length > 2 ? `<span class="src">+${r.flags.length - 2} more</span>` : ""}</div>` : ""}
+    ${mark.note && !open ? `<div class="src">📝 ${esc(mark.note)}</div>` : ""}
+    <button class="more" data-open="${esc(r.id)}" aria-expanded="${open}">${open ? "Hide details" : "Why? Show the evidence"}</button>`;
+  if (open) {
+    const scout = r.county === "Spokane" && r.parcel_id
+      ? `<a target="_blank" rel="noopener" href="https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=${encodeURIComponent(r.parcel_id)}">County parcel record</a>` : "";
+    html += `<div class="detail">
+      ${CATS.map(([c, name]) => {
+        const f = r[c] || { evidence: [] };
+        return `<div class="ev"><h3>${name}: <span class="pill ${tone(f)}">${esc(f.label || "Unknown")}</span></h3><ul>${
+          (f.evidence || []).length ? f.evidence.map(e => `<li>${esc(e.detail)} <span class="src">— ${esc(e.source)}, ${esc(e.confidence)}</span></li>`).join("")
+          : "<li>Nothing found. Ask the seller.</li>"}</ul></div>`;
+      }).join("")}
+      <div class="links">
+        ${r.parcel_id ? `<span>Parcel <span class="mono">${esc(r.parcel_id)}</span>${r.parcel_match ? ` <span class="src">(${esc(r.parcel_match)})</span>` : ""}</span>` : ""}
+        ${r.zoning ? `<span>Zoning: ${esc(r.zoning)}</span>` : ""}
+        ${r.days_on_market != null ? `<span>${r.days_on_market} days on market</span>` : ""}
+        ${r.url ? `<a target="_blank" rel="noopener" href="${esc(r.url)}">Open listing</a>` : ""}
+        ${scout}
+        ${r.lat != null ? `<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lon}">Google Maps</a>` : ""}
+      </div>
+      ${r.remarks ? `<div class="remarks">${esc(r.remarks)}</div>` : ""}
+      ${S.db && S.canWrite ? `<label class="src" for="n-${esc(r._doc)}">Your notes</label><textarea class="note" id="n-${esc(r._doc)}" data-note="${esc(r._doc)}" placeholder="Called the county about the easement…">${esc(mark.note || "")}</textarea>` : ""}
+    </div>`;
+  }
+  return html + "</article>";
+}
+
+let renderPending = false;
+function liveRender() {  // data arrived; don't rebuild a note the viewer is typing in
+  if (document.activeElement?.dataset?.note !== undefined) { renderPending = true; return; }
+  render();
+}
+document.addEventListener("focusout", e => { if (e.target.dataset?.note !== undefined && renderPending) { renderPending = false; setTimeout(render, 0); } });
+
+function render() {
+  const list = filtered();
+  $("countLabel").textContent = S.listings.length ? `${list.length} of ${S.listings.length} listings` : "Listings";
+  if (!S.listings.length) {
+    $("cards").innerHTML = `<div class="empty">${S.db === false
+      ? "Listings are stored with this app and can't load here. Open it from claude.ai while signed in."
+      : S.loaded ? "No listings yet. Add a property below, or ask Claude to refresh the land listings." : "Loading listings…"}</div>`;
+  } else {
+    $("cards").innerHTML = list.length ? list.map(card).join("") : `<div class="empty">No listings match these filters.</div>`;
+  }
+  drawDots(list);
+  tally(list);
+}
+
+function tally(list) {
+  const ppa = list.map(r => r.price_per_acre).filter(v => v != null).sort((a, b) => a - b);
+  const n = (c, s) => list.filter(r => has(r[c], s)).length;
+  const items = [
+    [list.length, "listings shown"],
+    [ppa.length ? money(ppa[Math.floor(ppa.length / 2)]) : "—", "median price per acre"],
+    [n("water", ["well", "public", "shared_well"]), "have water (well or public)"],
+    [n("electric", ["on_site", "at_road"]), "power on site or at road"],
+    [n("septic", ["sewer", "approved", "installed"]), "sewer or perc approved"],
+    [n("access", ["landlocked"]), "possibly landlocked"],
+  ];
+  $("tally").innerHTML = items.map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join("");
+}
+
+function select(id, scroll) {
+  S.sel = id; S.open.add(id); render();
+  if (scroll) document.querySelector(`.card[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+}
+
+/* ---------- events ---------- */
+["q", "maxPrice", "minAcres", "sort"].forEach(id => $(id).addEventListener("input", render));
+[["fWater", "water"], ["fPower", "power"], ["fAccess", "access"], ["fStar", "star"]].forEach(([id, k]) =>
+  $(id).addEventListener("click", e => { S.f[k] = !S.f[k]; e.currentTarget.setAttribute("aria-pressed", S.f[k]); render(); }));
+
+$("cards").addEventListener("click", async e => {
+  const o = e.target.closest("[data-open]");
+  if (o) { const id = o.dataset.open; S.open.has(id) ? S.open.delete(id) : S.open.add(id); S.sel = id; render(); return; }
+  const s = e.target.closest("[data-star]");
+  if (s && S.db) {
+    const doc = s.dataset.star, cur = S.marks[doc] || {};
+    S.marks[doc] = { ...cur, star: !cur.star }; render();
+    try { await S.db.doc("marks/" + doc).set({ star: !cur.star, note: cur.note || "" }); }
+    catch (err) { writeFailed(err); }
+  }
+});
+const noteTimers = {};
+$("cards").addEventListener("input", e => {
+  const t = e.target.closest("[data-note]"); if (!t || !S.db) return;
+  const doc = t.dataset.note, value = t.value;
+  clearTimeout(noteTimers[doc]);
+  noteTimers[doc] = setTimeout(async () => {
+    const cur = S.marks[doc] || {};
+    if ((cur.note || "") === value) return;
+    S.marks[doc] = { ...cur, note: value };
+    try { await S.db.doc("marks/" + doc).set({ star: !!cur.star, note: value }); toast("Note saved"); }
+    catch (err) { writeFailed(err); }
+  }, 900);
+});
+
+$("addForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!S.db) return toast("Open this app from claude.ai while signed in to add properties.");
+  const text = $("addText").value.trim(); if (!text) return;
+  const price = parseFloat($("addPrice").value.replace(/[^0-9.]/g, ""));
+  try {
+    await S.db.collection("requests").add({ text, price: isNaN(price) ? null : price, note: $("addNote").value.trim(),
+      status: "pending", created: new Date().toISOString() });
+    $("addForm").reset(); toast("Added. Ask Claude to analyze your added properties.");
+  } catch (err) { writeFailed(err); }
+});
+$("reqs").addEventListener("click", async e => {
+  const b = e.target.closest("[data-del]"); if (!b || !S.db) return;
+  try { await S.db.doc("requests/" + b.dataset.del).delete(); } catch (err) { writeFailed(err); }
+});
+
+function renderRequests() {
+  const pending = S.requests.filter(r => r.status !== "done");
+  $("reqs").innerHTML = pending.length
+    ? `<div class="src">Waiting for analysis (${pending.length}):</div>` + pending.map(r => `<div class="req"><span><span class="mono">${esc(r.text)}</span>${r.price ? " · " + money(r.price) : ""}${r.note ? ` · <span class="muted">${esc(r.note)}</span>` : ""}${r.status === "error" ? ` · <span class="flag">${esc(r.error || "couldn't locate it — try the parcel number")}</span>` : ""}</span>${S.canWrite ? `<button data-del="${esc(r._id)}" aria-label="Remove">Remove</button>` : ""}</div>`).join("")
+    : "";
+}
+
+function writeFailed(err) {
+  if (err?.code === "invalid_argument") { S.canWrite = false; $("addPanel").hidden = true; render(); toast("You can view this app but not change it."); }
+  else if (err?.code === "quota_exceeded") toast("Storage is full. Remove some added properties.");
+  else toast("Couldn't save. Try again in a moment.");
+}
+let toastTimer;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 3200); }
+
+/* ---------- data ---------- */
+drawBase(); render();
+(async () => {
+  const db = window.claude?.use ? await window.claude.use("db") : null;
+  if (!db) { S.db = false; $("addPanel").hidden = true; render(); return; }
+  S.db = db;
+  const user = await window.claude.use("user");
+  if (user && (await user.can("data.write")) === false) { S.canWrite = false; $("addPanel").hidden = true; }
+  db.collection("listings").limit(1000).onSnapshot(snap => {
+    S.loaded = true;
+    S.listings = snap.docs.map(d => ({ ...d.data(), _doc: d.id }));
+    liveRender();
+  }, () => { S.loaded = true; render(); });
+  db.doc("meta/info").onSnapshot(d => {
+    const m = d.exists ? d.data() : null; S.meta = m;
+    if (m) {
+      $("updated").textContent = `Updated ${m.generated}`;
+      $("sub").textContent = `Vacant land for sale, checked for water, power, septic and road access. Sources: ${(m.sources || []).join(", ")}.`;
+      $("radiusTag").textContent = `${m.radius_miles ?? 25} mi of downtown`;
+    }
+  });
+  db.collection("marks").onSnapshot(snap => {
+    S.marks = Object.fromEntries(snap.docs.map(d => [d.id, d.data()])); liveRender();
+  });
+  db.collection("requests").onSnapshot(snap => {
+    S.requests = snap.docs.map(d => ({ ...d.data(), _id: d.id })).sort((a, b) => String(a.created).localeCompare(String(b.created)));
+    renderRequests();
+  });
+})();
+</script>

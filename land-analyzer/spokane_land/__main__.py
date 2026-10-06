@@ -8,8 +8,8 @@ from . import geo
 from .analyze import analyze
 from .config import DEFAULT_RADIUS_MILES, SPOKANE_LAT, SPOKANE_LON
 from .enrich import Enricher
-from .report import write_all
-from .sources import fetch_redfin, fetch_reso, load_csv, load_parcel_ids
+from .report import export_db, write_all
+from .sources import fetch_redfin, fetch_reso, load_csv, load_parcel_ids, load_requests
 
 
 def build_parser():
@@ -24,6 +24,10 @@ def build_parser():
                    help="import listings from a CSV export (repeatable)")
     p.add_argument("--parcels", action="append", default=[], metavar="FILE",
                    help="text file of parcel numbers to analyse (repeatable)")
+    p.add_argument("--requests", metavar="FILE",
+                   help="JSON list of properties added in the hosted app ({id, text, price})")
+    p.add_argument("--db-export", metavar="DIR",
+                   help="also write one JSON document per listing for the hosted app's database")
     p.add_argument("--radius", type=float, default=DEFAULT_RADIUS_MILES,
                    help=f"search radius in miles from downtown Spokane (default {DEFAULT_RADIUS_MILES:g})")
     p.add_argument("--max-price", type=float, help="drop listings above this price")
@@ -36,7 +40,7 @@ def build_parser():
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
-    if not (args.redfin or args.reso or args.csv or args.parcels):
+    if not (args.redfin or args.reso or args.csv or args.parcels or args.requests):
         build_parser().error("choose at least one source: --redfin, --reso, --csv FILE, --parcels FILE")
 
     listings, sources = [], []
@@ -60,6 +64,12 @@ def main(argv=None):
         print(f"{path}: {len(got)} parcels", file=sys.stderr)
         listings += got
         sources.append(f"Parcels {path}")
+
+    if args.requests:
+        got = load_requests(args.requests)
+        print(f"{args.requests}: {len(got)} added properties", file=sys.stderr)
+        listings += got
+        sources.append("Added by you")
 
     listings = _dedupe(listings)
     if args.max_price is not None:
@@ -85,7 +95,8 @@ def main(argv=None):
 
     kept = []
     for r in results:
-        if r["miles_from_spokane"] is not None and r["miles_from_spokane"] > args.radius:
+        # Properties someone added by hand are always kept.
+        if r["source"] != "added" and r["miles_from_spokane"] is not None and r["miles_from_spokane"] > args.radius:
             continue
         if args.min_acres is not None and r["acres"] is not None and r["acres"] < args.min_acres:
             continue
@@ -99,6 +110,9 @@ def main(argv=None):
         "sources": sources,
     }
     paths = write_all(kept, args.out, meta)
+    if args.db_export:
+        n = export_db(kept, args.db_export, meta)
+        print(f"Database export: {n} documents in {args.db_export}", file=sys.stderr)
     _print_summary(kept)
     print(f"\nWrote {paths['html']}\n      {paths['csv']}\n      {paths['json']}")
     return 0

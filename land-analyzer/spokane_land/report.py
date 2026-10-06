@@ -5,6 +5,7 @@ import datetime
 import html
 import json
 import os
+import re
 
 CSV_FIELDS = [
     "score", "rating", "price", "acres", "price_per_acre", "miles_from_spokane",
@@ -62,3 +63,22 @@ def write_all(results, out_dir, meta):
     write_json(results, paths["json"], meta)
     write_html(results, paths["html"], meta)
     return paths
+
+
+def doc_id(listing_id):
+    """Listing id -> database document id (letters, digits, _ - . ~ : @ +)."""
+    return re.sub(r"[^A-Za-z0-9_\-.~:@+]", "_", listing_id)[:180]
+
+
+def export_db(results, out_dir, meta):
+    """One JSON file per listing (database collection "listings") plus meta.json."""
+    os.makedirs(os.path.join(out_dir, "listings"), exist_ok=True)
+    for r in results:
+        doc = dict(r, remarks=(r.get("remarks") or "")[:4000])
+        doc.pop("errors", None)
+        with open(os.path.join(out_dir, "listings", doc_id(r["id"]) + ".json"), "w", encoding="utf-8") as fh:
+            json.dump(doc, fh, default=str)
+    with open(os.path.join(out_dir, "meta.json"), "w", encoding="utf-8") as fh:
+        json.dump(dict(meta, generated=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                       count=len(results)), fh)
+    return len(results)
