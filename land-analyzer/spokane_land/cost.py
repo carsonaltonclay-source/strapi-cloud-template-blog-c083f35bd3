@@ -17,7 +17,8 @@ DEFAULTS = {
     "offgrid_solar": 45000,
     "septic_conventional": 18000,
     "septic_standard": 22000,   # gravity system, design + permit, soils not documented
-    "septic_engineered": 40000, # pressure / sand-filter system for poor soils
+    "septic_pressure": 28000,   # pressure distribution for gravelly / rocky soils (common here)
+    "septic_engineered": 40000, # mound / sand-filter system for shallow, wet or tight soils
     "sewer_hookup": 12000,
     "driveway": 6000,
     "easement_extra": 4000,     # recording / legal for access by easement
@@ -63,13 +64,15 @@ def _septic(r, soil, d):
         return d["sewer_hookup"], "Sewer hookup"
     if st == "sewer_area":
         return d["sewer_hookup"], "Sewer hookup (if a line is available)"
-    rating = (soil or {}).get("rating")
-    if st == "failed" or rating == "Very limited":
-        return d["septic_engineered"], "Engineered septic (soils very limited)" if st != "failed" else "Engineered septic (failed perc)"
+    outlook = (soil or {}).get("outlook")
+    if st == "failed":
+        return d["septic_engineered"], "Engineered septic (failed perc)"
     if st == "approved":
         return d["septic_conventional"], "Septic per approved design"
-    if rating == "Somewhat limited":
-        return round((d["septic_standard"] + d["septic_engineered"]) / 2), "Septic (soils somewhat limited)"
+    if outlook == "hard":
+        return d["septic_engineered"], "Engineered / mound septic (shallow bedrock, wet or tight soils)"
+    if outlook == "design":
+        return d["septic_pressure"], "Pressure-distribution septic (fast-draining or rocky soils)"
     return d["septic_standard"], "Standard septic system"
 
 
@@ -111,5 +114,5 @@ def all_in(result, facts, defaults=None):
         # inputs the app needs to recompute with the viewer's own assumptions
         "inputs": {"well_ft": (facts.get("wells") or {}).get("median_depth_ft"),
                    "power_ft": (facts.get("neighbors") or {}).get("nearest_ft"),
-                   "soil": (facts.get("soil") or {}).get("rating")},
+                   "soil": (facts.get("soil") or {}).get("outlook")},
     }

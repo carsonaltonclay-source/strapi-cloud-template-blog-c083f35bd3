@@ -18,7 +18,7 @@ import sys
 
 WATER_OK = {"well", "public", "shared_well", "public_area"}
 POWER_OK = {"on_site", "at_road", "likely_near"}
-SOIL_OK = {"Not limited", "Somewhat limited"}
+SOIL_OK = {"good", "design"}
 
 
 def _status(r, cat):
@@ -45,7 +45,7 @@ def matches(r, st):
     if f.get("access") and _status(r, "access") == "landlocked":
         return False
     if f.get("soil") and not (_status(r, "septic") in ("sewer", "installed", "approved")
-                              or (r.get("soil") or {}).get("rating") in SOIL_OK):
+                              or (r.get("soil") or {}).get("outlook") in SOIL_OK):
         return False
     if f.get("fire"):
         c = (r.get("wildfire") or {}).get("class")

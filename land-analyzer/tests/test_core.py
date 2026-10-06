@@ -204,11 +204,11 @@ class BuildabilityTests(unittest.TestCase):
 
     def test_soil_and_fire_flags(self):
         l = Listing(source="t", id="b1", price=100000, lot_acres=5, lat=LAT, lon=LON)
-        f = facts(soil={"rating": "Very limited", "worst": "Very limited", "reasons": ["Seepage, bottom layer"]},
+        f = facts(soil={"rating": "Very limited", "worst": "Very limited", "outlook": "hard", "hard_limits": ["Depth to bedrock"]},
                   wildfire={"class": 4, "label": "High"}, zoning=["Rural Traditional"])
         r = analyze(l, f)
         flags = " ".join(r["flags"])
-        self.assertIn("very limited for septic", flags)
+        self.assertIn("depth to bedrock", flags)
         self.assertIn("High wildfire", flags)
         self.assertIn("Smaller than Rural Traditional", flags)
         self.assertEqual(r["zoning_check"]["status"], "undersized")
@@ -227,7 +227,7 @@ class CostTests(unittest.TestCase):
 
     def test_raw_land(self):
         f = {"wells": {"median_depth_ft": 200}, "neighbors": {"nearest_ft": 1150},
-             "soil": {"rating": "Very limited"}, "terrain": {"slope_class": "steep"}}
+             "soil": {"rating": "Very limited", "outlook": "hard"}, "terrain": {"slope_class": "steep"}}
         c = cost.all_in(self.result("needs_well", "likely_near", "required", "landlocked"), f)
         d = cost.DEFAULTS
         items = {i["key"]: i["cost"] for i in c["items"]}
@@ -236,7 +236,10 @@ class CostTests(unittest.TestCase):
         self.assertEqual(items["septic"], d["septic_engineered"])
         self.assertEqual(items["access"], d["landlocked_access"])
         self.assertEqual(items["prep"], d["prep_steep"])
-        self.assertEqual(c["inputs"], {"well_ft": 200, "power_ft": 1150, "soil": "Very limited"})
+        self.assertEqual(c["inputs"], {"well_ft": 200, "power_ft": 1150, "soil": "hard"})
+        f["soil"]["outlook"] = "design"
+        c = cost.all_in(self.result("needs_well", "likely_near", "required", "landlocked"), f)
+        self.assertEqual(c["items"][2]["cost"], d["septic_pressure"])
 
     def test_custom_assumptions(self):
         c = cost.all_in(self.result("needs_well", "on_site", "installed", "public_road"), {}, {"well_per_ft": 100})
@@ -279,7 +282,7 @@ class AlertTests(unittest.TestCase):
                     "water": {"status": "well", "label": "Well"}, "electric": {"status": "at_road", "label": "At road"},
                     "access": {"status": "public_road"}, "septic": {"status": "required"},
                     "terrain": {"slope_class": "flat", "on_hill": False, "position": "flat"},
-                    "wildfire": {"class": 2}, "soil": {"rating": "Somewhat limited"}, "is_new": True}
+                    "wildfire": {"class": 2}, "soil": {"rating": "Very limited", "outlook": "design"}, "is_new": True}
             base.update(kw)
             return base
         results = [r("a"), r("b", price=300000), r("c", is_new=False), r("d", water={"status": "needs_well", "label": "Needs well"}),

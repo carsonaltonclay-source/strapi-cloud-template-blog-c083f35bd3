@@ -56,7 +56,8 @@ How a refresh works (for Claude or anyone maintaining it):
 
 1. Read the app's `requests` collection (ArtifactData `list`) and write the
    pending ones to `requests.json` as `[{"id", "text", "price", "note"}]`.
-2. Run `python -m spokane_land --csv <exports> --requests requests.json --previous last/land_report.json --db-export dbx`.
+2. Save the current `chunks` collection (ArtifactData `list` with `out_dir: prev`)
+   and run `python -m spokane_land --csv <exports> --requests requests.json --previous prev --db-export dbx`.
    `--previous` marks listings that are new since the last refresh, records
    price cuts (`price_history`), and lists listings that disappeared
    (`meta.refresh`). Duplicate listings of the same parcel are merged.

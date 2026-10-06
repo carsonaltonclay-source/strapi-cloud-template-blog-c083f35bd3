@@ -880,7 +880,7 @@ const CHIP_IDS = { water: "fWater", power: "fPower", access: "fAccess", star: "f
 const COST_DEFAULTS = {
   well_per_ft: 75, well_system: 10000, default_well_ft: 300, water_hookup: 15000, shared_well: 5000,
   power_service: 6000, power_per_ft: 30, offgrid_solar: 45000,
-  septic_conventional: 18000, septic_standard: 22000, septic_engineered: 40000, sewer_hookup: 12000,
+  septic_conventional: 18000, septic_standard: 22000, septic_pressure: 28000, septic_engineered: 40000, sewer_hookup: 12000,
   driveway: 6000, easement_extra: 4000, landlocked_access: 25000,
   prep_flat: 3000, prep_rolling: 7000, prep_steep: 20000, prep_very_steep: 35000,
 };
@@ -889,7 +889,7 @@ const COST_FIELDS = [
     ["water_hookup", "Public water hookup", "$"], ["shared_well", "Shared-well hookup", "$"]]],
   ["electric", "Power", [["power_service", "Service from the road", "$"], ["power_per_ft", "Line extension past 150 ft", "$/ft"], ["offgrid_solar", "Off-grid solar", "$"]]],
   ["septic", "Septic", [["septic_standard", "Standard septic", "$"], ["septic_conventional", "Septic with approved design", "$"],
-    ["septic_engineered", "Engineered septic (poor soils)", "$"], ["sewer_hookup", "Sewer hookup", "$"]]],
+    ["septic_pressure", "Pressure septic (gravelly / rocky soils)", "$"], ["septic_engineered", "Mound / engineered septic", "$"], ["sewer_hookup", "Sewer hookup", "$"]]],
   ["access", "Access", [["driveway", "Driveway", "$"], ["easement_extra", "Easement paperwork", "$"], ["landlocked_access", "Buy access + build road", "$"]]],
   ["_terrain", "Site prep", [["prep_flat", "Flat lot", "$"], ["prep_rolling", "Rolling lot", "$"], ["prep_steep", "Steep lot", "$"], ["prep_very_steep", "Very steep lot", "$"]]],
 ];
@@ -911,13 +911,14 @@ function allIn(r) {
   else if (p === "at_road") items.push(["electric", d.power_service, "Service from the road"]);
   else if (p === "none") items.push(["electric", d.offgrid_solar, "Off-grid solar system"]);
   else { const ft = inp.power_ft || POWER_DISTANCE_GUESS[p] || 1500; items.push(["electric", Math.round(d.power_service + Math.max(0, ft - 150) * d.power_per_ft), `Extend power ~${Math.round(ft).toLocaleString()} ft`]); }
-  const s = st("septic"), soil = inp.soil;
+  const s = st("septic"), soil = inp.soil;  // soil = USDA outlook: good / design / hard / unknown
   if (s === "installed") items.push(["septic", 0, "Septic system already installed"]);
   else if (s === "sewer") items.push(["septic", d.sewer_hookup, "Sewer hookup"]);
   else if (s === "sewer_area") items.push(["septic", d.sewer_hookup, "Sewer hookup (if a line is available)"]);
-  else if (s === "failed" || soil === "Very limited") items.push(["septic", d.septic_engineered, s === "failed" ? "Engineered septic (failed perc)" : "Engineered septic (soils very limited)"]);
+  else if (s === "failed") items.push(["septic", d.septic_engineered, "Engineered septic (failed perc)"]);
   else if (s === "approved") items.push(["septic", d.septic_conventional, "Septic per approved design"]);
-  else if (soil === "Somewhat limited") items.push(["septic", Math.round((d.septic_standard + d.septic_engineered) / 2), "Septic (soils somewhat limited)"]);
+  else if (soil === "hard") items.push(["septic", d.septic_engineered, "Engineered / mound septic (shallow bedrock, wet or tight soils)"]);
+  else if (soil === "design") items.push(["septic", d.septic_pressure, "Pressure-distribution septic (fast-draining or rocky soils)"]);
   else items.push(["septic", d.septic_standard, "Standard septic system"]);
   const a = st("access");
   items.push(a === "landlocked" ? ["access", d.landlocked_access, "Buy an access easement + build a road (very uncertain)"]
@@ -1266,7 +1267,7 @@ function valueRatio(r) {
 /* ---------- list ---------- */
 const has = (f, set) => f && set.includes(f.status);
 const lowFire = r => r.wildfire && (r.wildfire.class <= 2 || r.wildfire.class >= 6);
-const goodSoil = r => has(r.septic, ["sewer", "installed", "approved"]) || (r.soil && ["Not limited", "Somewhat limited"].includes(r.soil.rating));
+const goodSoil = r => has(r.septic, ["sewer", "installed", "approved"]) || (r.soil && ["good", "design"].includes(r.soil.outlook));
 const isFresh = r => !!(r.is_new || r.price_cut);
 // Current filters as plain data. Saved searches store this; spokane_land/alerts.py reads the same fields.
 function currentSearch() {
@@ -1361,14 +1362,15 @@ const sortFlags = f => [...f].sort((a, b) => SEVERE.test(b) - SEVERE.test(a));
 const ZONE_SHORT = { ok: ["good", "Zoning OK"], splittable: ["good", "Zoning OK"], undersized: ["bad", "Below zone minimum"],
                      not_residential: ["bad", "Zone bars homes"], urban: ["ok", "Urban zone"] };
 const FIRE_TONE = c => c <= 2 || c >= 6 ? "good" : c === 3 ? "ok" : "bad";
-const SOIL_TONE = { "Not limited": "good", "Somewhat limited": "ok", "Very limited": "bad" };
+const SOIL_TONE = { good: "good", design: "ok", hard: "bad" };
+const SOIL_SHORT = { good: "Good septic soil", design: "Septic: pressure system", hard: "Tough septic soil" };
 const NET_TONE = { fast: "good", ok: "ok", slow: "bad" };
 function buildChips(r) {
   const out = [], z = r.zoning_check && ZONE_SHORT[r.zoning_check.status];
   if (r.drive_min != null) out.push(`<span class="bchip" title="Drive to downtown Spokane">${icon("_car")}${r.drive_min} min drive</span>`);
   if (z) out.push(`<span class="bchip ${z[0]}" title="${esc(r.zoning_check.label)}">${icon("_zone")}${z[1]}</span>`);
-  if (r.soil && SOIL_TONE[r.soil.rating] && !has(r.septic, ["sewer", "installed"]))
-    out.push(`<span class="bchip ${SOIL_TONE[r.soil.rating]}" title="USDA soil rating for septic drain fields">${icon("_soil")}Soil: ${esc(r.soil.rating.toLowerCase())}</span>`);
+  if (r.soil && SOIL_TONE[r.soil.outlook] && !has(r.septic, ["sewer", "installed", "sewer_area"]))
+    out.push(`<span class="bchip ${SOIL_TONE[r.soil.outlook]}" title="USDA soil survey: ${esc(r.soil.rating)} for septic drain fields">${icon("_soil")}${SOIL_SHORT[r.soil.outlook]}</span>`);
   if (r.wildfire && r.wildfire.class <= 5) out.push(`<span class="bchip ${FIRE_TONE(r.wildfire.class)}" title="USFS wildfire hazard potential">${icon("_fire")}${esc(r.wildfire.label)} fire risk</span>`);
   if (r.internet?.down_mbps) out.push(`<span class="bchip ${NET_TONE[r.internet.class] || ""}" title="Fastest measured home internet within a mile">${icon("_net")}${r.internet.down_mbps >= 1000 ? "1 Gbps+" : r.internet.down_mbps + " Mbps"}</span>`);
   return out.length ? `<div class="bchips">${out.join("")}</div>` : "";
@@ -1551,9 +1553,10 @@ function buildPanel(r) {
   const z = r.zoning_check;
   if (z) items.push(li("_zone", `<b>Zoning:</b> ${esc(z.detail)}`, "Spokane County zoning code"));
   else if (r.state === "ID" || (r.county && r.county !== "Spokane")) items.push(li("_zone", `<b>Zoning:</b> not checked for ${esc(r.county || "this")} County. Ask the county planning office about minimum lot size.`));
-  if (r.soil) {
-    const share = Object.entries(r.soil.share || {}).filter(([, v]) => v > 0).map(([k, v]) => `${v}% ${k.toLowerCase()}`).join(", ");
-    items.push(li("_soil", `<b>Septic soils:</b> <span class="pill ${SOIL_TONE[r.soil.rating] || "unk"}">${esc(r.soil.rating)}</span>${share && Object.keys(r.soil.share).length > 1 ? ` (${esc(share)})` : ""}${r.soil.reasons?.length ? `. Limits: ${esc(r.soil.reasons.join("; ").toLowerCase())}` : ""}${r.soil.soils?.length ? `. Soil: ${esc(r.soil.soils[0])}` : ""}`, r.soil.source));
+  if (r.soil && !has(r.septic, ["sewer", "installed"])) {
+    const what = { good: "Soils suit a standard drain field.", design: "Common for this area: fast-draining gravel or rocky soil usually means a pressure-distribution system.",
+                   hard: `${esc((r.soil.hard_limits || []).join(" and ") || "Poor soils")} — likely a mound or engineered system; get a perc test first.`, unknown: "Not rated (often urban or disturbed ground)." }[r.soil.outlook] || "";
+    items.push(li("_soil", `<b>Septic soils:</b> <span class="pill ${SOIL_TONE[r.soil.outlook] || "unk"}">${esc(r.soil.rating)}</span> ${what}${r.soil.reasons?.length ? ` USDA limits: ${esc(r.soil.reasons.join("; ").toLowerCase())}.` : ""}${r.soil.soils?.length ? ` Soil: ${esc(r.soil.soils[0])}.` : ""}`, "USDA NRCS soil survey"));
   }
   if (r.wildfire) items.push(li("_fire", `<b>Wildfire hazard:</b> <span class="pill ${FIRE_TONE(r.wildfire.class)}">${esc(r.wildfire.label)}</span>${r.wildfire.class >= 4 && r.wildfire.class <= 5 ? " Expect defensible-space rules and higher insurance." : ""}`, "USFS"));
   if (r.internet) items.push(li("_net", r.internet.down_mbps
@@ -1926,7 +1929,7 @@ function openCompare() {
     ${row("Terrain", rs.map(r => r.terrain?.position_label), v => esc(v || "—"))}
     ${row("Average slope", rs.map(r => r.terrain?.slope_mean_pct), v => v != null ? v + "%" : "—", { best: true, low: true })}
     ${row("Flat ground", rs.map(r => r.terrain?.flat_pct), v => v != null ? v + "%" : "—", { best: true })}
-    ${row("Septic soils", rs.map(r => r.soil?.rating), v => esc(v || "—"))}
+    ${row("Septic soils", rs.map(r => r.soil ? SOIL_SHORT[r.soil.outlook] || r.soil.rating : null), v => esc(v || "—"))}
     ${row("Wildfire hazard", rs.map(r => r.wildfire?.label), v => esc(v || "—"))}
     ${row("Internet nearby", rs.map(r => r.internet?.down_mbps), v => v ? v + " Mbps" : "—", { best: true })}
     ${row("Zoning", rs.map(r => r.zoning_check?.label), v => esc(v || "—"))}

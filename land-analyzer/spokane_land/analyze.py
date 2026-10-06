@@ -324,10 +324,9 @@ def analyze(listing, facts):
         flags.append("Listing mentions water rights")
 
     soil = facts.get("soil")
-    if soil and soil["rating"] == "Very limited" and findings["septic"].status not in ("installed", "sewer", "approved"):
-        why = f" ({', '.join(soil['reasons'][:2]).lower()})" if soil.get("reasons") else ""
-        flags.append(f"USDA soil survey rates these soils very limited for septic{why}: "
-                     "expect an engineered system or a hard perc test")
+    if soil and soil.get("outlook") == "hard" and findings["septic"].status not in ("installed", "sewer", "approved"):
+        flags.append(f"USDA soil survey: {', '.join(soil['hard_limits']).lower()} — septic may need a mound or "
+                     "engineered system; get a perc test before buying")
     fire = facts.get("wildfire")
     if fire and fire.get("class") in (4, 5):
         flags.append(f"{fire['label']} wildfire hazard (USFS): defensible space and fire-safe building rules apply")

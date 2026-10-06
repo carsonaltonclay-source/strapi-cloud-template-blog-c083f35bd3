@@ -15,6 +15,11 @@ from .http import HttpError, get_json
 
 SEPTIC_RULE = "ENG - Septic Tank Absorption Fields"
 SOIL_RANK = {"Not limited": 1, "Somewhat limited": 2, "Very limited": 3, "Not rated": 0}
+# USDA limitations that usually mean a mound/engineered system or no drain field at all.
+# The rest (seepage / filtering capacity of gravelly soils, stones, slope) are very common
+# around Spokane and are usually handled with pressure distribution or extra treatment.
+HARD_SOIL_LIMITS = ("Depth to bedrock", "Depth to saturated zone", "Slow water movement", "Flooding", "Ponding",
+                    "Depth to cemented pan", "Subsidence")
 
 WHP_CLASSES = {1: "Very low", 2: "Low", 3: "Moderate", 4: "High", 5: "Very high",
                6: "Non-burnable", 7: "Water"}
@@ -62,7 +67,7 @@ def soil_septic(geometry, lat, lon):
     if len(table) < 2:
         return None
     cols, rows = table[0], [dict(zip(table[0], r)) for r in table[1:]]
-    weight, reasons, soils = {}, {}, []
+    weight, reasons, soils, hard_by_comp = {}, {}, [], {}
     for r in rows:
         pct = float(r.get("comppct_r") or 0)
         if str(r.get("ruledepth")) == "0":
@@ -71,16 +76,32 @@ def soil_septic(geometry, lat, lon):
             name = r.get("muname") or ""
             if name and name not in soils:
                 soils.append(name)
-        elif r.get("interphrc"):
+        elif r.get("interphrc") and float(r.get("interphr") or 0) >= 0.5:
             reasons[r["interphrc"]] = reasons.get(r["interphrc"], 0) + pct
+            # a component counts as hard only when a hard limit is rated at full severity
+            if r["interphrc"] in HARD_SOIL_LIMITS and float(r.get("interphr") or 0) >= 0.99:
+                key = (r.get("mukey"), r.get("compname"), pct)
+                hard_by_comp[key] = pct
     if not weight:
         return None
     total = sum(weight.values())
     dominant = max(weight, key=lambda k: (weight[k], SOIL_RANK.get(k, 0)))
     worst = max(weight, key=lambda k: SOIL_RANK.get(k, 0))
+    hard = {k: v for k, v in reasons.items() if k in HARD_SOIL_LIMITS}
+    hard_share = sum(hard_by_comp.values()) / total
+    if dominant == "Not rated":
+        outlook = "unknown"
+    elif hard_share >= 0.5:
+        outlook = "hard"
+    elif dominant in ("Not limited", "Somewhat limited"):
+        outlook = "good"
+    else:
+        outlook = "design"
     return {
         "rating": dominant,
         "worst": worst,
+        "outlook": outlook,
+        "hard_limits": [k for k, _ in sorted(hard.items(), key=lambda kv: -kv[1])][:2],
         "share": {k: round(v / total * 100) for k, v in weight.items()},
         "reasons": [k for k, _ in sorted(reasons.items(), key=lambda kv: -kv[1])][:3],
         "soils": soils[:3],

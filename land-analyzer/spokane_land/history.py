@@ -8,7 +8,9 @@ Pass the previous run's land_report.json with --previous and each listing gets:
 """
 
 import datetime
+import glob
 import json
+import os
 import re
 
 from .report import doc_id
@@ -93,5 +95,14 @@ def apply(results, previous, today=None):
 
 
 def load_previous(path):
+    """A land_report.json, or a folder of the app's chunk documents (as saved by
+    ArtifactData list with out_dir: <dir>/chunks/chunk-*.json or <dir>/chunk-*.json)."""
+    if os.path.isdir(path):
+        files = sorted(glob.glob(os.path.join(path, "chunk-*.json")) + glob.glob(os.path.join(path, "chunks", "chunk-*.json")))
+        out = []
+        for fp in files:
+            with open(fp, encoding="utf-8") as f:
+                out.extend(json.load(f).get("items", []))
+        return out
     with open(path, encoding="utf-8") as f:
         return json.load(f).get("results", [])

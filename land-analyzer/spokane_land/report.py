@@ -87,6 +87,22 @@ def doc_id(listing_id):
     return re.sub(r"[^A-Za-z0-9_\-.~:@+]", "_", listing_id)[:180]
 
 
+def _slim(r):
+    """Drop what the app doesn't need (it rebuilds the cost breakdown and knows the sources)."""
+    doc = dict(r, remarks=(r.get("remarks") or "")[:2000])
+    for k in ("errors", "notes"):
+        doc.pop(k, None)
+    if doc.get("cost"):
+        doc["cost"] = {k: doc["cost"][k] for k in ("total", "improvements", "inputs")}
+    if doc.get("soil"):
+        doc["soil"] = {k: v for k, v in doc["soil"].items() if k not in ("share", "worst", "source")}
+        doc["soil"]["soils"] = doc["soil"].get("soils", [])[:1]
+    for k in ("wildfire", "internet", "power_company"):
+        if doc.get(k):
+            doc[k] = {kk: v for kk, v in doc[k].items() if kk != "source" and v not in ("", None)}
+    return doc
+
+
 def export_db(results, out_dir, meta, chunk_size=40):
     """Database export for the hosted app.
 
@@ -97,12 +113,7 @@ def export_db(results, out_dir, meta, chunk_size=40):
     """
     for sub in ("chunks", "listings"):
         os.makedirs(os.path.join(out_dir, sub), exist_ok=True)
-    docs = []
-    for r in results:
-        doc = dict(r, remarks=(r.get("remarks") or "")[:2000])
-        doc.pop("errors", None)
-        doc.pop("notes", None)
-        docs.append(doc)
+    docs = [_slim(r) for r in results]
     bulk = [d for d in docs if d["source"] != "added"]
     for i in range(0, len(bulk), chunk_size):
         with open(os.path.join(out_dir, "chunks", f"chunk-{i // chunk_size:03d}.json"), "w", encoding="utf-8") as fh:
