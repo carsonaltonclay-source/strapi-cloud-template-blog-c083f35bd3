@@ -563,6 +563,64 @@ a { color: var(--accent); }
 .hist text { fill: var(--muted); font: 500 10.5px var(--f-body); }
 .hist text.m { fill: var(--ink); font-weight: 600; }
 .g-leg button.zero { opacity: 0.45; }
+
+/* G1 all-in cost */
+.allin { margin-top: 3px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.allin b { color: var(--ink); font-weight: 600; }
+.allin button { border: none; background: none; padding: 0; color: inherit; font: inherit; text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; }
+.cost-t { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.cost-t td { padding: 4px 0; border-bottom: 1px dashed var(--line); vertical-align: top; }
+.cost-t td:last-child { text-align: right; white-space: nowrap; padding-left: 12px; font-weight: 600; }
+.cost-t tr.tot td { border-bottom: none; border-top: 2px solid var(--ink); font: 700 15px/1.3 var(--f-display); padding-top: 7px; }
+.cost-t .k { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; display: block; }
+.cost-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.linkbtn { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; font-weight: 500; }
+.linkbtn:hover { border-color: var(--muted); }
+.costform { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 14px; }
+.costform fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 12px; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px 14px; }
+.costform legend { font: 600 13px var(--f-display); padding: 0 6px; display: inline-flex; align-items: center; gap: 6px; }
+.costform label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.costform .inp { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); padding: 0 10px; }
+.costform .inp:focus-within { border-color: var(--accent); }
+.costform .inp span { color: var(--muted); font-size: 13px; }
+.costform input { border: none; background: transparent; padding: 8px 4px; width: 100%; min-width: 0; font-size: 14px; color: var(--ink); font-variant-numeric: tabular-nums; outline: none; }
+.costform input.chg { color: var(--accent); font-weight: 600; }
+.costform .bar { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
+.costform .bar .src { margin-right: auto; }
+.sheet.narrow { width: min(720px, 100%); }
+/* G2 build checks */
+.bchips { display: flex; flex-wrap: wrap; gap: 5px; }
+.bchip { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 500; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: var(--panel); white-space: nowrap; }
+.bchip.good { border-color: color-mix(in srgb, var(--good) 35%, transparent); }
+.bchip.ok { border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.bchip.bad { border-color: color-mix(in srgb, var(--bad) 35%, transparent); }
+.bchip svg.i { width: 12px; height: 12px; }
+.bl { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; align-items: start; }
+.bl > svg.i { width: 18px; height: 18px; margin-top: 1px; color: var(--muted); }
+.bl b { font-weight: 600; }
+.bl .pill { font-size: 11.5px; padding: 1px 7px; margin-left: 4px; }
+.bl a { color: var(--accent); }
+.bdg.cut { background: var(--good); color: var(--panel); }
+.bdg.fresh2 { background: var(--accent); color: var(--accent-ink); }
+/* G4 saved searches */
+.c-row.saved { gap: 6px; align-items: center; flex-wrap: wrap; }
+.c-row.saved[hidden] { display: none; }
+.sv-l { font: 600 11px/1 var(--f-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-right: 2px; display: inline-flex; align-items: center; gap: 5px; }
+.sv-l svg { width: 14px; height: 14px; }
+.svchip { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); overflow: hidden; }
+.svchip.on { border-color: var(--accent); background: var(--accent-soft); }
+.svchip > button { border: none; background: none; padding: 6px 4px 6px 12px; font-size: 13px; font-weight: 500; color: var(--ink); display: inline-flex; gap: 6px; align-items: center; }
+.svchip > button em { font-style: normal; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); }
+.svchip > button .bell { width: 13px; height: 13px; color: var(--muted); }
+.svchip > button.x { padding: 6px 10px 6px 6px; color: var(--muted); font-size: 12px; }
+.svadd { border: 1px dashed var(--muted); background: none; border-radius: 999px; padding: 6px 12px; font-size: 13px; color: var(--ink); font-weight: 500; }
+.svadd:hover { border-style: solid; }
+.svform { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.svform[hidden] { display: none; }
+.svform input[type=text] { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 12px; font-size: 13px; width: 200px; max-width: 100%; color: var(--ink); }
+.svform label { font-size: 12.5px; color: var(--muted); display: inline-flex; gap: 5px; align-items: center; }
+.svform .btn { padding: 6px 14px; font-size: 13px; }
+.svhint { font-size: 12px; color: var(--muted); }
 </style>
 
 <div class="wrap">
@@ -603,6 +661,8 @@ a { color: var(--accent); }
         <option value="ppa">Sort: Lowest $/acre</option>
         <option value="acres">Sort: Most acres</option>
         <option value="miles">Sort: Closest</option>
+        <option value="allin">Sort: Lowest all-in cost</option>
+        <option value="drive">Sort: Shortest drive</option>
       </select>
     </div>
     <div class="c-row chips">
@@ -618,6 +678,9 @@ a { color: var(--accent); }
       <button class="chip" id="fWater" aria-pressed="false"></button>
       <button class="chip" id="fPower" aria-pressed="false"></button>
       <button class="chip" id="fAccess" aria-pressed="false"></button>
+      <button class="chip" id="fSoil" aria-pressed="false"></button>
+      <button class="chip" id="fFire" aria-pressed="false"></button>
+      <button class="chip" id="fFresh" aria-pressed="false" hidden></button>
       <label class="chip chip-select" for="terrainF"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m2 20 7-12 4 6 3-4 6 10z"/></svg>
         <select id="terrainF" aria-label="Terrain">
           <option value="">Any terrain</option>
@@ -632,6 +695,17 @@ a { color: var(--accent); }
       <span id="glanceChip"></span>
       <button class="clear" id="clearAll" hidden>Clear filters</button>
       <span class="count-pill" id="countPill"></span>
+    </div>
+    <div class="c-row saved" id="savedRow" hidden>
+      <span class="sv-l"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Saved</span>
+      <span id="svList" style="display:contents"></span>
+      <button class="svadd" id="svAdd" type="button">+ Save this search</button>
+      <form class="svform" id="svForm" hidden>
+        <input type="text" id="svName" maxlength="40" placeholder="Name it, e.g. 5+ ac with water" aria-label="Name for this search" required>
+        <label><input type="checkbox" id="svNotify" checked>Email me new matches</label>
+        <button class="btn primary" type="submit">Save</button><button class="btn" type="button" id="svCancel">Cancel</button>
+      </form>
+      <span class="svhint" id="svHint"></span>
     </div>
   </section>
 
@@ -693,8 +767,11 @@ a { color: var(--accent); }
       <div><b>${SEPTIC}Septic<em>25</em></b><span>Perc and septic notes, city sewer areas, health district rules.</span></div>
       <div><b>${ACCESS}Access<em>25</em></b><span>Whether a public road touches the parcel boundary.</span></div>
     </div>
+    <p class="disclaimer" style="margin:0"><b>All-in estimate</b> = asking price + rough cost to bring in water, power and septic, build a driveway and prepare a building pad, using
+      nearby well depths, distance to the nearest home, USDA soil ratings and slope. Planning numbers, not quotes — change them under "Cost assumptions" on any parcel.</p>
     <div class="bands"><span><i style="background:var(--bar-good)"></i>80–100 Build-ready</span><span><i style="background:var(--bar-ok)"></i>50–79 Needs work</span><span><i style="background:var(--bar-bad)"></i>0–49 High risk</span><span>Terrain is shown but doesn't change the score.</span></div>
-    <p class="disclaimer">Sources: Zillow listings; county parcels, roads and address points; WA Ecology and Idaho IDWR well logs; USGS 3DEP elevation.
+    <p class="disclaimer">Sources: Zillow listings; county parcels, roads, zoning and address points; WA Ecology and Idaho IDWR well logs; USGS 3DEP elevation;
+      USDA NRCS soil survey; USFS Wildfire Hazard Potential; Ookla speed tests and electric service areas via the WA State Broadband Office and WA UTC; OSRM drive times.
       "High" confidence means the seller or a recorded well log says so; "low" is an educated guess. Confirm with the seller, a title report,
       the health district (septic) and the power company before you buy.</p>
   </section>
@@ -708,6 +785,9 @@ a { color: var(--accent); }
 <div class="modal" id="cmpModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cmpTitle">
   <header><h2 id="cmpTitle">Compare parcels</h2><button id="cmpClose" aria-label="Close">✕</button></header>
   <div class="cmp-wrap" id="cmpBody"></div></div></div>
+<div class="modal" id="costModal" hidden><div class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="costTitle">
+  <header><h2 id="costTitle">Cost assumptions</h2><button id="costClose" aria-label="Close">✕</button></header>
+  <form class="costform" id="costForm"></form></div></div>
 <button class="fab" id="fab" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg><span id="fabLabel">Top</span></button>
 
 <script>
@@ -735,6 +815,15 @@ const ICON = {
   star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
   chev: '<path d="m6 9 6 6 6-6"/>',
   _terrain: '<path d="m2 20 7-12 4 6 3-4 6 10z"/>',
+  _cost: '<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1.3 1.7 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.6-.6-3-1.6M12 6v2M12 16v2"/>',
+  _build: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  _zone: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h18M12 3v18"/>',
+  _soil: '<path d="M2 8h20M2 13h20M2 18h20"/><circle cx="7" cy="10.5" r=".6"/><circle cx="15" cy="15.5" r=".6"/>',
+  _fire: '<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5 1-8.5z"/>',
+  _net: '<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/>',
+  _car: '<path d="M4 16V12l2-5h12l2 5v4z"/><path d="M4 12h16"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/>',
+  _plug: '<path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0zM12 17v5"/>',
+  _bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/>',
 };
 const icon = (k, cls = "i") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 
@@ -773,7 +862,7 @@ const COMPARE = new Set();
 let MAPMODE = "dots", MIN_ACRES = 0, PREVIEW = null;
 try { VIEW = localStorage.getItem("landfinder.view") || "cards"; } catch (e) {}
 const S = { listings: [], meta: null, requests: [], marks: {}, sel: null, hover: null, open: new Set(), shown: PAGE, glance: null,
-            f: { water: false, power: false, access: false, star: false }, db: null, canWrite: true, loaded: false, medians: {},
+            f: { water: false, power: false, access: false, star: false, soil: false, fire: false, fresh: false }, searches: [], activeSearch: null, db: null, canWrite: true, loaded: false, medians: {},
             radius: 25, maxRadius: 25 };
 try { const v = +localStorage.getItem("landfinder.radius"); if (v > 0) S.radius = v; } catch (e) {}
 
@@ -782,6 +871,67 @@ document.querySelector(".pts").innerHTML = document.querySelector(".pts").innerH
   .replace("${WATER}", icon("water")).replace("${POWER}", icon("electric")).replace("${SEPTIC}", icon("septic")).replace("${ACCESS}", icon("access"));
 $("fPower").innerHTML = icon("electric") + "Power close";
 $("fAccess").innerHTML = icon("access") + "Not landlocked";
+$("fSoil").innerHTML = icon("_soil") + "Septic-friendly soil";
+$("fFire").innerHTML = icon("_fire") + "Low fire risk";
+$("fFresh").innerHTML = icon("_bell") + "New or price cut";
+const CHIP_IDS = { water: "fWater", power: "fPower", access: "fAccess", star: "fStar", soil: "fSoil", fire: "fFire", fresh: "fFresh" };
+
+/* ---------- G1 all-in cost (mirror of spokane_land/cost.py; keep in sync) ---------- */
+const COST_DEFAULTS = {
+  well_per_ft: 75, well_system: 10000, default_well_ft: 300, water_hookup: 15000, shared_well: 5000,
+  power_service: 6000, power_per_ft: 30, offgrid_solar: 45000,
+  septic_conventional: 18000, septic_standard: 22000, septic_engineered: 40000, sewer_hookup: 12000,
+  driveway: 6000, easement_extra: 4000, landlocked_access: 25000,
+  prep_flat: 3000, prep_rolling: 7000, prep_steep: 20000, prep_very_steep: 35000,
+};
+const COST_FIELDS = [
+  ["water", "Water", [["well_per_ft", "Well drilling", "$/ft"], ["well_system", "Pump, tank & trench", "$"], ["default_well_ft", "Well depth if no nearby logs", "ft"],
+    ["water_hookup", "Public water hookup", "$"], ["shared_well", "Shared-well hookup", "$"]]],
+  ["electric", "Power", [["power_service", "Service from the road", "$"], ["power_per_ft", "Line extension past 150 ft", "$/ft"], ["offgrid_solar", "Off-grid solar", "$"]]],
+  ["septic", "Septic", [["septic_standard", "Standard septic", "$"], ["septic_conventional", "Septic with approved design", "$"],
+    ["septic_engineered", "Engineered septic (poor soils)", "$"], ["sewer_hookup", "Sewer hookup", "$"]]],
+  ["access", "Access", [["driveway", "Driveway", "$"], ["easement_extra", "Easement paperwork", "$"], ["landlocked_access", "Buy access + build road", "$"]]],
+  ["_terrain", "Site prep", [["prep_flat", "Flat lot", "$"], ["prep_rolling", "Rolling lot", "$"], ["prep_steep", "Steep lot", "$"], ["prep_very_steep", "Very steep lot", "$"]]],
+];
+const POWER_DISTANCE_GUESS = { likely_near: 600, possible: 1500, far: 3000 };
+S.costs = { ...COST_DEFAULTS };
+try { Object.assign(S.costs, JSON.parse(localStorage.getItem("landfinder.costs") || "{}")); } catch (e) {}
+let costMemo = new WeakMap();
+function allIn(r) {
+  if (costMemo.has(r)) return costMemo.get(r);
+  const d = S.costs, inp = r.cost?.inputs || {}, st = c => r[c]?.status, items = [];
+  const w = st("water");
+  if (w === "well") items.push(["water", 0, "Well already on the parcel"]);
+  else if (w === "public") items.push(["water", d.water_hookup, "Public water connection"]);
+  else if (w === "shared_well") items.push(["water", d.shared_well, "Shared-well hookup"]);
+  else if (w === "public_area") items.push(["water", d.water_hookup, "Water-district hookup (if a main reaches the lot)"]);
+  else { const ft = inp.well_ft || d.default_well_ft; items.push(["water", Math.round(ft * d.well_per_ft + d.well_system), `Drill a well (~${Math.round(ft)} ft like nearby wells)`]); }
+  const p = st("electric");
+  if (p === "on_site") items.push(["electric", 0, "Power already on the parcel"]);
+  else if (p === "at_road") items.push(["electric", d.power_service, "Service from the road"]);
+  else if (p === "none") items.push(["electric", d.offgrid_solar, "Off-grid solar system"]);
+  else { const ft = inp.power_ft || POWER_DISTANCE_GUESS[p] || 1500; items.push(["electric", Math.round(d.power_service + Math.max(0, ft - 150) * d.power_per_ft), `Extend power ~${Math.round(ft).toLocaleString()} ft`]); }
+  const s = st("septic"), soil = inp.soil;
+  if (s === "installed") items.push(["septic", 0, "Septic system already installed"]);
+  else if (s === "sewer") items.push(["septic", d.sewer_hookup, "Sewer hookup"]);
+  else if (s === "sewer_area") items.push(["septic", d.sewer_hookup, "Sewer hookup (if a line is available)"]);
+  else if (s === "failed" || soil === "Very limited") items.push(["septic", d.septic_engineered, s === "failed" ? "Engineered septic (failed perc)" : "Engineered septic (soils very limited)"]);
+  else if (s === "approved") items.push(["septic", d.septic_conventional, "Septic per approved design"]);
+  else if (soil === "Somewhat limited") items.push(["septic", Math.round((d.septic_standard + d.septic_engineered) / 2), "Septic (soils somewhat limited)"]);
+  else items.push(["septic", d.septic_standard, "Standard septic system"]);
+  const a = st("access");
+  items.push(a === "landlocked" ? ["access", d.landlocked_access, "Buy an access easement + build a road (very uncertain)"]
+    : a === "easement" ? ["access", d.driveway + d.easement_extra, "Driveway + easement paperwork"]
+    : a === "seasonal" ? ["access", d.driveway * 2, "Driveway + road improvements"]
+    : a === "private_road" ? ["access", Math.round(d.driveway * 1.3), "Driveway off a private road"] : ["access", d.driveway, "Driveway"]);
+  const sc = r.terrain?.slope_class;
+  items.push(sc === "very_steep" ? ["_terrain", d.prep_very_steep, "Major grading on very steep ground"] : sc === "steep" ? ["_terrain", d.prep_steep, "Grading + foundation work on a steep lot"]
+    : sc === "rolling" ? ["_terrain", d.prep_rolling, "Grading on rolling ground"] : ["_terrain", d.prep_flat, "Clearing and building pad"]);
+  const improvements = items.reduce((t, x) => t + x[1], 0);
+  const out = { items, improvements, total: r.price ? r.price + improvements : null };
+  costMemo.set(r, out);
+  return out;
+}
 
 /* ---------- 1. topo masthead ---------- */
 function drawTopo() {
@@ -1115,36 +1265,52 @@ function valueRatio(r) {
 
 /* ---------- list ---------- */
 const has = (f, set) => f && set.includes(f.status);
-function filtered() {
-  const q = $("q").value.trim().toLowerCase(), minP = PSTEPS[+$("pMin").value], maxP = PSTEPS[+$("pMax").value], minA = MIN_ACRES;
+const lowFire = r => r.wildfire && (r.wildfire.class <= 2 || r.wildfire.class >= 6);
+const goodSoil = r => has(r.septic, ["sewer", "installed", "approved"]) || (r.soil && ["Not limited", "Somewhat limited"].includes(r.soil.rating));
+const isFresh = r => !!(r.is_new || r.price_cut);
+// Current filters as plain data. Saved searches store this; spokane_land/alerts.py reads the same fields.
+function currentSearch() {
   const g = S.glance && GROUPS[S.glance.cat].find(x => x[0] === S.glance.key);
-  const tf = $("terrainF").value;
-  const list = S.listings.filter(r => {
-    if (q && ![r.address, r.city, r.parcel_id, r.zip, r.county, r.mls].join(" ").toLowerCase().includes(q)) return false;
-    if (r.price != null && (r.price < minP || r.price > maxP)) return false;
-    if (minA && r.acres != null && r.acres < minA) return false;
-    if (S.f.water && !has(r.water, ["well", "public", "shared_well", "public_area"])) return false;
-    if (S.f.power && !has(r.electric, ["on_site", "at_road", "likely_near"])) return false;
-    if (S.f.access && has(r.access, ["landlocked"])) return false;
-    if (S.f.star && !S.marks[r._doc]?.star) return false;
-    if (g && !has(r[S.glance.cat], g[3])) return false;
-    if (HIDDEN_RATINGS.has(r.rating)) return false;
-    if (r.miles_from_spokane != null && r.miles_from_spokane > S.radius && r.source !== "added") return false;
-    if (tf) {
-      const t = r.terrain;
-      if (!t) return false;
-      if (tf === "hill" && !t.on_hill) return false;
-      if (tf === "hilltop" && t.position !== "hilltop") return false;
-      if (tf === "hillside" && t.position !== "hillside") return false;
-      if (tf === "valley" && t.position !== "valley") return false;
-      if (tf === "flat" && !["flat", "gentle"].includes(t.slope_class)) return false;
-      if (tf === "notsteep" && ["steep", "very_steep"].includes(t.slope_class)) return false;
-    }
-    return true;
-  });
+  const a = +$("pMin").value, b = +$("pMax").value;
+  return { q: $("q").value.trim(), pMin: a, pMax: b, min_price: PSTEPS[a] || null, max_price: b === 13 ? null : PSTEPS[b],
+           min_acres: MIN_ACRES, radius: S.radius, f: { ...S.f }, terrain: $("terrainF").value,
+           glance: g ? { cat: S.glance.cat, key: S.glance.key, statuses: g[3] } : null, hidden: [...HIDDEN_RATINGS], sort: $("sort").value };
+}
+function passes(r, st) {
+  const q = (st.q || "").toLowerCase(), f = st.f || {};
+  if (q && ![r.address, r.city, r.parcel_id, r.zip, r.county, r.mls].join(" ").toLowerCase().includes(q)) return false;
+  if (r.price != null && (r.price < (st.min_price || 0) || (st.max_price != null && r.price > st.max_price))) return false;
+  if (st.min_acres && r.acres != null && r.acres < st.min_acres) return false;
+  if (f.water && !has(r.water, ["well", "public", "shared_well", "public_area"])) return false;
+  if (f.power && !has(r.electric, ["on_site", "at_road", "likely_near"])) return false;
+  if (f.access && has(r.access, ["landlocked"])) return false;
+  if (f.soil && !goodSoil(r)) return false;
+  if (f.fire && !lowFire(r)) return false;
+  if (f.fresh && !isFresh(r)) return false;
+  if (f.star && !S.marks[r._doc]?.star) return false;
+  if (st.glance && !has(r[st.glance.cat], st.glance.statuses)) return false;
+  if ((st.hidden || []).includes(r.rating)) return false;
+  if (r.miles_from_spokane != null && r.miles_from_spokane > st.radius && r.source !== "added") return false;
+  const tf = st.terrain;
+  if (tf) {
+    const t = r.terrain;
+    if (!t) return false;
+    if (tf === "hill" && !t.on_hill) return false;
+    if (tf === "hilltop" && t.position !== "hilltop") return false;
+    if (tf === "hillside" && t.position !== "hillside") return false;
+    if (tf === "valley" && t.position !== "valley") return false;
+    if (tf === "flat" && !["flat", "gentle"].includes(t.slope_class)) return false;
+    if (tf === "notsteep" && ["steep", "very_steep"].includes(t.slope_class)) return false;
+  }
+  return true;
+}
+function filtered() {
+  const st = currentSearch();
+  const list = S.listings.filter(r => passes(r, st));
   const key = { score: r => -r.score, price: r => r.price ?? 1e12, ppa: r => r.price_per_acre ?? 1e12,
                 acres: r => -(r.acres ?? 0), miles: r => r.miles_from_spokane ?? 1e9,
-                value: r => valueRatio(r)?.ratio ?? 1e9 }[$("sort").value];
+                value: r => valueRatio(r)?.ratio ?? 1e9, allin: r => allIn(r).total ?? 1e12,
+                drive: r => r.drive_min ?? 1e9 }[$("sort").value];
   return list.sort((a, b) => key(a) - key(b) || (b.score - a.score));
 }
 
@@ -1178,7 +1344,10 @@ function eyebrow(r) {
 }
 function badges(r) {
   const out = [], v = valueRatio(r), t = r.terrain;
-  if (r.days_on_market != null && r.days_on_market <= 14) out.push(`<span class="bdg new">New listing</span>`);
+  if (r.is_new) out.push(`<span class="bdg fresh2">New since last refresh</span>`);
+  else if (r.days_on_market != null && r.days_on_market <= 14) out.push(`<span class="bdg new">New listing</span>`);
+  if (r.price_cut) out.push(`<span class="bdg cut">Price cut −${kmoney(r.price_cut)}</span>`);
+  if (r.zoning_check?.status === "splittable") out.push(`<span class="bdg big">${icon("_zone")}Could split</span>`);
   if (v && v.ratio <= 0.6) out.push(`<span class="bdg value">Great value</span>`);
   if (t && t.position === "hilltop") out.push(`<span class="bdg views">${icon("_terrain")}Hilltop views</span>`);
   if (r.acres >= 20) out.push(`<span class="bdg big">Big acreage</span>`);
@@ -1187,6 +1356,28 @@ function badges(r) {
 }
 const SEVERE = /landlocked|flood|failed|no water wells|steep ground|conflicting/i;
 const sortFlags = f => [...f].sort((a, b) => SEVERE.test(b) - SEVERE.test(a));
+
+// G2 quick build checks on the card
+const ZONE_SHORT = { ok: ["good", "Zoning OK"], splittable: ["good", "Zoning OK"], undersized: ["bad", "Below zone minimum"],
+                     not_residential: ["bad", "Zone bars homes"], urban: ["ok", "Urban zone"] };
+const FIRE_TONE = c => c <= 2 || c >= 6 ? "good" : c === 3 ? "ok" : "bad";
+const SOIL_TONE = { "Not limited": "good", "Somewhat limited": "ok", "Very limited": "bad" };
+const NET_TONE = { fast: "good", ok: "ok", slow: "bad" };
+function buildChips(r) {
+  const out = [], z = r.zoning_check && ZONE_SHORT[r.zoning_check.status];
+  if (r.drive_min != null) out.push(`<span class="bchip" title="Drive to downtown Spokane">${icon("_car")}${r.drive_min} min drive</span>`);
+  if (z) out.push(`<span class="bchip ${z[0]}" title="${esc(r.zoning_check.label)}">${icon("_zone")}${z[1]}</span>`);
+  if (r.soil && SOIL_TONE[r.soil.rating] && !has(r.septic, ["sewer", "installed"]))
+    out.push(`<span class="bchip ${SOIL_TONE[r.soil.rating]}" title="USDA soil rating for septic drain fields">${icon("_soil")}Soil: ${esc(r.soil.rating.toLowerCase())}</span>`);
+  if (r.wildfire && r.wildfire.class <= 5) out.push(`<span class="bchip ${FIRE_TONE(r.wildfire.class)}" title="USFS wildfire hazard potential">${icon("_fire")}${esc(r.wildfire.label)} fire risk</span>`);
+  if (r.internet?.down_mbps) out.push(`<span class="bchip ${NET_TONE[r.internet.class] || ""}" title="Fastest measured home internet within a mile">${icon("_net")}${r.internet.down_mbps >= 1000 ? "1 Gbps+" : r.internet.down_mbps + " Mbps"}</span>`);
+  return out.length ? `<div class="bchips">${out.join("")}</div>` : "";
+}
+function allinLine(r) {
+  const c = allIn(r);
+  if (c.total == null) return "";
+  return `<div class="allin">≈ <b>${kmoney(c.total)}</b> all-in <button data-costs="1" title="Asking price plus estimated cost for water, power, septic, driveway and site prep. Click to change the assumptions.">+${kmoney(c.improvements)} to build</button></div>`;
+}
 
 // Is it on a hill? Badge + slope wedge + numbers
 function terrainRow(r, compact) {
@@ -1232,7 +1423,7 @@ function suggestions() {
   if (MIN_ACRES) tries.push(["acres", "Any acreage", () => { const o = MIN_ACRES; MIN_ACRES = 0; return () => MIN_ACRES = o; }]);
   if ($("terrainF").value) tries.push(["terrain", "Any terrain", () => { const o = $("terrainF").value; $("terrainF").value = ""; return () => $("terrainF").value = o; }]);
   if ($("q").value) tries.push(["q", "Clear search", () => { const o = $("q").value; $("q").value = ""; return () => $("q").value = o; }]);
-  for (const [k, lab] of [["water", "Has water"], ["power", "Power close"], ["access", "Not landlocked"], ["star", "Starred"]])
+  for (const [k, lab] of [["water", "Has water"], ["power", "Power close"], ["access", "Not landlocked"], ["star", "Starred"], ["soil", "Septic-friendly soil"], ["fire", "Low fire risk"], ["fresh", "New or price cut"]])
     if (S.f[k]) tries.push(["f-" + k, `Drop "${lab}"`, () => { S.f[k] = false; return () => S.f[k] = true; }]);
   if (S.glance) tries.push(["glance", "Clear summary filter", () => { const o = S.glance; S.glance = null; return () => S.glance = o; }]);
   if (HIDDEN_RATINGS.size) tries.push(["ratings", "Show all ratings", () => { const o = [...HIDDEN_RATINGS]; HIDDEN_RATINGS.clear(); return () => o.forEach(x => HIDDEN_RATINGS.add(x)); }]);
@@ -1246,7 +1437,7 @@ function applySuggestion(k) {
   else if (k === "acres") setAcres(0);
   else if (k === "terrain") $("terrainF").value = "";
   else if (k === "q") $("q").value = "";
-  else if (k.startsWith("f-")) { const f = k.slice(2); S.f[f] = false; $({ water: "fWater", power: "fPower", access: "fAccess", star: "fStar" }[f]).setAttribute("aria-pressed", "false"); }
+  else if (k.startsWith("f-")) { const f = k.slice(2); S.f[f] = false; $(CHIP_IDS[f]).setAttribute("aria-pressed", "false"); }
   else if (k === "glance") S.glance = null;
   else if (k === "ratings") { HIDDEN_RATINGS.clear(); document.querySelectorAll("[data-rate]").forEach(b => b.setAttribute("aria-pressed", "true")); }
   else $("clearAll").click();
@@ -1275,19 +1466,20 @@ function card(r, i) {
       <div><span>Acres</span><b>${r.acres ?? "—"}</b></div>
       <div><span>Per acre</span><b>${kmoney(r.price_per_acre)}</b></div>
       <div><span>Slope</span><b>${t.slope_mean_pct != null ? t.slope_mean_pct + "%" : "—"}</b></div>
-      <div><span>Flat</span><b>${t.flat_pct != null ? t.flat_pct + "%" : "—"}</b></div>
+      <div><span>Drive</span><b>${r.drive_min != null ? r.drive_min + " min" : "—"}</b></div>
       <div><span>Miles</span><b>${r.miles_from_spokane ?? "—"}</b></div></div>`;
   const open = S.open.has(r.id), rt = ratingTone(r.rating);
   let html = `<article class="card r-${rt}${r.id === S.sel ? " sel" : ""}${i < 12 && !reduceMotion ? " rise" : ""}" style="--i:${i}" id="c-${esc(r._doc)}" data-id="${esc(r.id)}">
     <div class="c-head">
       ${plat(r)}
-      <div style="min-width:0">${eyebrow(r)}<div class="price">${money(r.price)}</div><div class="addr">${esc(loc)}</div><div class="facts">${esc(facts)}</div>${badges(r)}</div>
+      <div style="min-width:0">${eyebrow(r)}<div class="price">${money(r.price)}</div>${allinLine(r)}<div class="addr">${esc(loc)}</div><div class="facts">${esc(facts)}</div>${badges(r)}</div>
       <div class="scorecol"><div class="ring ${rt}" style="--p:${r.score}" title="${esc(r.rating)} — score ${r.score} of 100"><span>${r.score}<small>${rt === "good" ? "ready" : rt === "ok" ? "work" : "risk"}</small></span></div>
         <div class="sb" aria-label="Score breakdown">${CATS.map(([c, n]) => { const pt = r[c]?.points ?? 8; return `<i title="${n}: ${pt} of 25" style="--w:${Math.round(pt / 25 * 100)}%;--c:${toneVar(tone(r[c]))}"></i>`; }).join("")}</div></div>
     </div>
     ${spec}
     ${utils(r)}
     ${terrainRow(r)}
+    ${buildChips(r)}
     ${valueMeter(r)}
     ${r.flags?.length ? `<div class="flags">${sortFlags(r.flags).slice(0, open ? 99 : 1).map(f => `<span class="flag${SEVERE.test(f) ? " severe" : ""}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20zM12 10v4M12 17v.5"/></svg>${esc(f)}</span>`).join("")}${!open && r.flags.length > 1 ? `<span class="src">+${r.flags.length - 1} more</span>` : ""}</div>` : ""}
     ${mark.note && !open ? `<div class="src">📝 ${esc(mark.note)}</div>` : ""}
@@ -1321,6 +1513,8 @@ function card(r, i) {
           return panel(c, name, f, items);
         }).join("")}
         ${terrainPanel ? terrainPanel.replace('class="evc"', 'class="evc wide"') : ""}
+        ${costPanel(r)}
+        ${buildPanel(r)}
       </div>
       ${r.remarks ? `<blockquote class="quote">“${esc(r.remarks)}”<cite>Listing description</cite></blockquote>` : ""}
       <div class="facts-line">
@@ -1339,6 +1533,45 @@ function card(r, i) {
     </div>`;
   }
   return html + "</article>";
+}
+
+function costPanel(r) {
+  const c = allIn(r);
+  const names = Object.fromEntries([...CATS, ["_terrain", "Site prep"]]);
+  const rows = c.items.map(([k, v, lab]) => `<tr><td><span class="k">${esc(names[k])}</span>${esc(lab)}</td><td>${v ? money(v) : "$0"}</td></tr>`).join("");
+  const changed = Object.keys(COST_DEFAULTS).some(k => S.costs[k] !== COST_DEFAULTS[k]);
+  return `<section class="evc wide"><header>${icon("_cost")}<b>All-in estimate</b><span class="pill ${c.improvements > 90000 ? "bad" : c.improvements > 45000 ? "ok" : "good"}">${c.total != null ? "≈ " + money(c.total) : "+" + money(c.improvements)}</span></header>
+    <table class="cost-t"><tbody>${r.price ? `<tr><td><span class="k">Land</span>Asking price</td><td>${money(r.price)}</td></tr>` : ""}${rows}
+    ${c.total != null ? `<tr class="tot"><td>Ready to build a house</td><td>${money(c.total)}</td></tr>` : `<tr class="tot"><td>Cost to get it build-ready</td><td>${money(c.improvements)}</td></tr>`}</tbody></table>
+    <div class="cost-note"><span>Rough planning numbers${changed ? ", using your own assumptions" : " for the Spokane area"}. Get quotes before you buy.</span><button class="linkbtn" data-costs="1">Cost assumptions…</button></div></section>`;
+}
+function buildPanel(r) {
+  const li = (ic, html, tag) => `<li class="bl">${icon(ic)}<span>${html}${tag ? `<span class="tag">${esc(tag)}</span>` : ""}</span></li>`;
+  const items = [];
+  const z = r.zoning_check;
+  if (z) items.push(li("_zone", `<b>Zoning:</b> ${esc(z.detail)}`, "Spokane County zoning code"));
+  else if (r.state === "ID" || (r.county && r.county !== "Spokane")) items.push(li("_zone", `<b>Zoning:</b> not checked for ${esc(r.county || "this")} County. Ask the county planning office about minimum lot size.`));
+  if (r.soil) {
+    const share = Object.entries(r.soil.share || {}).filter(([, v]) => v > 0).map(([k, v]) => `${v}% ${k.toLowerCase()}`).join(", ");
+    items.push(li("_soil", `<b>Septic soils:</b> <span class="pill ${SOIL_TONE[r.soil.rating] || "unk"}">${esc(r.soil.rating)}</span>${share && Object.keys(r.soil.share).length > 1 ? ` (${esc(share)})` : ""}${r.soil.reasons?.length ? `. Limits: ${esc(r.soil.reasons.join("; ").toLowerCase())}` : ""}${r.soil.soils?.length ? `. Soil: ${esc(r.soil.soils[0])}` : ""}`, r.soil.source));
+  }
+  if (r.wildfire) items.push(li("_fire", `<b>Wildfire hazard:</b> <span class="pill ${FIRE_TONE(r.wildfire.class)}">${esc(r.wildfire.label)}</span>${r.wildfire.class >= 4 && r.wildfire.class <= 5 ? " Expect defensible-space rules and higher insurance." : ""}`, "USFS"));
+  if (r.internet) items.push(li("_net", r.internet.down_mbps
+    ? `<b>Internet:</b> fastest home connection measured within a mile is <b>${r.internet.down_mbps} Mbps</b> (typical ${r.internet.typical_mbps} Mbps, ${r.internet.tests.toLocaleString()} speed tests)`
+    : `<b>Internet:</b> no home speed tests within a mile — ask providers before you buy`, "Ookla via WA Broadband Office"));
+  else if (r.state === "ID") items.push(li("_net", `<b>Internet:</b> no public speed data for Idaho parcels here`));
+  if (r.power_company) {
+    const pc = r.power_company, web = pc.website && /^https?:\/\//i.test(pc.website) ? pc.website : pc.website ? "https://" + pc.website : "";
+    items.push(li("_plug", `<b>Power company:</b> ${esc(pc.name)}${pc.phone ? ` · <a href="tel:${esc(pc.phone.replace(/[^0-9+]/g, ""))}">${esc(pc.phone)}</a>` : ""}${web ? ` · <a target="_blank" rel="noopener" href="${esc(web)}">website</a>` : ""}. Ask them for a line-extension quote.`, "WA service areas"));
+  }
+  if (r.drive_min != null) items.push(li("_car", `<b>Drive:</b> about <b>${r.drive_min} minutes</b> to downtown Spokane`, "OSRM"));
+  if (r.first_seen || r.price_history?.length > 1) {
+    const ph = (r.price_history || []).map(h => `${kmoney(h.price)} (${esc(h.date)})`).join(" → ");
+    items.push(li("_bell", `<b>History:</b> ${r.first_seen ? `on the market since about ${esc(r.first_seen)}` : ""}${r.price_history?.length > 1 ? `. Price ${ph}` : ""}`));
+  }
+  if (r.also_listed_as?.length) items.push(li("_build", `<b>Also listed as:</b> ${esc(r.also_listed_as.join("; "))}`));
+  if (!items.length) return "";
+  return `<section class="evc wide"><header>${icon("_build")}<b>Can you build here?</b></header><ul>${items.join("")}</ul></section>`;
 }
 
 const skeleton = () => Array.from({ length: 3 }, () => `<div class="card skel" aria-hidden="true">
@@ -1396,6 +1629,8 @@ function render() {
     if (!reduceMotion) { $("glance").classList.add("grow"); countUp(); setTimeout(() => $("glance").classList.remove("grow"), 1200); }
   }
   $("clearAll").hidden = !anyFilter();
+  $("fFresh").hidden = !S.f.fresh && !S.listings.some(isFresh);
+  renderSaved();
   document.querySelector(".chip-select").classList.toggle("on", !!$("terrainF").value);
 }
 
@@ -1450,7 +1685,7 @@ $("clearAll").addEventListener("click", () => {
   ["q", "terrainF"].forEach(id => $(id).value = "");
   $("pMin").value = 0; $("pMax").value = 13; setAcres(0);
   for (const k in S.f) S.f[k] = false;
-  ["fWater", "fPower", "fAccess", "fStar"].forEach(id => $(id).setAttribute("aria-pressed", "false"));
+  Object.values(CHIP_IDS).forEach(id => $(id).setAttribute("aria-pressed", "false"));
   S.glance = null; HIDDEN_RATINGS.clear(); document.querySelectorAll("[data-rate]").forEach(b => b.setAttribute("aria-pressed", "true"));
   S.shown = PAGE; render();
 });
@@ -1504,7 +1739,7 @@ function select(id, scroll) {
 
 /* ---------- events ---------- */
 ["q", "sort", "terrainF"].forEach(id => $(id).addEventListener("input", () => { S.shown = PAGE; render(); }));
-[["fWater", "water"], ["fPower", "power"], ["fAccess", "access"], ["fStar", "star"]].forEach(([id, k]) =>
+Object.entries(CHIP_IDS).map(([k, id]) => [id, k]).forEach(([id, k]) =>
   $(id).addEventListener("click", e => { S.f[k] = !S.f[k]; S.shown = PAGE; e.currentTarget.setAttribute("aria-pressed", S.f[k]); render(); }));
 
 $("cards").addEventListener("pointerover", e => { const rw = e.target.closest("[data-row]"); if (rw && !rw.contains(e.relatedTarget)) highlightDot(rw.dataset.row, true); });
@@ -1522,6 +1757,7 @@ $("cards").addEventListener("click", async e => {
   const sg = e.target.closest("[data-sugg]"); if (sg) { applySuggestion(sg.dataset.sugg); return; }
   const sk = e.target.closest(".lhead [data-sort]"); if (sk) { $("sort").value = sk.dataset.sort; S.shown = PAGE; render(); return; }
   const pk = e.target.closest("[data-pick]"); if (pk) { select(pk.dataset.pick, true); return; }
+  if (e.target.closest("[data-costs]")) { openCosts(); return; }
   const cb = e.target.closest("[data-cmp]");
   if (cb) {
     const id = cb.dataset.cmp;
@@ -1683,11 +1919,17 @@ function openCompare() {
     ${row("Score", rs.map(r => r.score), v => `${v} / 100`, { best: true })}
     ${row("Acres", rs.map(r => r.acres), v => v ?? "—", { best: true })}
     ${row("Price per acre", rs.map(r => r.price_per_acre), v => kmoney(v), { best: true, low: true })}
+    ${row("All-in estimate", rs.map(r => allIn(r).total), v => kmoney(v), { best: true, low: true })}
     ${row("Miles from Spokane", rs.map(r => r.miles_from_spokane), v => v ?? "—", { best: true, low: true })}
+    ${row("Drive to downtown", rs.map(r => r.drive_min), v => v != null ? v + " min" : "—", { best: true, low: true })}
     ${statusRow("water", "Water")}${statusRow("electric", "Power")}${statusRow("septic", "Septic")}${statusRow("access", "Access")}
     ${row("Terrain", rs.map(r => r.terrain?.position_label), v => esc(v || "—"))}
     ${row("Average slope", rs.map(r => r.terrain?.slope_mean_pct), v => v != null ? v + "%" : "—", { best: true, low: true })}
     ${row("Flat ground", rs.map(r => r.terrain?.flat_pct), v => v != null ? v + "%" : "—", { best: true })}
+    ${row("Septic soils", rs.map(r => r.soil?.rating), v => esc(v || "—"))}
+    ${row("Wildfire hazard", rs.map(r => r.wildfire?.label), v => esc(v || "—"))}
+    ${row("Internet nearby", rs.map(r => r.internet?.down_mbps), v => v ? v + " Mbps" : "—", { best: true })}
+    ${row("Zoning", rs.map(r => r.zoning_check?.label), v => esc(v || "—"))}
     ${row("Days on market", rs.map(r => r.days_on_market), v => v ?? "—")}
     ${row("Warnings", rs.map(r => r.flags?.length || 0), v => v ? `${v}` : "None", { best: true, low: true })}
     <tr><th scope="row"></th>${rs.map(r => `<td>${r.url ? `<a class="act primary" target="_blank" rel="noopener" href="${esc(r.url)}">Open listing</a>` : ""}</td>`).join("")}</tr>
@@ -1715,6 +1957,77 @@ $("fab").addEventListener("click", () => {
   const target = narrow.matches ? $("mapbox").getBoundingClientRect().top + scrollY - 12 : 0;
   scrollTo({ top: target, behavior: reduceMotion ? "auto" : "smooth" });
 });
+
+/* ---------- G1 cost assumptions editor (saved per viewer in this browser) ---------- */
+function openCosts() {
+  $("costForm").innerHTML = COST_FIELDS.map(([ic, name, fields]) => `<fieldset><legend>${icon(ic)}${name}</legend>${fields.map(([k, lab, unit]) =>
+    `<label for="cf-${k}">${lab}<span class="inp">${unit.startsWith("$") ? "<span>$</span>" : ""}<input id="cf-${k}" data-ck="${k}" inputmode="numeric" value="${S.costs[k]}"${S.costs[k] !== COST_DEFAULTS[k] ? ' class="chg"' : ""}>${unit === "$/ft" ? "<span>/ft</span>" : unit === "ft" ? "<span>ft</span>" : ""}</span></label>`).join("")}</fieldset>`).join("")
+    + `<div class="bar"><span class="src">Saved in this browser only.</span><button class="btn" type="button" id="costReset">Reset to defaults</button><button class="btn primary" type="submit">Apply</button></div>`;
+  $("costModal").hidden = false; $("costForm").querySelector("input").focus();
+}
+function setCosts(c) {
+  S.costs = c; costMemo = new WeakMap();
+  const diff = Object.fromEntries(Object.entries(c).filter(([k, v]) => v !== COST_DEFAULTS[k]));
+  try { Object.keys(diff).length ? localStorage.setItem("landfinder.costs", JSON.stringify(diff)) : localStorage.removeItem("landfinder.costs"); } catch (e) {}
+  render();
+}
+$("costForm").addEventListener("input", e => { const i = e.target.closest("[data-ck]"); if (i) i.classList.toggle("chg", +i.value.replace(/[^0-9.]/g, "") !== COST_DEFAULTS[i.dataset.ck]); });
+$("costForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const c = { ...S.costs };
+  $("costForm").querySelectorAll("[data-ck]").forEach(i => { const v = parseFloat(i.value.replace(/[^0-9.]/g, "")); if (!isNaN(v) && v >= 0) c[i.dataset.ck] = v; });
+  setCosts(c); $("costModal").hidden = true; toast("All-in estimates updated");
+});
+$("costForm").addEventListener("click", e => { if (e.target.id === "costReset") { setCosts({ ...COST_DEFAULTS }); openCosts(); } });
+$("costClose").addEventListener("click", () => { $("costModal").hidden = true; });
+$("costModal").addEventListener("click", e => { if (e.target === $("costModal")) $("costModal").hidden = true; });
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("costModal").hidden) $("costModal").hidden = true; });
+
+/* ---------- G4 saved searches (db collection "searches"; alerts go out at each refresh) ---------- */
+const sameSearch = (a, b) => JSON.stringify({ ...a, sort: 0 }) === JSON.stringify({ ...b, sort: 0 });
+function renderSaved() {
+  const row = $("savedRow");
+  row.hidden = !S.db || (!S.canWrite && !S.searches.length);
+  if (row.hidden) return;
+  const cur = currentSearch();
+  $("svList").innerHTML = S.searches.map(sv => {
+    const fresh = S.listings.filter(r => isFresh(r) && passes(r, sv.state)).length;
+    return `<span class="svchip${sameSearch(sv.state, cur) ? " on" : ""}"><button data-sv="${esc(sv._id)}" title="${sv.notify ? "You get an email when new parcels match" : "Show these parcels"}">${sv.notify ? icon("_bell", "i bell") : ""}${esc(sv.name)}${fresh ? `<em>${fresh} new</em>` : ""}</button>${S.canWrite ? `<button class="x" data-svdel="${esc(sv._id)}" aria-label="Delete saved search ${esc(sv.name)}">✕</button>` : ""}</span>`;
+  }).join("");
+  const formOpen = !$("svForm").hidden;
+  $("svAdd").hidden = !S.canWrite || formOpen || S.searches.some(sv => sameSearch(sv.state, cur));
+  $("svHint").textContent = !S.searches.length && !formOpen ? "Set filters, then save them. Claude emails you new matches each time listings are refreshed." : "";
+}
+$("svAdd").addEventListener("click", () => { $("svForm").hidden = false; renderSaved(); $("svName").focus(); });
+$("svCancel").addEventListener("click", () => { $("svForm").hidden = true; renderSaved(); });
+$("svForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = $("svName").value.trim(), notify = $("svNotify").checked; if (!name || !S.db) return;
+  try {
+    await S.db.collection("searches").add({ name, state: currentSearch(), notify, created: new Date().toISOString() });
+    $("svForm").reset(); $("svNotify").checked = true; $("svForm").hidden = true;
+    toast(notify ? `Saved "${name}". New matches will be emailed at each refresh.` : `Saved "${name}"`);
+  } catch (err) { writeFailed(err); }
+  renderSaved();
+});
+$("savedRow").addEventListener("click", async e => {
+  const d = e.target.closest("[data-svdel]");
+  if (d && S.db) { try { await S.db.doc("searches/" + d.dataset.svdel).delete(); } catch (err) { writeFailed(err); } return; }
+  const b = e.target.closest("[data-sv]"); if (!b) return;
+  const sv = S.searches.find(x => x._id === b.dataset.sv); if (!sv) return;
+  applySearch(sv.state);
+});
+function applySearch(st) {
+  $("q").value = st.q || ""; $("pMin").value = st.pMin ?? 0; $("pMax").value = st.pMax ?? 13; setAcres(st.min_acres || 0);
+  for (const k in S.f) { S.f[k] = !!st.f?.[k]; $(CHIP_IDS[k]).setAttribute("aria-pressed", S.f[k]); }
+  $("terrainF").value = st.terrain || "";
+  S.glance = st.glance ? { cat: st.glance.cat, key: st.glance.key } : null;
+  HIDDEN_RATINGS.clear(); (st.hidden || []).forEach(x => HIDDEN_RATINGS.add(x));
+  document.querySelectorAll("[data-rate]").forEach(b => b.setAttribute("aria-pressed", !HIDDEN_RATINGS.has(b.dataset.rate)));
+  if (st.sort) $("sort").value = st.sort;
+  S.radius = Math.min(st.radius || S.maxRadius, S.maxRadius); $("dist").value = S.radius;
+  S.shown = PAGE; render(); fitRadius();
+}
 
 /* ---------- data ---------- */
 if (matchMedia("(max-width: 760px)").matches) $("glanceBox").open = false;
@@ -1745,7 +2058,8 @@ drawTopo(); drawBase(); render(); fitRadius();
   db.doc("meta/info").onSnapshot(d => {
     const m = d.exists ? d.data() : null; S.meta = m;
     if (m) {
-      $("updated").textContent = `Updated ${m.generated}`;
+      const rf = m.refresh && !m.refresh.first_run ? m.refresh : null;
+      $("updated").textContent = `Updated ${m.generated}` + (rf ? ` · ${rf.new} new, ${rf.price_cuts} price cut${rf.price_cuts === 1 ? "" : "s"}, ${rf.removed} gone since last refresh` : "");
       setMaxRadius(m.radius_miles ?? 25);
       const src = (m.sources || [])[0] || "";
       const when = (src.match(/[A-Z][a-z]{2} \d{1,2},? \d{4}/) || [""])[0];
@@ -1754,6 +2068,10 @@ drawTopo(); drawBase(); render(); fitRadius();
   });
   db.collection("marks").onSnapshot(snap => {
     S.marks = Object.fromEntries(snap.docs.map(d => [d.id, d.data()])); liveRender();
+  });
+  db.collection("searches").onSnapshot(snap => {
+    S.searches = snap.docs.map(d => ({ ...d.data(), _id: d.id })).sort((a, b) => String(a.created).localeCompare(String(b.created)));
+    renderSaved();
   });
   db.collection("requests").onSnapshot(snap => {
     S.requests = snap.docs.map(d => ({ ...d.data(), _id: d.id })).sort((a, b) => String(a.created).localeCompare(String(b.created)));

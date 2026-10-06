@@ -8,7 +8,7 @@ import datetime
 import re
 import statistics
 
-from . import arcgis, geo
+from . import arcgis, buildability, geo
 from .config import (
     CENSUS_GEOCODER, LAYERS, NEIGHBOR_SEARCH_RADIUS_M, POINT_PARCEL_SNAP_M,
     ROAD_FRONTAGE_TOLERANCE_M, ROAD_SEARCH_RADIUS_M, WELL_SEARCH_RADIUS_M,
@@ -199,6 +199,17 @@ class Enricher:
                                            parcel.acres if parcel and parcel.acres else listing.lot_acres)
         if facts["terrain"] is None:
             facts["errors"].append("terrain: elevation service gave no answer")
+        for key, fn, args in (
+            ("soil", buildability.soil_septic, (shape, listing.lat, listing.lon)),
+            ("wildfire", buildability.wildfire, (shape, listing.lat, listing.lon)),
+            ("internet", buildability.internet, (listing.lat, listing.lon, state)),
+            ("power_company", buildability.power_company, (listing.lat, listing.lon, state)),
+        ):
+            try:
+                facts[key] = fn(*args)
+            except Exception as e:  # noqa: BLE001 - best-effort extras must never sink a parcel
+                facts[key] = None
+                facts["errors"].append(f"{key}: {e}")
         return facts
 
     @staticmethod

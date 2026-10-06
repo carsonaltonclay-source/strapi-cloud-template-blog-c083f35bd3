@@ -2,7 +2,7 @@
 
 import math
 
-from . import geo, remarks
+from . import buildability, cost, geo, remarks
 from .config import ROAD_FRONTAGE_TOLERANCE_M, SPOKANE_LAT, SPOKANE_LON
 from .models import HIGH, LOW, MEDIUM, Evidence, Finding, conf_rank
 
@@ -323,11 +323,25 @@ def analyze(listing, facts):
     if any(e.status == "water_rights" for e in text_ev["water"]):
         flags.append("Listing mentions water rights")
 
+    soil = facts.get("soil")
+    if soil and soil["rating"] == "Very limited" and findings["septic"].status not in ("installed", "sewer", "approved"):
+        why = f" ({', '.join(soil['reasons'][:2]).lower()})" if soil.get("reasons") else ""
+        flags.append(f"USDA soil survey rates these soils very limited for septic{why}: "
+                     "expect an engineered system or a hard perc test")
+    fire = facts.get("wildfire")
+    if fire and fire.get("class") in (4, 5):
+        flags.append(f"{fire['label']} wildfire hazard (USFS): defensible space and fire-safe building rules apply")
+
     parcel = facts.get("parcel")
     acres = listing.lot_acres or (parcel.acres if parcel else None)
     dist = (geo.miles_between(SPOKANE_LAT, SPOKANE_LON, listing.lat, listing.lon)
             if listing.lat is not None and listing.lon is not None else None)
-    return {
+    zcheck = buildability.zoning_check(", ".join(facts.get("zoning") or []), acres)
+    if zcheck and zcheck["status"] == "not_residential":
+        flags.append(zcheck["label"])
+    elif zcheck and zcheck["status"] == "undersized":
+        flags.append(zcheck["label"] + " — confirm it is a buildable lot of record")
+    result = {
         "id": listing.id,
         "source": listing.source,
         "address": listing.address or (parcel.site_address if parcel else ""),
@@ -355,11 +369,18 @@ def analyze(listing, facts):
         "rating": "Build-ready" if score >= 80 else "Needs work" if score >= 50 else "High risk",
         "shape": parcel_sketch(parcel),
         "terrain": facts.get("terrain"),
+        "soil": soil,
+        "wildfire": fire,
+        "internet": facts.get("internet"),
+        "power_company": facts.get("power_company"),
+        "zoning_check": zcheck,
         "flags": flags,
         "errors": facts.get("errors", []),
         "notes": facts.get("notes", []),
         "remarks": listing.remarks,
     }
+    result["cost"] = cost.all_in(result, facts)
+    return result
 
 
 def parcel_sketch(parcel, max_points=48):

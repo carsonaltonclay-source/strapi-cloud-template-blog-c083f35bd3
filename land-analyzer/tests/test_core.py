@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from spokane_land import geo, remarks  # noqa: E402
+from spokane_land import alerts, buildability, cost, geo, history, remarks  # noqa: E402
 from spokane_land.analyze import analyze  # noqa: E402
 from spokane_land.models import Listing, Parcel  # noqa: E402
 from spokane_land.sources.csv_import import load_csv  # noqa: E402
@@ -187,6 +187,110 @@ class AnalyzeTests(unittest.TestCase):
                                     sewer="Public Sewer", road_access="County Road"), facts())
         self.assertEqual(best["score"], 100)
         self.assertEqual(best["rating"], "Build-ready")
+
+
+class BuildabilityTests(unittest.TestCase):
+    def test_zoning_check(self):
+        z = buildability.zoning_check
+        self.assertEqual(z("Rural-5", 5)["status"], "ok")
+        self.assertEqual(z("Rural-5", 20)["status"], "splittable")
+        self.assertIn("4 lots", z("Rural-5", 20)["label"])
+        self.assertEqual(z("Rural Traditional", 5)["status"], "undersized")
+        self.assertEqual(z("Light Industrial", 5)["status"], "not_residential")
+        self.assertEqual(z("Low Density Residential", 0.2)["status"], "urban")
+        self.assertIsNone(z("", 5))
+        # Split-zoned parcel: the stricter zone governs.
+        self.assertEqual(z("Rural-5, Rural Conservation", 12)["zone"], "Rural Conservation")
+
+    def test_soil_and_fire_flags(self):
+        l = Listing(source="t", id="b1", price=100000, lot_acres=5, lat=LAT, lon=LON)
+        f = facts(soil={"rating": "Very limited", "worst": "Very limited", "reasons": ["Seepage, bottom layer"]},
+                  wildfire={"class": 4, "label": "High"}, zoning=["Rural Traditional"])
+        r = analyze(l, f)
+        flags = " ".join(r["flags"])
+        self.assertIn("very limited for septic", flags)
+        self.assertIn("High wildfire", flags)
+        self.assertIn("Smaller than Rural Traditional", flags)
+        self.assertEqual(r["zoning_check"]["status"], "undersized")
+
+
+class CostTests(unittest.TestCase):
+    def result(self, water, electric, septic, access, price=100000):
+        return {"price": price, "water": {"status": water}, "electric": {"status": electric},
+                "septic": {"status": septic}, "access": {"status": access}}
+
+    def test_ready_lot_costs_little(self):
+        c = cost.all_in(self.result("well", "on_site", "installed", "public_road"), {})
+        d = cost.DEFAULTS
+        self.assertEqual(c["improvements"], d["driveway"] + d["prep_flat"])
+        self.assertEqual(c["total"], 100000 + c["improvements"])
+
+    def test_raw_land(self):
+        f = {"wells": {"median_depth_ft": 200}, "neighbors": {"nearest_ft": 1150},
+             "soil": {"rating": "Very limited"}, "terrain": {"slope_class": "steep"}}
+        c = cost.all_in(self.result("needs_well", "likely_near", "required", "landlocked"), f)
+        d = cost.DEFAULTS
+        items = {i["key"]: i["cost"] for i in c["items"]}
+        self.assertEqual(items["water"], 200 * d["well_per_ft"] + d["well_system"])
+        self.assertEqual(items["power"], d["power_service"] + 1000 * d["power_per_ft"])
+        self.assertEqual(items["septic"], d["septic_engineered"])
+        self.assertEqual(items["access"], d["landlocked_access"])
+        self.assertEqual(items["prep"], d["prep_steep"])
+        self.assertEqual(c["inputs"], {"well_ft": 200, "power_ft": 1150, "soil": "Very limited"})
+
+    def test_custom_assumptions(self):
+        c = cost.all_in(self.result("needs_well", "on_site", "installed", "public_road"), {}, {"well_per_ft": 100})
+        self.assertEqual(c["items"][0]["cost"], 300 * 100 + cost.DEFAULTS["well_system"])
+
+
+class HistoryTests(unittest.TestCase):
+    def r(self, id_, price, **kw):
+        return dict({"id": id_, "price": price, "acres": 5, "parcel_id": None, "address": ""}, **kw)
+
+    def test_dedupe(self):
+        a = self.r("a", 100000, parcel_id="P1", address="21 S Harrison Rd Lot 1")
+        b = self.r("b", 100000, parcel_id="P1", address="21 S Harrison Rd", remarks="long " * 50)
+        c = self.r("c", 100000, parcel_id="P1", address="21 S Harrison Rd Lot 2")
+        d = self.r("d", 250000, parcel_id="P1", address="other")
+        out = history.dedupe([a, b, c, d])
+        self.assertEqual([x["id"] for x in out], ["b", "c", "d"])
+        self.assertIn("21 S Harrison Rd Lot 1", out[0]["also_listed_as"])
+
+    def test_refresh(self):
+        first = [self.r("a", 100000, days_on_market=10), self.r("b", 50000)]
+        info = history.apply(first, [], today="2026-10-01")
+        self.assertTrue(info["first_run"])
+        self.assertEqual(first[0]["first_seen"], "2026-09-21")
+        self.assertFalse(first[0]["is_new"])
+        second = [self.r("a", 90000), self.r("c", 70000)]
+        info = history.apply(second, first, today="2026-10-08")
+        self.assertEqual((info["new"], info["price_cuts"], info["removed"]), (1, 1, 1))
+        self.assertEqual(second[0]["price_cut"], 10000)
+        self.assertEqual(second[0]["first_seen"], "2026-09-21")
+        self.assertEqual([h["price"] for h in second[0]["price_history"]], [100000, 90000])
+        self.assertTrue(second[1]["is_new"])
+        self.assertEqual(info["removed_list"][0]["id"], "b")
+
+
+class AlertTests(unittest.TestCase):
+    def test_saved_search_matching(self):
+        def r(id_, **kw):
+            base = {"id": id_, "price": 90000, "acres": 6, "miles_from_spokane": 12, "score": 80, "rating": "Build-ready",
+                    "water": {"status": "well", "label": "Well"}, "electric": {"status": "at_road", "label": "At road"},
+                    "access": {"status": "public_road"}, "septic": {"status": "required"},
+                    "terrain": {"slope_class": "flat", "on_hill": False, "position": "flat"},
+                    "wildfire": {"class": 2}, "soil": {"rating": "Somewhat limited"}, "is_new": True}
+            base.update(kw)
+            return base
+        results = [r("a"), r("b", price=300000), r("c", is_new=False), r("d", water={"status": "needs_well", "label": "Needs well"}),
+                   r("e", is_new=False, price_cut=5000), r("f", wildfire={"class": 4})]
+        st = {"max_price": 150000, "min_acres": 5, "radius": 25, "f": {"water": True, "fire": True}}
+        groups = alerts.collect([{"name": "5ac", "notify": True, "state": st}, {"name": "off", "notify": False, "state": {}}], results)
+        self.assertEqual(len(groups), 1)
+        self.assertEqual([x["id"] for x in groups[0][1]], ["a", "e"])
+        subject, txt, _ = alerts.render(groups, "https://example.test")
+        self.assertIn("2 new matches", subject)
+        self.assertIn("PRICE CUT", txt)
 
 
 if __name__ == "__main__":

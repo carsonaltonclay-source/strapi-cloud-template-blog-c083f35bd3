@@ -4,7 +4,7 @@ import argparse
 import concurrent.futures
 import sys
 
-from . import geo
+from . import drive, geo, history
 from .analyze import analyze
 from .config import DEFAULT_RADIUS_MILES, SPOKANE_LAT, SPOKANE_LON
 from .enrich import Enricher
@@ -34,6 +34,9 @@ def build_parser():
     p.add_argument("--min-acres", type=float, help="drop listings smaller than this")
     p.add_argument("--out", default="output", help="output directory (default ./output)")
     p.add_argument("--workers", type=int, default=4, help="parallel GIS lookups (default 4)")
+    p.add_argument("--previous", metavar="FILE",
+                   help="last run's land_report.json: marks new listings, price cuts and removed listings")
+    p.add_argument("--no-drive", action="store_true", help="skip drive times (public OSRM routing server)")
     p.add_argument("--no-cache", action="store_true", help="ignore the 24h HTTP cache")
     return p
 
@@ -101,13 +104,30 @@ def main(argv=None):
         if args.min_acres is not None and r["acres"] is not None and r["acres"] < args.min_acres:
             continue
         kept.append(r)
+    before = len(kept)
+    kept = history.dedupe(kept)
+    if len(kept) < before:
+        print(f"Merged {before - len(kept)} duplicate listings of the same parcel", file=sys.stderr)
     kept.sort(key=lambda r: (-r["score"], r["price"] or 0))
+
+    if not args.no_drive:
+        minutes = drive.drive_minutes([(r["lat"], r["lon"]) for r in kept])
+        for r, m in zip(kept, minutes):
+            r["drive_min"] = m
+        print(f"Drive times: {sum(m is not None for m in minutes)}/{len(kept)}", file=sys.stderr)
+
+    previous = history.load_previous(args.previous) if args.previous else []
+    refresh = history.apply(kept, previous)
+    if previous:
+        print(f"Since last refresh: {refresh['new']} new, {refresh['price_cuts']} price cuts, "
+              f"{refresh['removed']} gone", file=sys.stderr)
 
     meta = {
         "title": f"Land within {args.radius:g} miles of Spokane",
         "center": [SPOKANE_LAT, SPOKANE_LON],
         "radius_miles": args.radius,
         "sources": sources,
+        "refresh": refresh,
     }
     paths = write_all(kept, args.out, meta)
     if args.db_export:

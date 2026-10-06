@@ -44,9 +44,15 @@ LAYERS = {
     # US Census TIGER roads (both states) for areas outside the county network.
     "tiger_local_roads": f"{TIGER_GIS}/Transportation/MapServer/8",
     "tiger_secondary_roads": f"{TIGER_GIS}/Transportation/MapServer/6",
+    # WA State Broadband Office: measured speed-test tiles and electric utility territories.
+    "wa_speed_tiles": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/ArcGIS/rest/services/Ookla_Fixed_Tiles_WA_Q1_2019_Q1_2023/FeatureServer/50",
+    "wa_electric_territories": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/ArcGIS/rest/services/Electric_Retail_Service_Territories/FeatureServer/0",
 }
 
 ELEVATION_IMAGE_SERVER = "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer"
+SDA_URL = "https://SDMDataAccess.sc.egov.usda.gov/Tabular/post.rest"
+WILDFIRE_IMAGE_SERVER = "https://imagery.geoplatform.gov/iipp/rest/services/Fire_Aviation/USFS_EDW_RMRS_WildfireHazardPotentialClassified/ImageServer"
+OSRM_URL = "https://router.project-osrm.org"
 CENSUS_GEOCODER = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
 REDFIN_CSV = "https://www.redfin.com/stingray/api/gis-csv"
 

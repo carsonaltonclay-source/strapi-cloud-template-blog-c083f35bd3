@@ -19,6 +19,18 @@ aquifer (stricter septic rules), lots under 1 acre (too small for a well +
 septic under WAC 246-272A), conflicting information, or a map pin that
 didn't land on a parcel.
 
+It also answers "can I actually build here, and what will it cost?":
+
+| Check | Source |
+| --- | --- |
+| **All-in estimate**: price + well, power line, septic, driveway, site prep | `cost.py` defaults (editable in the app) using nearby well depths, distance to the nearest home, soil rating and slope |
+| **Septic soils**: Not / Somewhat / Very limited for drain fields, with the reasons | USDA NRCS Soil Data Access |
+| **Zoning**: minimum lot size per home, room to split, zones that bar houses | Spokane County zoning code tables 616-3 and 618-3 |
+| **Wildfire hazard** (very low … very high) | USFS Wildfire Hazard Potential 2023 |
+| **Internet**: fastest measured home connection within a mile (WA) | Ookla speed tests via the WA State Broadband Office |
+| **Power company** with phone number (WA) | WA electric retail service territories |
+| **Drive time** to downtown Spokane | OSRM routing (public server) |
+
 Output: `output/land_report.html` (interactive map + filterable table),
 `land_report.csv` (open in Excel/Sheets) and `land_report.json`.
 
@@ -28,8 +40,12 @@ Output: `output/land_report.html` (interactive map + filterable table),
 
 Open it on your phone or computer. It shows every analyzed listing on a map and
 in a ranked list with filters (price, acres, has water, power close, not
-landlocked, starred). Tap **Why? Show the evidence** on any listing to see where
-each answer came from. You can star listings and keep notes.
+landlocked, septic-friendly soil, low fire risk, new or price cut, starred) and
+sorting by all-in cost or drive time. Tap **Why? Show the evidence** on any listing to see where
+each answer came from. You can star listings and keep notes, change the
+cost assumptions behind the all-in estimates (saved in your browser), and
+**save searches**: each saved search shows how many new listings match it, and
+searches with "Email me new matches" get an email after each refresh.
 
 To check a property you found somewhere else, use **Add a property to check**
 (parcel number, address, listing link, or coordinates), then ask Claude to
@@ -40,10 +56,21 @@ How a refresh works (for Claude or anyone maintaining it):
 
 1. Read the app's `requests` collection (ArtifactData `list`) and write the
    pending ones to `requests.json` as `[{"id", "text", "price", "note"}]`.
-2. Run `python -m spokane_land --redfin --csv <exports> --requests requests.json --db-export dbx`.
-3. Upload `dbx/listings/*.json` to the `listings` collection and `dbx/meta.json`
-   to `meta/info` (ArtifactData `batch`), delete listings that are no longer
-   for sale, and mark processed requests `status: "done"`.
+2. Run `python -m spokane_land --csv <exports> --requests requests.json --previous last/land_report.json --db-export dbx`.
+   `--previous` marks listings that are new since the last refresh, records
+   price cuts (`price_history`), and lists listings that disappeared
+   (`meta.refresh`). Duplicate listings of the same parcel are merged.
+3. Upload `dbx/chunks/*.json` to the `chunks` collection, `dbx/listings/*.json`
+   to `listings` and `dbx/meta.json` to `meta/info` (ArtifactData `batch`),
+   delete chunk documents beyond the new count, and mark processed requests
+   `status: "done"`.
+4. Alerts: read the `searches` collection to `searches.json` and run
+   `python -m spokane_land.alerts searches.json output/land_report.json --out alert`;
+   if anything matched, email `alert.html` to the owner.
+
+Refreshes run when asked. A hands-off daily refresh needs a listing feed you
+are allowed to pull automatically — the MLS RESO feed (`--reso`) through an
+agent; scraping listing sites on a schedule breaks their terms.
 
 The page is `app/land_finder.html`, built from `app/app_template.html` plus the
 vector base map `app/basemap.json`:
@@ -115,6 +142,10 @@ inputs; for complete coverage use the MLS feed or CSV exports:
 | Wells, parcels, municipal water service areas (Kootenai Co.) | Idaho Dept. of Water Resources |
 | Roads outside the county network | US Census TIGERweb |
 | Address → coordinates | US Census geocoder |
+| Septic suitability of soils | USDA NRCS Soil Data Access (`sdmdataaccess.sc.egov.usda.gov`) |
+| Wildfire Hazard Potential | USFS via `imagery.geoplatform.gov` |
+| Internet speed tests, electric service territories | WA State Broadband Office / WA UTC (ArcGIS Online) |
+| Drive times | OSRM public server (`router.project-osrm.org`) |
 
 Responses are cached for 24 h in `~/.cache/spokane-land` (`--no-cache` to
 skip; `LAND_ANALYZER_CACHE` to move it).
@@ -127,6 +158,14 @@ skip; `LAND_ANALYZER_CACHE` to move it).
   private wells are nearby, the report says so.
 * "Possibly landlocked" means no mapped road touches the parcel. A recorded
   easement may still give legal access — check the title report.
+* The all-in estimate is a planning number, not a bid. Well depth and power
+  distance come from neighbors, so a dry hole or a long line extension can
+  cost far more.
+* The USDA soil rating is mapped at a county scale; a site's actual soil logs
+  decide the septic design.
+* Zoning minimums apply to new lots. An older, smaller lot of record is often
+  still buildable — ask the county.
+* Internet and power-company data cover Washington only.
 * Septic feasibility needs soil logs from the health district (Spokane
   Regional Health District, Northeast Tri County, Panhandle, ...).
 

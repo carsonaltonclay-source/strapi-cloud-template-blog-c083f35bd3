@@ -14,6 +14,8 @@ CSV_FIELDS = [
     "septic", "septic_confidence", "access", "access_confidence",
     "address", "city", "state", "zip", "county", "parcel_id", "parcel_match", "zoning",
     "land_use", "days_on_market", "status", "mls", "source", "url", "lat", "lon",
+    "all_in_total", "drive_min", "soil_septic", "wildfire", "internet_mbps", "power_company", "zoning_check",
+    "first_seen", "price_cut",
     "flags", "water_detail", "electric_detail", "septic_detail", "access_detail",
 ]
 
@@ -33,6 +35,14 @@ def write_csv(results, path):
                 row[f"{cat}_confidence"] = r[cat]["confidence"]
                 row[f"{cat}_detail"] = _detail(r[cat])
             row["flags"] = " | ".join(r["flags"])
+            row["all_in_total"] = (r.get("cost") or {}).get("total") or ""
+            row["soil_septic"] = (r.get("soil") or {}).get("rating", "")
+            row["wildfire"] = (r.get("wildfire") or {}).get("label", "")
+            row["internet_mbps"] = (r.get("internet") or {}).get("down_mbps") or ""
+            row["power_company"] = (r.get("power_company") or {}).get("name", "")
+            row["zoning_check"] = (r.get("zoning_check") or {}).get("label", "")
+            row["drive_min"] = r.get("drive_min") if r.get("drive_min") is not None else ""
+            row["price_cut"] = r.get("price_cut") or ""
             t = r.get("terrain") or {}
             row["on_hill"] = {True: "yes", False: "no"}.get(t.get("on_hill"), "")
             row["terrain"] = f"{t['position_label']}; {t['slope_label']}" if t else ""
