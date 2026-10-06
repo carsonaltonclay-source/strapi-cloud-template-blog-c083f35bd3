@@ -1,0 +1,139 @@
+"""Command line entry point:  python -m spokane_land --help"""
+
+import argparse
+import concurrent.futures
+import sys
+
+from . import geo
+from .analyze import analyze
+from .config import DEFAULT_RADIUS_MILES, SPOKANE_LAT, SPOKANE_LON
+from .enrich import Enricher
+from .report import write_all
+from .sources import fetch_redfin, fetch_reso, load_csv, load_parcel_ids
+
+
+def build_parser():
+    p = argparse.ArgumentParser(
+        prog="spokane_land",
+        description="Analyse land for sale near Spokane: price, water, power, septic and road access.")
+    p.add_argument("--redfin", action="store_true",
+                   help="pull vacant-land listings from Redfin's download (partial coverage, see README)")
+    p.add_argument("--reso", action="store_true",
+                   help="pull active land listings from an MLS RESO Web API (needs RESO_BASE_URL/RESO_TOKEN)")
+    p.add_argument("--csv", action="append", default=[], metavar="FILE",
+                   help="import listings from a CSV export (repeatable)")
+    p.add_argument("--parcels", action="append", default=[], metavar="FILE",
+                   help="text file of parcel numbers to analyse (repeatable)")
+    p.add_argument("--radius", type=float, default=DEFAULT_RADIUS_MILES,
+                   help=f"search radius in miles from downtown Spokane (default {DEFAULT_RADIUS_MILES:g})")
+    p.add_argument("--max-price", type=float, help="drop listings above this price")
+    p.add_argument("--min-acres", type=float, help="drop listings smaller than this")
+    p.add_argument("--out", default="output", help="output directory (default ./output)")
+    p.add_argument("--workers", type=int, default=4, help="parallel GIS lookups (default 4)")
+    p.add_argument("--no-cache", action="store_true", help="ignore the 24h HTTP cache")
+    return p
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
+    if not (args.redfin or args.reso or args.csv or args.parcels):
+        build_parser().error("choose at least one source: --redfin, --reso, --csv FILE, --parcels FILE")
+
+    listings, sources = [], []
+    if args.redfin:
+        got = fetch_redfin(SPOKANE_LAT, SPOKANE_LON, args.radius, use_cache=not args.no_cache)
+        print(f"Redfin: {len(got)} land listings", file=sys.stderr)
+        listings += got
+        sources.append("Redfin download")
+    if args.reso:
+        got = fetch_reso(SPOKANE_LAT, SPOKANE_LON, args.radius)
+        print(f"MLS (RESO): {len(got)} land listings", file=sys.stderr)
+        listings += got
+        sources.append("MLS RESO feed")
+    for path in args.csv:
+        got = load_csv(path)
+        print(f"{path}: {len(got)} rows", file=sys.stderr)
+        listings += got
+        sources.append(f"CSV {path}")
+    for path in args.parcels:
+        got = load_parcel_ids(path)
+        print(f"{path}: {len(got)} parcels", file=sys.stderr)
+        listings += got
+        sources.append(f"Parcels {path}")
+
+    listings = _dedupe(listings)
+    if args.max_price is not None:
+        listings = [l for l in listings if l.price is None or l.price <= args.max_price]
+
+    enricher = Enricher(use_cache=not args.no_cache)
+    results = []
+
+    def work(listing):
+        facts = enricher.enrich(listing)
+        return analyze(listing, facts)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
+        futures = {pool.submit(work, l): l for l in listings}
+        for i, fut in enumerate(concurrent.futures.as_completed(futures), 1):
+            l = futures[fut]
+            try:
+                results.append(fut.result())
+            except Exception as e:  # keep going; one bad listing shouldn't stop the run
+                print(f"  ! {l.id}: {e}", file=sys.stderr)
+            print(f"\r  analysed {i}/{len(listings)}", end="", file=sys.stderr)
+    print(file=sys.stderr)
+
+    kept = []
+    for r in results:
+        if r["miles_from_spokane"] is not None and r["miles_from_spokane"] > args.radius:
+            continue
+        if args.min_acres is not None and r["acres"] is not None and r["acres"] < args.min_acres:
+            continue
+        kept.append(r)
+    kept.sort(key=lambda r: (-r["score"], r["price"] or 0))
+
+    meta = {
+        "title": f"Land within {args.radius:g} miles of Spokane",
+        "center": [SPOKANE_LAT, SPOKANE_LON],
+        "radius_miles": args.radius,
+        "sources": sources,
+    }
+    paths = write_all(kept, args.out, meta)
+    _print_summary(kept)
+    print(f"\nWrote {paths['html']}\n      {paths['csv']}\n      {paths['json']}")
+    return 0
+
+
+def _dedupe(listings):
+    """Same land from several sources: keep the one with the most detail."""
+    best = {}
+    for l in listings:
+        if l.lat is not None and l.lon is not None:
+            key = (round(l.lat, 4), round(l.lon, 4), round(l.price or 0, -2))
+        elif l.parcel_id:
+            key = ("pid", l.parcel_id)
+        else:
+            key = ("id", l.id)
+        richness = len(l.remarks) + 200 * bool(l.water_source or l.electric or l.sewer)
+        if key not in best or richness > best[key][0]:
+            best[key] = (richness, l)
+    return [v[1] for v in best.values()]
+
+
+def _print_summary(results):
+    print(f"\n{len(results)} listings\n")
+    hdr = f"{'Score':>5}  {'Price':>10}  {'Acres':>6}  {'Water':<24} {'Power':<24} {'Septic':<24} {'Access':<22} Address"
+    print(hdr)
+    print("-" * len(hdr))
+    for r in results[:60]:
+        price = f"${r['price']:,.0f}" if r["price"] else "?"
+        acres = f"{r['acres']:.2f}" if r["acres"] else "?"
+        print(f"{r['score']:>5}  {price:>10}  {acres:>6}  {r['water']['label'][:23]:<24} "
+              f"{r['electric']['label'][:23]:<24} {r['septic']['label'][:23]:<24} "
+              f"{r['access']['label'][:21]:<22} {r['address']}, {r['city']}")
+    if len(results) > 60:
+        print(f"... {len(results) - 60} more in the report")
+
+
+if __name__ == "__main__":
+    sys.exit(main())
