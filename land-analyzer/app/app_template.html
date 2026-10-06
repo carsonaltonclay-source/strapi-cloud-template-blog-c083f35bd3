@@ -93,13 +93,20 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
   padding-block: 10px; margin-block: -4px; background: color-mix(in srgb, var(--bg) 84%, transparent);
   -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2); }
 @media (min-width: 901px) { .controls { position: sticky; top: env(safe-area-inset-top, 0px); } }
-.controls input[type=search] { flex: 1 1 220px; min-width: 0; }
+.controls input[type=search] { flex: 1 1 170px; min-width: 0; }
 .controls input, .controls select { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 7px 14px; }
 .controls input[type=number] { width: 124px; }
 .chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
 .chip:hover { border-color: var(--muted); }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .chip.active-glance { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.dist { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 5px 14px 5px 12px; }
+.dist label { font-size: 13px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.dist b { font: 700 16px/1 var(--f-display); font-variant-numeric: tabular-nums; color: var(--accent); min-width: 2ch; text-align: right; display: inline-block; }
+.dist input[type=range] { width: 150px; accent-color: var(--accent); padding: 0; border: none; background: none; }
+@media (max-width: 520px) { .dist { flex: 1 1 100%; } .dist input[type=range] { flex: 1; width: auto; } }
+.m-dist { fill: color-mix(in srgb, var(--accent) 6%, transparent); stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: 7 5; vector-effect: non-scaling-stroke; pointer-events: none; }
+.m-dist-label { fill: var(--accent); font-family: var(--f-display); font-weight: 700; paint-order: stroke; stroke: var(--map-land); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
 .count-pill { font: 600 13px/1 var(--f-display); letter-spacing: 0.04em; color: var(--muted); margin-left: auto; white-space: nowrap; }
 
 .main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; align-items: start; }
@@ -246,6 +253,8 @@ footer { color: var(--muted); font-size: 12px; max-width: 80ch; }
     <input id="q" type="search" placeholder="Search address, town, parcel #" aria-label="Search">
     <input id="maxPrice" type="number" min="0" step="5000" placeholder="Max price" aria-label="Max price">
     <input id="minAcres" type="number" min="0" step="0.5" placeholder="Min acres" aria-label="Min acres">
+    <div class="dist"><label for="dist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.5"/></svg>Within <b id="distVal">25</b> mi</label>
+      <input id="dist" type="range" min="1" max="25" step="1" value="25" aria-describedby="distVal"></div>
     <button class="chip" id="fWater" aria-pressed="false"></button>
     <button class="chip" id="fPower" aria-pressed="false"></button>
     <button class="chip" id="fAccess" aria-pressed="false"></button>
@@ -265,10 +274,10 @@ footer { color: var(--muted); font-size: 12px; max-width: 80ch; }
   <div class="main">
     <div class="mapbox" id="mapbox">
       <svg id="map" viewBox="-420 -420 840 840" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of listings around Spokane">
-        <g id="base"></g><g id="dots"></g><g id="shields"></g><g id="labels"></g>
+        <g id="base"></g><g id="distG"></g><g id="dots"></g><g id="shields"></g><g id="labels"></g>
       </svg>
       <div class="legend"><span><i style="background:var(--good)"></i>Build-ready</span><span><i style="background:var(--warn)"></i>Needs work</span><span><i style="background:var(--bad)"></i>High risk</span>
-        <span class="sz"><i style="width:5px;height:5px"></i><i style="width:9px;height:9px"></i><i style="width:13px;height:13px"></i>&nbsp;acres</span></div>
+        <span class="sz"><i style="width:5px;height:5px"></i><i style="width:9px;height:9px"></i><i style="width:13px;height:13px"></i>&nbsp;acres</span><span class="muted">dashed ring = your distance</span></div>
       <div class="map-tools">
         <button id="zin" aria-label="Zoom in">+</button>
         <button id="zout" aria-label="Zoom out">−</button>
@@ -357,7 +366,9 @@ const GROUPS = {
 
 const PAGE = 40;
 const S = { listings: [], meta: null, requests: [], marks: {}, sel: null, hover: null, open: new Set(), shown: PAGE, glance: null,
-            f: { water: false, power: false, access: false, star: false }, db: null, canWrite: true, loaded: false, medians: {} };
+            f: { water: false, power: false, access: false, star: false }, db: null, canWrite: true, loaded: false, medians: {},
+            radius: 25, maxRadius: 25 };
+try { const v = +localStorage.getItem("landfinder.radius"); if (v > 0) S.radius = v; } catch (e) {}
 
 $("fWater").innerHTML = icon("water") + "Has water";
 $("fPower").innerHTML = icon("electric") + "Power close";
@@ -406,15 +417,17 @@ function drawBase() {
   BASEMAP.counties.forEach(c => el("path", { d: pathD(c.rings, true), class: "m-county" }, g));
   BASEMAP.roads.filter(r => r.kind !== "primary").forEach(r => el("path", { d: pathD(r.paths), class: "m-road2" }, g));
   BASEMAP.roads.filter(r => r.kind === "primary").forEach(r => el("path", { d: pathD(r.paths), class: "m-road" }, g));
-  [10, 25].forEach(m => el("circle", { cx: 0, cy: 0, r: m * MI, class: "m-ring" + (m === 10 ? " minor" : "") }, g));
+  [10, 25, 50].forEach(m => el("circle", { cx: 0, cy: 0, r: m * MI, class: "m-ring minor" }, g));
   el("path", { d: "M-7 0H7M0 -7V7", stroke: "var(--map-ring)", "stroke-width": 2, "vector-effect": "non-scaling-stroke" }, g);
-  const countyPts = { Spokane: [-117.2, 47.47], Stevens: [-117.75, 48.0], Lincoln: [-117.9, 47.45], Kootenai: [-116.9, 47.55],
-                      "Pend Oreille": [-117.12, 48.03], Whitman: [-117.4, 47.29] };
+  const countyPts = { Spokane: [-117.2, 47.47], Stevens: [-117.75, 48.12], Lincoln: [-118.1, 47.5], Kootenai: [-116.75, 47.62],
+                      "Pend Oreille": [-117.2, 48.3], Whitman: [-117.5, 47.08], Bonner: [-116.6, 48.3], Benewah: [-116.62, 47.2], Adams: [-118.45, 47.0] };
   for (const [name, [lon, lat]] of Object.entries(countyPts)) {
     const [x, y] = px(lon, lat); const t = el("text", { x, y, class: "m-label county", "data-s": 0.85, "text-anchor": "middle" }, L); t.textContent = name;
   }
   const keep = new Set(["Spokane", "Spokane Valley", "Cheney", "Deer Park", "Airway Heights", "Medical Lake", "Liberty Lake",
-    "Post Falls", "Rathdrum", "Coeur d'Alene", "Hayden", "Spangle", "Rockford", "Fairfield", "Reardan", "Millwood", "Latah", "Waverly", "Spirit Lake"]);
+    "Post Falls", "Rathdrum", "Coeur d'Alene", "Hayden", "Spangle", "Rockford", "Fairfield", "Reardan", "Millwood", "Latah", "Waverly", "Spirit Lake",
+    "Newport", "Chewelah", "Davenport", "Rosalia", "Tekoa", "Oakesdale", "Plummer", "Worley", "Priest River", "Athol", "Springdale", "Sprague",
+    "Harrington", "St. Maries", "Colfax", "Sandpoint", "Harrison"]);
   BASEMAP.towns.forEach(t => {
     const name = t.name.replace(/ (city|town)$/, "");
     if (!keep.has(name)) return;
@@ -427,7 +440,9 @@ function drawBase() {
 
   // 5. Highway shields, snapped onto the highway nearest each anchor
   const anchors = [["I- 90", "90", -117.72, 47.54], ["I- 90", "90", -117.06, 47.69], ["US Hwy 2", "2", -117.80, 47.645],
-                   ["US Hwy 2", "2", -117.33, 47.87], ["US Hwy 395", "395", -117.44, 47.92], ["US Hwy 195", "195", -117.41, 47.50]];
+                   ["US Hwy 2", "2", -117.33, 47.87], ["US Hwy 395", "395", -117.44, 47.92], ["US Hwy 195", "195", -117.41, 47.50],
+                   ["US Hwy 2", "2", -117.12, 48.12], ["US Hwy 395", "395", -117.74, 48.22], ["US Hwy 195", "195", -117.36, 47.18],
+                   ["US Hwy 95", "95", -116.79, 47.88], ["I- 90", "90", -118.05, 47.33]];
   for (const [name, num, lon, lat] of anchors) {
     const [ax, ay] = px(lon, lat); let best = null, bd = Infinity;
     BASEMAP.roads.filter(r => r.name === name || r.name.startsWith(name + " ")).forEach(r => r.paths.forEach(p => p.forEach(([x, y]) => {
@@ -455,6 +470,8 @@ function scaleMarks() {
   $("labels").querySelectorAll("text").forEach(t => t.setAttribute("font-size", (fs * +t.dataset.s).toFixed(2)));
   $("shields").querySelectorAll("g").forEach(g => g.setAttribute("transform", `translate(${g.dataset.x} ${g.dataset.y}) scale(${(1 / u).toFixed(3)})`));
   $("dots").querySelectorAll("circle").forEach(c => c.setAttribute("r", (+c.dataset.px / u).toFixed(2)));
+  const dl = $("distG").querySelector("text");
+  if (dl) { const R = S.radius * MI; dl.setAttribute("font-size", (13 / u).toFixed(2)); dl.setAttribute("x", (R * 0.7071 + 6 / u).toFixed(1)); dl.setAttribute("y", (R * 0.7071 + 14 / u).toFixed(1)); }
 }
 
 function svgPoint(evt) {
@@ -463,7 +480,7 @@ function svgPoint(evt) {
   return [vb.x - ox + (evt.clientX - r.left) * s, vb.y - oy + (evt.clientY - r.top) * s];
 }
 function zoom(f, cx, cy) {
-  const nw = Math.min(Math.max(vb.w * f, 40), 1400);
+  const nw = Math.min(Math.max(vb.w * f, 40), 2000);
   const k = nw / vb.w;
   cx ??= vb.x + vb.w / 2; cy ??= vb.y + vb.h / 2;
   vb = { x: cx - (cx - vb.x) * k, y: cy - (cy - vb.y) * k, w: nw, h: vb.h * k };
@@ -478,7 +495,7 @@ svg.addEventListener("pointermove", e => {
   vb = { ...drag.vb, x: drag.vb.x - (e.clientX - drag.x) * s, y: drag.vb.y - (e.clientY - drag.y) * s }; setVB();
 });
 ["pointerup", "pointercancel"].forEach(t => svg.addEventListener(t, () => { drag = null; svg.classList.remove("dragging"); }));
-$("zin").onclick = () => zoom(1 / 1.5); $("zout").onclick = () => zoom(1.5); $("zreset").onclick = () => { vb = { ...VB0 }; setVB(); };
+$("zin").onclick = () => zoom(1 / 1.5); $("zout").onclick = () => zoom(1.5); $("zreset").onclick = () => fitRadius();
 new ResizeObserver(() => { scaleMarks(); drawTopo(); }).observe(document.body);
 
 const byId = new Map();
@@ -497,6 +514,30 @@ function drawDots(list) {
   }
   scaleMarks();
 }
+/* distance ring */
+function drawDist() {
+  const g = $("distG"); g.textContent = "";
+  const R = S.radius * MI, u = unitPx() || 0.8;
+  el("circle", { cx: 0, cy: 0, r: R, class: "m-dist" }, g);
+  const t = el("text", { x: (R * 0.7071 + 6 / u).toFixed(1), y: (R * 0.7071 + 14 / u).toFixed(1), "text-anchor": "start", class: "m-dist-label", "font-size": (13 / u).toFixed(2) }, g);
+  t.textContent = `${S.radius} mi`;
+  $("distVal").textContent = S.radius;
+  $("radiusTag").textContent = `Spokane, WA · within ${S.radius} miles`;
+}
+function fitRadius() {
+  const half = Math.max(S.radius, 4) * MI * 1.12;
+  vb = { x: -half, y: -half, w: half * 2, h: half * 2 }; setVB();
+}
+let distRaf = 0;
+$("dist").addEventListener("input", e => {
+  S.radius = +e.target.value; S.shown = PAGE;
+  cancelAnimationFrame(distRaf); distRaf = requestAnimationFrame(render);
+});
+$("dist").addEventListener("change", () => {
+  try { localStorage.setItem("landfinder.radius", S.radius); } catch (e) {}
+  fitRadius();
+});
+
 // 4. hover preview card
 const tip = $("tip");
 function showTip(r, evt) {
@@ -558,6 +599,7 @@ function filtered() {
     if (S.f.access && has(r.access, ["landlocked"])) return false;
     if (S.f.star && !S.marks[r._doc]?.star) return false;
     if (g && !has(r[S.glance.cat], g[3])) return false;
+    if (r.miles_from_spokane != null && r.miles_from_spokane > S.radius && r.source !== "added") return false;
     return true;
   });
   const key = { score: r => -r.score, price: r => r.price ?? 1e12, ppa: r => r.price_per_acre ?? 1e12,
@@ -674,6 +716,7 @@ function render() {
         (rest > 0 ? `<button class="btn" id="showMore" style="align-self:center">Show ${Math.min(rest, PAGE)} more · ${rest.toLocaleString()} left</button>` : "")
       : `<div class="empty">${LAND_ICON}<b>Nothing matches these filters</b><span>Try a higher max price or clear a filter.</span></div>`;
   }
+  drawDist();
   drawDots(list);
   renderGlance(list);
   renderHeadline();
@@ -709,11 +752,11 @@ $("glance").addEventListener("click", e => {
 $("glanceChip").addEventListener("click", e => { if (e.target.closest("#clearGlance")) { S.glance = null; S.shown = PAGE; render(); } });
 
 function renderHeadline() {
-  const L = S.listings;
+  const L = S.listings.filter(r => r.miles_from_spokane == null || r.miles_from_spokane <= S.radius);
   if (!L.length) { $("headline").innerHTML = ""; return; }
   const ppa = L.map(r => r.price_per_acre).filter(v => v != null).sort((a, b) => a - b);
   const ready = L.filter(r => r.rating === "Build-ready").length;
-  $("headline").innerHTML = `<div class="hl-acc"><b>${L.length.toLocaleString()}</b><span>parcels for sale</span></div>
+  $("headline").innerHTML = `<div class="hl-acc"><b>${L.length.toLocaleString()}</b><span>parcels within ${S.radius} mi</span></div>
     <div><b>${kmoney(ppa[Math.floor(ppa.length / 2)])}</b><span>median per acre</span></div>
     <div><b>${ready}</b><span>build-ready</span></div>`;
 }
@@ -787,8 +830,17 @@ function writeFailed(err) {
 let toastTimer;
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 3200); }
 
+function setMaxRadius(max) {
+  S.maxRadius = Math.max(1, Math.round(max));
+  $("dist").max = S.maxRadius;
+  if (S.radius > S.maxRadius) S.radius = S.maxRadius;
+  $("dist").value = S.radius;
+  render(); fitRadius();
+}
+
 /* ---------- data ---------- */
-drawTopo(); drawBase(); render();
+$("dist").value = S.radius;
+drawTopo(); drawBase(); render(); fitRadius();
 (async () => {
   const db = window.claude?.use ? await window.claude.use("db") : null;
   if (!db) { S.db = false; $("addPanel").hidden = true; render(); return; }
@@ -814,7 +866,7 @@ drawTopo(); drawBase(); render();
     const m = d.exists ? d.data() : null; S.meta = m;
     if (m) {
       $("updated").textContent = `Updated ${m.generated}`;
-      $("radiusTag").textContent = `Spokane, WA · ${m.radius_miles ?? 25}-mile radius`;
+      setMaxRadius(m.radius_miles ?? 25);
       $("sub").textContent = `Every lot and acreage for sale near Spokane, checked against public records for water, power, septic and road access. Source: ${(m.sources || []).join(", ")}.`;
     }
   });

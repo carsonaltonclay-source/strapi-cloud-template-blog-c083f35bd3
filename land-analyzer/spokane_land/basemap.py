@@ -12,7 +12,7 @@ import sys
 from . import arcgis
 from .config import TIGER_GIS
 
-BBOX = {"xmin": -118.02, "ymin": 47.26, "xmax": -116.82, "ymax": 48.07,
+BBOX = {"xmin": -118.62, "ymin": 46.88, "xmax": -116.22, "ymax": 48.44,
         "spatialReference": {"wkid": 4326}}
 GEN = 0.0015  # degrees of server-side generalisation (~120 m)
 
