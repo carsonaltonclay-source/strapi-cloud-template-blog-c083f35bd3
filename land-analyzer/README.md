@@ -48,6 +48,9 @@ How a refresh works (for Claude or anyone maintaining it):
 The page is `app/land_finder.html`, built from `app/app_template.html` plus the
 vector base map `app/basemap.json`:
 `python -m spokane_land.basemap --app app/basemap.json app/land_finder.html`.
+The map's shaded relief, `app/hillshade.jpg`, is a USGS 3DEP "Hillshade
+Multidirectional" export for the same bounding box (published alongside the
+page).
 
 ## Run it
 

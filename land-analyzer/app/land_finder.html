@@ -7,8 +7,9 @@
 :root {
   --bg: #edf0eb; --panel: #fafbf8; --ink: #18211d; --muted: #58665f; --line: #d3dad3; --soft: #e3e8e1;
   --accent: #2c5b46; --accent-ink: #ffffff; --accent-soft: #d6e6dc; --topo: #9fb5a5;
-  --good: #1d6f43; --good-bg: #dcefe2; --warn: #9a6200; --warn-bg: #f7ebcc; --bad: #a12f26; --bad-bg: #f6deda;
+  --good: #22704a; --good-bg: #e0f1e6; --warn: #94640a; --warn-bg: #fbf0d4; --bad: #b03d33; --bad-bg: #f9e2de;
   --unk: #5b6660; --unk-bg: #e6e9e4; --star: #d39b1c;
+  --bar-good: #3f9466; --bar-ok: #e0a53a; --bar-bad: #d0604f; --bar-unk: #9aa59f;
   --map-land: #e9ece2; --map-water: #b7d0df; --map-water-line: #8fb3c8; --map-road: #c08a3e; --map-road2: #d5b27a;
   --map-county: #8d978f; --map-town: #d9ddd2; --map-label: #3f4b45; --map-ring: #2c5b46;
   --shield-i: #24508f; --shield-us: #ffffff; --shield-us-ink: #18211d;
@@ -23,6 +24,7 @@
     --accent: #7fc4a2; --accent-ink: #10201a; --accent-soft: #1f3a2d; --topo: #34473b;
     --good: #8fd6ac; --good-bg: #1c3427; --warn: #efc36b; --warn-bg: #362c19; --bad: #f19a8f; --bad-bg: #3b2320;
     --unk: #a6b0aa; --unk-bg: #262d28; --star: #f0c04a;
+    --bar-good: #5fbf8a; --bar-ok: #e9b65a; --bar-bad: #e57a6c; --bar-unk: #6f7a74;
     --map-land: #1d2420; --map-water: #24384a; --map-water-line: #3c5a72; --map-road: #b98a4c; --map-road2: #7d6646;
     --map-county: #4f5a53; --map-town: #2a322d; --map-label: #c3cdc7; --map-ring: #7fc4a2;
     --shield-i: #3a6fb8; --shield-us: #e5ebe6; --shield-us-ink: #121714;
@@ -34,6 +36,7 @@
   --accent: #7fc4a2; --accent-ink: #10201a; --accent-soft: #1f3a2d; --topo: #34473b;
   --good: #8fd6ac; --good-bg: #1c3427; --warn: #efc36b; --warn-bg: #362c19; --bad: #f19a8f; --bad-bg: #3b2320;
   --unk: #a6b0aa; --unk-bg: #262d28; --star: #f0c04a;
+  --bar-good: #5fbf8a; --bar-ok: #e9b65a; --bar-bad: #e57a6c; --bar-unk: #6f7a74;
   --map-land: #1d2420; --map-water: #24384a; --map-water-line: #3c5a72; --map-road: #b98a4c; --map-road2: #7d6646;
   --map-county: #4f5a53; --map-town: #2a322d; --map-label: #c3cdc7; --map-ring: #7fc4a2;
   --shield-i: #3a6fb8; --shield-us: #e5ebe6; --shield-us-ink: #121714;
@@ -63,24 +66,42 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 .eyebrow { font: 600 12px/1 var(--f-display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
   display: inline-flex; align-items: center; gap: 8px; }
 .eyebrow::before { content: ""; width: 18px; height: 2px; background: currentColor; }
-.mast h1 { font-size: clamp(32px, 5vw, 50px); font-weight: 700; line-height: 0.98; letter-spacing: -0.005em; margin-top: 10px; }
+.brand { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.mark { width: clamp(38px, 5vw, 50px); height: clamp(38px, 5vw, 50px); flex: none; }
+.mark path { fill: var(--accent); } .mark .c { fill: none; stroke: var(--accent-ink); stroke-width: 2; stroke-linecap: round; }
+.mast h1 { font-size: clamp(32px, 5vw, 50px); font-weight: 700; line-height: 0.98; letter-spacing: -0.005em; }
+.sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.sources span { font-size: 11.5px; color: var(--muted); border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 85%, transparent); border-radius: 999px; padding: 2px 9px; }
 .mast .lede { color: var(--muted); max-width: 60ch; margin-top: 8px; }
-.headline { display: flex; gap: 22px; flex-wrap: wrap; }
-.headline div { display: flex; flex-direction: column; }
+.headline { display: flex; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04); }
+.headline div { display: flex; flex-direction: column; padding: 12px 18px; min-width: 0; }
+.headline div + div { border-left: 1px solid var(--line); }
+@media (max-width: 760px) { .headline div { flex: 1 1 0; padding: 10px 12px; } .headline b { font-size: 30px !important; } }
 .headline b { font: 700 40px/1 var(--f-display); font-variant-numeric: tabular-nums; }
 .headline span { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
 .headline .hl-acc b { color: var(--accent); }
 
 /* 2. Market at a glance */
+.glance-box { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.glance-box summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 10px 16px; }
+.glance-box summary::-webkit-details-marker { display: none; }
+.g-title { font: 600 13px/1 var(--f-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); white-space: nowrap; }
+.g-sum { color: var(--muted); font-size: 12.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.glance-box .chev { transition: transform .2s; color: var(--muted); }
+.glance-box[open] .chev { transform: rotate(180deg); }
+.glance-box[open] .g-sum { visibility: hidden; }
+.glance-box .glance { border: none; border-top: 1px solid var(--line); border-radius: 0 0 var(--radius) var(--radius); }
 .glance { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px;
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; }
 @media (max-width: 760px) { .glance { grid-template-columns: 1fr; } }
 .g-row { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 4px 12px; align-items: center; }
 .g-row .g-k { display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--f-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); grid-row: span 2; }
-.g-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--soft); gap: 2px; }
+.g-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--soft); gap: 3px; }
+.g-bar button:first-child { border-radius: 5px 0 0 5px; } .g-bar button:last-child { border-radius: 0 5px 5px 0; }
 .g-bar button { border: none; padding: 0; min-width: 4px; height: 100%; }
-.g-bar button.good, .g-leg .good i { background: var(--good); } .g-bar button.ok, .g-leg .ok i { background: var(--warn); }
-.g-bar button.bad, .g-leg .bad i { background: var(--bad); } .g-bar button.unk, .g-leg .unk i { background: var(--unk); }
+.g-bar button.good, .g-leg .good i { background: var(--bar-good); } .g-bar button.ok, .g-leg .ok i { background: var(--bar-ok); }
+.g-bar button.bad, .g-leg .bad i { background: var(--bar-bad); } .g-bar button.unk, .g-leg .unk i { background: var(--bar-unk); }
 .g-bar button[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: 1px; }
 .g-bar.dim button[aria-pressed="false"] { opacity: 0.35; }
 .g-leg { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--muted); }
@@ -89,16 +110,29 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 .g-leg i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
 
 /* 10. Sticky glass filter bar */
-.controls { position: relative; z-index: 20; display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center;
+.controls { position: relative; z-index: 20; display: flex; flex-direction: column; gap: 8px;
   padding-block: 10px; margin-block: -4px; background: color-mix(in srgb, var(--bg) 84%, transparent);
   -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2); }
 @media (min-width: 901px) { .controls { position: sticky; top: env(safe-area-inset-top, 0px); } }
-.controls input[type=search] { flex: 1 1 170px; min-width: 0; }
+.c-row { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.controls input[type=search] { flex: 1 1 240px; min-width: 0; }
+.controls .chips input[type=number] { width: 112px; }
+.chip-select { padding-block: 0; padding-right: 4px; }
+.controls .chip-select select { border: none; background: transparent; padding: 6px 4px; border-radius: 999px; font-size: 13px; }
+.clear { border: none; background: none; color: var(--accent); font-weight: 600; font-size: 13px; padding: 4px 6px; }
+@media (max-width: 760px) {
+  .c-row.chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; padding-bottom: 2px; }
+  .c-row.chips::-webkit-scrollbar { display: none; }
+  .c-row.chips > * { flex: none; }
+  .controls #sort { flex: 1 1 100%; }
+}
 .controls input, .controls select { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 7px 14px; }
 .controls input[type=number] { width: 124px; }
 .chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
 .chip:hover { border-color: var(--muted); }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chip-select.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chip-select.on select { color: var(--accent-ink); }
 .chip.active-glance { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .dist { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 5px 14px 5px 12px; }
 .dist label { font-size: 13px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
@@ -113,10 +147,10 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 @media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
 
 /* Map */
-.mapbox { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 72px); background: var(--map-land); border: 1px solid var(--line);
+.mapbox { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 112px); background: var(--map-land); border: 1px solid var(--line);
   border-radius: var(--radius); overflow: hidden; }
 @media (max-width: 900px) { .mapbox { position: relative; top: 0; } }
-#map { display: block; width: 100%; height: min(calc(100vh - 110px), 700px); touch-action: none; cursor: grab; }
+#map { display: block; width: 100%; height: min(calc(100vh - 130px), 700px); touch-action: none; cursor: grab; }
 @media (max-width: 900px) { #map { height: 400px; } }
 #map.dragging { cursor: grabbing; }
 .map-tools { position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 6px; }
@@ -127,8 +161,18 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
 .legend .sz { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); }
 .legend .sz i { background: var(--muted); margin: 0; }
+@media (max-width: 520px) { .north { display: none; } .legend .muted { display: none; } }
+.m-relief { mix-blend-mode: multiply; opacity: 0.9; pointer-events: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .m-relief { opacity: 1; filter: contrast(1.7) brightness(1.05); } }
+:root[data-theme="dark"] .m-relief { opacity: 1; filter: contrast(1.7) brightness(1.05); }
+.m-callout { fill: var(--ink); font-family: var(--f-display); font-weight: 700; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+.scale { position: absolute; left: 10px; bottom: 10px; background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line);
+  border-radius: 8px; padding: 4px 8px 5px; font: 600 11px/1 var(--f-display); letter-spacing: 0.04em; color: var(--muted); }
+.scale i { display: block; height: 5px; border: 1.5px solid var(--ink); border-top: none; margin-top: 4px; }
+.north { position: absolute; right: 10px; top: 10px; width: 34px; height: 34px; border-radius: 50%; background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 1px solid var(--line); display: grid; place-items: center; }
 .m-county { fill: none; stroke: var(--map-county); stroke-width: 1; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
-.m-town { fill: var(--map-town); stroke: none; }
+.m-town { fill: var(--map-town); fill-opacity: 0.75; stroke: none; }
 .m-water { fill: var(--map-water); stroke: var(--map-water-line); stroke-width: 0.6; vector-effect: non-scaling-stroke; }
 .m-river { fill: none; stroke: var(--map-water-line); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
 .m-road { fill: none; stroke: var(--map-road); stroke-width: 2.2; vector-effect: non-scaling-stroke; stroke-linecap: round; }
@@ -138,7 +182,7 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 #labels, #shields { pointer-events: none; }
 .m-label { fill: var(--map-label); font-family: var(--f-display); font-weight: 600; paint-order: stroke; stroke: var(--map-land); stroke-width: 3.5px; stroke-linejoin: round; }
 .m-label.county { font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
-.m-dot { stroke: var(--panel); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; fill-opacity: 0.86; }
+.m-dot { stroke: #fff; stroke-width: 1.2; stroke-opacity: 0.9; vector-effect: non-scaling-stroke; cursor: pointer; fill-opacity: 0.9; }
 .m-dot:hover, .m-dot.hl { fill-opacity: 1; stroke: var(--ink); stroke-width: 2; }
 .m-dot.dim { fill-opacity: 0.18; stroke-opacity: 0.3; }
 .m-halo { fill: none; stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; transform-box: fill-box; transform-origin: center; }
@@ -153,10 +197,38 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 
 /* Cards */
 .list, #cards { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.list-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0;
-  transition: border-color .15s, box-shadow .15s; }
-.card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.list-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.list-head .src { display: block; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--panel); }
+.seg button { border: none; background: none; border-radius: 999px; padding: 5px 14px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.rowlist { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.lrow { display: grid; grid-template-columns: 6px 88px 62px minmax(0, 1fr) auto 58px; gap: 12px; align-items: center; width: 100%; text-align: left;
+  border: none; background: none; padding: 9px 12px 9px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.lrow:first-child { border-top: none; }
+.lrow:hover, .lrow.sel { background: var(--soft); }
+.lrow .sp { align-self: stretch; background: var(--stripe); margin-block: -9px; }
+.lrow.r-good { --stripe: var(--bar-good); } .lrow.r-ok { --stripe: var(--bar-ok); } .lrow.r-bad { --stripe: var(--bar-bad); }
+.lrow .p { font: 700 16px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.lrow .a { color: var(--muted); font-variant-numeric: tabular-nums; }
+.lrow .w { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lrow .ic { display: flex; gap: 3px; }
+.lrow .ic i { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; }
+.lrow .ic svg { width: 13px; height: 13px; }
+.lrow .m { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 520px) { .lrow { grid-template-columns: 6px 74px minmax(0, 1fr) auto; } .lrow .a, .lrow .m { display: none; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 14px 14px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0;
+  position: relative; overflow: hidden; transition: border-color .15s, box-shadow .2s, transform .2s; }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--stripe, var(--line)); }
+.card.r-good { --stripe: var(--bar-good); } .card.r-ok { --stripe: var(--bar-ok); } .card.r-bad { --stripe: var(--bar-bad); }
+.card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); box-shadow: 0 6px 18px rgb(0 0 0 / 0.07); }
+@media (prefers-reduced-motion: no-preference) {
+  .card:hover { transform: translateY(-1px); }
+  .detail { animation: open .25s ease-out; }
+  .star[aria-pressed="true"] { animation: pop .3s ease-out; }
+}
+@keyframes open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes pop { 50% { transform: scale(1.18); } }
 .card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .card.rise { animation: rise .35s ease-out both; animation-delay: calc(var(--i, 0) * 35ms); }
@@ -177,7 +249,7 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 .ring span { width: 42px; height: 42px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; text-align: center;
   font: 700 18px/1 var(--f-display); font-variant-numeric: tabular-nums; }
 .ring small { display: block; font: 600 8.5px/1.2 var(--f-body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.ring.good { --c: var(--good); } .ring.ok { --c: var(--warn); } .ring.bad { --c: var(--bad); }
+.ring.good { --c: var(--bar-good); } .ring.ok { --c: var(--bar-ok); } .ring.bad { --c: var(--bar-bad); }
 /* 7. Utility icon row */
 .utils { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; list-style: none; margin: 0; padding: 0; }
 @media (max-width: 520px) { .utils { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -185,6 +257,13 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 .utils li span { min-width: 0; overflow-wrap: anywhere; }
 .good { color: var(--good); background: var(--good-bg); } .ok { color: var(--warn); background: var(--warn-bg); }
 .bad { color: var(--bad); background: var(--bad-bg); } .unk { color: var(--unk); background: var(--unk-bg); }
+/* Spec strip */
+.spec { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.spec div { padding: 6px 10px; min-width: 0; }
+.spec div + div { border-left: 1px solid var(--line); }
+.spec span { display: block; font: 600 10px/1.3 var(--f-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.spec b { display: block; font: 700 17px/1.2 var(--f-display); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 420px) { .spec div { padding: 5px 7px; } .spec b { font-size: 15px; } }
 /* Terrain row */
 .terrain { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
 .hill-badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 10px 3px 8px; font-weight: 600; font-size: 12.5px; }
@@ -204,7 +283,9 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 .v-tag { font-weight: 600; }
 .v-tag.below { color: var(--good); } .v-tag.above { color: var(--bad); }
 .flags { display: flex; flex-wrap: wrap; gap: 6px; }
-.flag { font-size: 12px; color: var(--bad); background: var(--bad-bg); border-radius: 6px; padding: 2px 8px; }
+.flag { font-size: 12px; color: var(--warn); background: var(--warn-bg); border-radius: 8px; padding: 3px 9px 3px 7px; display: inline-flex; gap: 6px; align-items: flex-start; line-height: 1.4; }
+.flag svg { width: 13px; height: 13px; flex: none; margin-top: 2px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.flag.severe { color: var(--bad); background: var(--bad-bg); }
 .c-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .more { border: none; background: none; color: var(--accent); font-weight: 600; padding: 0; display: inline-flex; gap: 4px; align-items: center; }
 .star { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; font-size: 13px; line-height: 1; color: var(--muted); padding: 6px 10px; display: inline-flex; gap: 5px; align-items: center; }
@@ -251,43 +332,56 @@ footer { color: var(--muted); font-size: 12px; max-width: 80ch; }
     <svg class="topo" id="topo" aria-hidden="true"></svg>
     <div>
       <span class="eyebrow" id="radiusTag">Spokane, WA · 25-mile radius</span>
-      <h1>Spokane Land Finder</h1>
-      <p class="lede" id="sub">Every lot and acreage for sale near Spokane, checked against public records for water, power, septic and road access.</p>
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c-8 0-14 6-14 14 0 10 14 26 14 26s14-16 14-26c0-8-6-14-14-14z"/><path class="c" d="M17 19c3-4 11-4 14 0M19.5 23c2.5-2 6.5-2 9 0M15 15c5-6 13-6 18 0"/></svg>
+        <h1>Spokane Land Finder</h1>
+      </div>
+      <p class="lede">Every lot and acreage for sale near Spokane, checked against public records for water, power, septic, road access and terrain.</p>
+      <div class="sources" id="sources"><span>Listings: Zillow</span><span>USGS elevation</span><span>County parcels &amp; roads</span><span>State well logs</span></div>
     </div>
     <div class="headline" id="headline" aria-live="polite"></div>
   </header>
 
-  <section class="glance" id="glance" aria-label="Market at a glance"></section>
+  <details class="glance-box" id="glanceBox" open>
+    <summary><span class="g-title">Market at a glance</span><span class="g-sum" id="glanceSum"></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+    <section class="glance" id="glance" aria-label="Market at a glance"></section>
+  </details>
 
   <section class="controls" aria-label="Filters">
-    <input id="q" type="search" placeholder="Search address, town, parcel #" aria-label="Search">
-    <input id="maxPrice" type="number" min="0" step="5000" placeholder="Max price" aria-label="Max price">
-    <input id="minAcres" type="number" min="0" step="0.5" placeholder="Min acres" aria-label="Min acres">
-    <div class="dist"><label for="dist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.5"/></svg>Within <b id="distVal">25</b> mi</label>
-      <input id="dist" type="range" min="1" max="25" step="1" value="25" aria-describedby="distVal"></div>
-    <button class="chip" id="fWater" aria-pressed="false"></button>
-    <button class="chip" id="fPower" aria-pressed="false"></button>
-    <button class="chip" id="fAccess" aria-pressed="false"></button>
-    <select id="terrainF" aria-label="Terrain">
-      <option value="">Any terrain</option>
-      <option value="hill">On a hill</option>
-      <option value="hilltop">Hilltop / ridge (views)</option>
-      <option value="hillside">Hillside</option>
-      <option value="flat">Flat or gentle</option>
-      <option value="notsteep">Not steep</option>
-      <option value="valley">Valley / low ground</option>
-    </select>
-    <button class="chip" id="fStar" aria-pressed="false">★ Starred</button>
-    <span id="glanceChip"></span>
-    <select id="sort" aria-label="Sort">
-      <option value="score">Best score</option>
-      <option value="value">Best value ($/acre vs. similar)</option>
-      <option value="price">Lowest price</option>
-      <option value="ppa">Lowest $/acre</option>
-      <option value="acres">Most acres</option>
-      <option value="miles">Closest to Spokane</option>
-    </select>
-    <span class="count-pill" id="countPill"></span>
+    <div class="c-row">
+      <input id="q" type="search" placeholder="Search address, town, parcel #" aria-label="Search">
+      <div class="dist"><label for="dist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.5"/></svg>Within <b id="distVal">25</b> mi</label>
+        <input id="dist" type="range" min="1" max="25" step="1" value="25" aria-describedby="distVal"></div>
+      <select id="sort" aria-label="Sort">
+        <option value="score">Sort: Best score</option>
+        <option value="value">Sort: Best value</option>
+        <option value="price">Sort: Lowest price</option>
+        <option value="ppa">Sort: Lowest $/acre</option>
+        <option value="acres">Sort: Most acres</option>
+        <option value="miles">Sort: Closest</option>
+      </select>
+    </div>
+    <div class="c-row chips">
+      <input id="maxPrice" type="number" min="0" step="5000" placeholder="Max price" aria-label="Max price">
+      <input id="minAcres" type="number" min="0" step="0.5" placeholder="Min acres" aria-label="Min acres">
+      <button class="chip" id="fWater" aria-pressed="false"></button>
+      <button class="chip" id="fPower" aria-pressed="false"></button>
+      <button class="chip" id="fAccess" aria-pressed="false"></button>
+      <label class="chip chip-select" for="terrainF"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m2 20 7-12 4 6 3-4 6 10z"/></svg>
+        <select id="terrainF" aria-label="Terrain">
+          <option value="">Any terrain</option>
+          <option value="hill">On a hill</option>
+          <option value="hilltop">Hilltop / ridge (views)</option>
+          <option value="hillside">Hillside</option>
+          <option value="flat">Flat or gentle</option>
+          <option value="notsteep">Not steep</option>
+          <option value="valley">Valley / low ground</option>
+        </select></label>
+      <button class="chip" id="fStar" aria-pressed="false">★ Starred</button>
+      <span id="glanceChip"></span>
+      <button class="clear" id="clearAll" hidden>Clear filters</button>
+      <span class="count-pill" id="countPill"></span>
+    </div>
   </section>
 
   <div class="main">
@@ -295,7 +389,7 @@ footer { color: var(--muted); font-size: 12px; max-width: 80ch; }
       <svg id="map" viewBox="-420 -420 840 840" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of listings around Spokane">
         <g id="base"></g><g id="distG"></g><g id="dots"></g><g id="shields"></g><g id="labels"></g>
       </svg>
-      <div class="legend"><span><i style="background:var(--good)"></i>Build-ready</span><span><i style="background:var(--warn)"></i>Needs work</span><span><i style="background:var(--bad)"></i>High risk</span>
+      <div class="legend"><span><i style="background:var(--bar-good)"></i>Build-ready</span><span><i style="background:var(--bar-ok)"></i>Needs work</span><span><i style="background:var(--bar-bad)"></i>High risk</span>
         <span class="sz"><i style="width:5px;height:5px"></i><i style="width:9px;height:9px"></i><i style="width:13px;height:13px"></i>&nbsp;acres</span><span class="muted">dashed ring = your distance</span></div>
       <div class="map-tools">
         <button id="zin" aria-label="Zoom in">+</button>
@@ -303,10 +397,13 @@ footer { color: var(--muted); font-size: 12px; max-width: 80ch; }
         <button id="zreset" aria-label="Reset map" style="font-size:13px">⤢</button>
       </div>
       <div class="tip" id="tip" hidden></div>
+      <div class="scale" id="scale" aria-hidden="true"><span id="scaleLabel">5 mi</span><i id="scaleBar" style="width:80px"></i></div>
+      <div class="north" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3l4 9h-8z" fill="var(--ink)"/><path d="M12 21l-4-9h8z" fill="var(--line)"/></svg></div>
     </div>
 
     <section class="list" aria-label="Listings">
-      <div class="list-head"><h2 id="countLabel">Listings</h2><span class="src" id="updated"></span></div>
+      <div class="list-head"><div><h2 id="countLabel">Listings</h2><span class="src" id="updated"></span></div>
+        <div class="seg" role="group" aria-label="View"><button id="vCards" aria-pressed="true">Cards</button><button id="vList" aria-pressed="false">List</button></div></div>
       <div id="cards"></div>
     </section>
   </div>
@@ -345,7 +442,7 @@ const kmoney = v => v == null ? "—" : v >= 1e6 ? "$" + (v / 1e6).toFixed(v >= 
 const px = (lon, lat) => [(lon - LON0) * K * 1000, (LAT0 - lat) * 1000];
 const tone = f => !f || f.status === "unknown" ? "unk" : f.points >= 19 ? "good" : f.points >= 12 ? "ok" : "bad";
 const ratingTone = r => r === "Build-ready" ? "good" : r === "Needs work" ? "ok" : "bad";
-const toneVar = t => t === "ok" ? "var(--warn)" : `var(--${t})`;
+const toneVar = t => `var(--bar-${t})`;
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const ICON = {
@@ -387,6 +484,8 @@ const GROUPS = {
 };
 
 const PAGE = 40;
+let VIEW = "cards";
+try { VIEW = localStorage.getItem("landfinder.view") || "cards"; } catch (e) {}
 const S = { listings: [], meta: null, requests: [], marks: {}, sel: null, hover: null, open: new Set(), shown: PAGE, glance: null,
             f: { water: false, power: false, access: false, star: false }, db: null, canWrite: true, loaded: false, medians: {},
             radius: 25, maxRadius: 25 };
@@ -433,6 +532,9 @@ const pathD = (parts, close) => parts.map(p => p.map(([x, y], i) => {
 function drawBase() {
   const g = $("base"), L = $("labels"), SH = $("shields");
   if (!BASEMAP) return;
+  // Shaded relief (USGS 3DEP), georeferenced to the base map's bounding box
+  const [rx0, ry0] = px(BASEMAP.bbox[0], BASEMAP.bbox[3]), [rx1, ry1] = px(BASEMAP.bbox[2], BASEMAP.bbox[1]);
+  el("image", { href: "hillshade.jpg", x: rx0, y: ry0, width: rx1 - rx0, height: ry1 - ry0, preserveAspectRatio: "none", class: "m-relief" }, g);
   BASEMAP.towns.forEach(t => el("path", { d: pathD(t.rings, true), class: "m-town", "fill-rule": "evenodd" }, g));
   BASEMAP.water.forEach(w => el("path", { d: pathD(w.rings, true), class: "m-water", "fill-rule": "evenodd" }, g));
   BASEMAP.rivers.forEach(r => el("path", { d: pathD(r.paths), class: "m-river" }, g));
@@ -492,6 +594,10 @@ function scaleMarks() {
   $("labels").querySelectorAll("text").forEach(t => t.setAttribute("font-size", (fs * +t.dataset.s).toFixed(2)));
   $("shields").querySelectorAll("g").forEach(g => g.setAttribute("transform", `translate(${g.dataset.x} ${g.dataset.y}) scale(${(1 / u).toFixed(3)})`));
   $("dots").querySelectorAll("circle").forEach(c => c.setAttribute("r", (+c.dataset.px / u).toFixed(2)));
+  $("dots").querySelectorAll("text").forEach(t => { t.setAttribute("font-size", (13 / u).toFixed(2)); t.setAttribute("y", (+t.dataset.y - (+t.dataset.off) / u).toFixed(1)); });
+  // scale bar: pick a round mileage that draws 60-130 px
+  const pxPerMile = u * MI, miles = [0.5, 1, 2, 5, 10, 20, 25].find(m => m * pxPerMile >= 60) || 25;
+  $("scaleLabel").textContent = `${miles} mi`; $("scaleBar").style.width = Math.round(miles * pxPerMile) + "px";
   const dl = $("distG").querySelector("text");
   if (dl) { const R = S.radius * MI; dl.setAttribute("font-size", (13 / u).toFixed(2)); dl.setAttribute("x", (R * 0.7071 + 6 / u).toFixed(1)); dl.setAttribute("y", (R * 0.7071 + 14 / u).toFixed(1)); }
 }
@@ -533,6 +639,8 @@ function drawDots(list) {
     const [x, y] = px(sel.lon, sel.lat);
     el("circle", { cx: x, cy: y, r: 4, "data-px": (dotPx(sel) + 2).toFixed(1), class: "m-dot hl", fill: toneVar(ratingTone(sel.rating)), "data-id": sel.id }, g);
     el("circle", { cx: x, cy: y, r: 4, "data-px": (dotPx(sel) + 2).toFixed(1), class: "m-halo" }, g);
+    const lab = el("text", { x, y, "data-y": y, "data-off": dotPx(sel) + 9, "text-anchor": "middle", class: "m-callout" }, g);
+    lab.textContent = kmoney(sel.price);
   }
   scaleMarks();
 }
@@ -663,6 +771,9 @@ function plat(r) {
          `<text class="north" x="36" y="68" text-anchor="middle" style="font-weight:500">${ft >= 5280 ? (ft / 5280).toFixed(1) + " mi" : ft.toLocaleString() + " ft"}</text></svg>`;
 }
 
+const SEVERE = /landlocked|flood|failed|no water wells|steep ground|conflicting/i;
+const sortFlags = f => [...f].sort((a, b) => SEVERE.test(b) - SEVERE.test(a));
+
 // Is it on a hill? Badge + slope wedge + numbers
 function terrainRow(r, compact) {
   const t = r.terrain;
@@ -674,9 +785,7 @@ function terrainRow(r, compact) {
   const wedge = `<svg class="wedge" viewBox="0 0 44 18" aria-hidden="true"><path d="M2 17H42V${(17 - h).toFixed(1)}Z"/></svg>`;
   if (compact) return `<div class="terrain" style="margin-top:6px"><span class="hill-badge ${cls}">${icon("_terrain")}${badge}</span><span><b>${t.slope_mean_pct}%</b> slope</span></div>`;
   return `<div class="terrain" title="${esc(t.position_label)}; ${esc(t.slope_label)}"><span class="hill-badge ${cls}">${icon("_terrain")}${badge}</span>
-    ${wedge}<span>${esc(t.slope_label)} · <b>${t.slope_mean_pct}%</b> avg slope</span>
-    ${t.flat_pct != null ? `<span><b>${t.flat_pct}%</b> flat ground</span>` : ""}
-    ${t.relief_ft != null ? `<span><b>${t.relief_ft.toLocaleString()} ft</b> rise across lot</span>` : ""}</div>`;
+    ${wedge}<span>${esc(t.slope_label)}${t.relief_ft != null ? ` · <b>${t.relief_ft.toLocaleString()} ft</b> rise across the lot` : ""}</span></div>`;
 }
 
 // 9. value meter
@@ -690,21 +799,42 @@ function valueMeter(r) {
     <div class="v-track" aria-hidden="true"><span class="v-mark" style="left:${pos}%"></span></div></div>`;
 }
 
+function lrow(r) {
+  const rt = ratingTone(r.rating);
+  const cats = [...CATS, ["_terrain", "Terrain"]];
+  const ic = cats.map(([c, n]) => {
+    const f = c === "_terrain" ? { status: r.terrain ? (r.terrain.on_hill ? "hill" : "flat") : "unknown", points: r.terrain ? (["steep", "very_steep"].includes(r.terrain.slope_class) ? 5 : r.terrain.slope_class === "rolling" ? 14 : 20) : 0 } : r[c];
+    const label = c === "_terrain" ? (r.terrain ? r.terrain.position_label : "Terrain unknown") : `${n}: ${f?.label || "Unknown"}`;
+    return `<i class="${c === "_terrain" && !r.terrain ? "unk" : tone(f)}" title="${esc(label)}">${icon(c)}</i>`;
+  }).join("");
+  return `<button class="lrow r-${rt}${r.id === S.sel ? " sel" : ""}" data-row="${esc(r.id)}"><span class="sp"></span><span class="p">${money(r.price)}</span>
+    <span class="a">${r.acres ?? "—"} ac</span><span class="w">${esc([r.address, r.city].filter(Boolean).join(", ") || r.parcel_id || "")}</span>
+    <span class="ic">${ic}</span><span class="m">${r.miles_from_spokane ?? "—"} mi</span></button>`;
+}
+
 function card(r, i) {
   const mark = S.marks[r._doc] || {};
   const loc = [r.address, r.city].filter(Boolean).join(", ") || (r.parcel_id ? "Parcel " + r.parcel_id : "Unknown location");
-  const facts = [r.acres != null && `${r.acres} ac`, r.miles_from_spokane != null && `${r.miles_from_spokane} mi out`, r.county && `${r.county} Co.`].filter(Boolean).join(" · ");
+  const facts = [r.county && `${r.county} County`, r.zoning && r.zoning.split(",")[0]].filter(Boolean).join(" · ");
+  const t = r.terrain || {};
+  const spec = `<div class="spec">
+      <div><span>Acres</span><b>${r.acres ?? "—"}</b></div>
+      <div><span>Per acre</span><b>${kmoney(r.price_per_acre)}</b></div>
+      <div><span>Slope</span><b>${t.slope_mean_pct != null ? t.slope_mean_pct + "%" : "—"}</b></div>
+      <div><span>Flat</span><b>${t.flat_pct != null ? t.flat_pct + "%" : "—"}</b></div>
+      <div><span>Miles</span><b>${r.miles_from_spokane ?? "—"}</b></div></div>`;
   const open = S.open.has(r.id), rt = ratingTone(r.rating);
-  let html = `<article class="card${r.id === S.sel ? " sel" : ""}${i < 12 && !reduceMotion ? " rise" : ""}" style="--i:${i}" id="c-${esc(r._doc)}" data-id="${esc(r.id)}">
+  let html = `<article class="card r-${rt}${r.id === S.sel ? " sel" : ""}${i < 12 && !reduceMotion ? " rise" : ""}" style="--i:${i}" id="c-${esc(r._doc)}" data-id="${esc(r.id)}">
     <div class="c-head">
       ${plat(r)}
       <div style="min-width:0"><div class="price">${money(r.price)}</div><div class="addr">${esc(loc)}</div><div class="facts">${esc(facts)}</div></div>
       <div class="ring ${rt}" style="--p:${r.score}" title="${esc(r.rating)} — score ${r.score} of 100"><span>${r.score}<small>${rt === "good" ? "ready" : rt === "ok" ? "work" : "risk"}</small></span></div>
     </div>
+    ${spec}
     ${utils(r)}
     ${terrainRow(r)}
     ${valueMeter(r)}
-    ${r.flags?.length ? `<div class="flags">${r.flags.slice(0, open ? 99 : 1).map(f => `<span class="flag">${esc(f)}</span>`).join("")}${!open && r.flags.length > 1 ? `<span class="src">+${r.flags.length - 1} more</span>` : ""}</div>` : ""}
+    ${r.flags?.length ? `<div class="flags">${sortFlags(r.flags).slice(0, open ? 99 : 1).map(f => `<span class="flag${SEVERE.test(f) ? " severe" : ""}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20zM12 10v4M12 17v.5"/></svg>${esc(f)}</span>`).join("")}${!open && r.flags.length > 1 ? `<span class="src">+${r.flags.length - 1} more</span>` : ""}</div>` : ""}
     ${mark.note && !open ? `<div class="src">📝 ${esc(mark.note)}</div>` : ""}
     <div class="c-foot">
       <button class="more" data-open="${esc(r.id)}" aria-expanded="${open}">${open ? "Hide details" : "Why? Show the evidence"}</button>
@@ -767,16 +897,23 @@ function render() {
     const selIdx = list.findIndex(r => r.id === S.sel);
     if (selIdx >= S.shown) S.shown = Math.ceil((selIdx + 1) / PAGE) * PAGE;
     const rest = list.length - S.shown;
+    const page = list.slice(0, S.shown);
+    const body = VIEW === "list"
+      ? `<div class="rowlist">${page.map(r => S.open.has(r.id) ? `</div>${card(r, 99)}<div class="rowlist">` : lrow(r)).join("")}</div>`.replace(/<div class="rowlist"><\/div>/g, "")
+      : page.map(card).join("");
     $("cards").innerHTML = list.length
-      ? list.slice(0, S.shown).map(card).join("") +
+      ? body +
         (rest > 0 ? `<button class="btn" id="showMore" style="align-self:center">Show ${Math.min(rest, PAGE)} more · ${rest.toLocaleString()} left</button>` : "")
       : `<div class="empty">${LAND_ICON}<b>Nothing matches these filters</b><span>Try a higher max price or clear a filter.</span></div>`;
   }
   drawDist();
   drawDots(list);
   renderGlance(list);
+  renderGlanceSum(list);
   renderHeadline();
   renderGlanceChip();
+  $("clearAll").hidden = !anyFilter();
+  document.querySelector(".chip-select").classList.toggle("on", !!$("terrainF").value);
 }
 
 /* 2. market-at-a-glance bars (counts reflect the current filters) */
@@ -806,8 +943,22 @@ $("glance").addEventListener("click", e => {
   S.glance = S.glance && S.glance.cat === cat && S.glance.key === key ? null : { cat, key };
   S.shown = PAGE; render();
 });
+function anyFilter() {
+  return !!($("q").value || $("maxPrice").value || $("minAcres").value || $("terrainF").value || S.glance || Object.values(S.f).some(Boolean));
+}
+$("clearAll").addEventListener("click", () => {
+  ["q", "maxPrice", "minAcres", "terrainF"].forEach(id => $(id).value = "");
+  for (const k in S.f) S.f[k] = false;
+  ["fWater", "fPower", "fAccess", "fStar"].forEach(id => $(id).setAttribute("aria-pressed", "false"));
+  S.glance = null; S.shown = PAGE; render();
+});
 $("glanceChip").addEventListener("click", e => { if (e.target.closest("#clearGlance")) { S.glance = null; S.shown = PAGE; render(); } });
 
+function renderGlanceSum(list) {
+  const n = list.length || 1, pct = (c, st) => Math.round(list.filter(r => has(r[c], st)).length / n * 100);
+  const hill = Math.round(list.filter(r => r.terrain?.on_hill).length / n * 100);
+  $("glanceSum").textContent = `${pct("water", ["needs_well", "none", "well_possible"])}% need a well · ${pct("access", ["public_road", "road_frontage"])}% on a public road · ${hill}% on a hill`;
+}
 function renderHeadline() {
   const L = S.listings.filter(r => r.miles_from_spokane == null || r.miles_from_spokane <= S.radius);
   if (!L.length) { $("headline").innerHTML = ""; return; }
@@ -828,10 +979,20 @@ function select(id, scroll) {
 [["fWater", "water"], ["fPower", "power"], ["fAccess", "access"], ["fStar", "star"]].forEach(([id, k]) =>
   $(id).addEventListener("click", e => { S.f[k] = !S.f[k]; S.shown = PAGE; e.currentTarget.setAttribute("aria-pressed", S.f[k]); render(); }));
 
+$("cards").addEventListener("pointerover", e => { const rw = e.target.closest("[data-row]"); if (rw && !rw.contains(e.relatedTarget)) highlightDot(rw.dataset.row, true); });
+$("cards").addEventListener("pointerout", e => { const rw = e.target.closest("[data-row]"); if (rw && !rw.contains(e.relatedTarget)) highlightDot(rw.dataset.row, false); });
 $("cards").addEventListener("pointerover", e => { const c = e.target.closest(".card[data-id]"); if (c && !c.contains(e.relatedTarget)) highlightDot(c.dataset.id, true); });
 $("cards").addEventListener("pointerout", e => { const c = e.target.closest(".card[data-id]"); if (c && !c.contains(e.relatedTarget)) highlightDot(c.dataset.id, false); });
+function setView(v) {
+  VIEW = v; $("vCards").setAttribute("aria-pressed", v === "cards"); $("vList").setAttribute("aria-pressed", v === "list");
+  try { localStorage.setItem("landfinder.view", v); } catch (e) {}
+  render();
+}
+$("vCards").onclick = () => setView("cards"); $("vList").onclick = () => setView("list");
 $("cards").addEventListener("click", async e => {
   if (e.target.id === "showMore") { S.shown += PAGE; render(); return; }
+  const row = e.target.closest("[data-row]");
+  if (row) { const id = row.dataset.row; S.open.add(id); S.sel = id; render(); return; }
   const o = e.target.closest("[data-open]");
   if (o) { const id = o.dataset.open; S.open.has(id) ? S.open.delete(id) : S.open.add(id); S.sel = id; render(); return; }
   const s = e.target.closest("[data-star]");
@@ -896,6 +1057,8 @@ function setMaxRadius(max) {
 }
 
 /* ---------- data ---------- */
+if (matchMedia("(max-width: 760px)").matches) $("glanceBox").open = false;
+$("vCards").setAttribute("aria-pressed", VIEW === "cards"); $("vList").setAttribute("aria-pressed", VIEW === "list");
 $("dist").value = S.radius;
 drawTopo(); drawBase(); render(); fitRadius();
 (async () => {
@@ -924,7 +1087,9 @@ drawTopo(); drawBase(); render(); fitRadius();
     if (m) {
       $("updated").textContent = `Updated ${m.generated}`;
       setMaxRadius(m.radius_miles ?? 25);
-      $("sub").textContent = `Every lot and acreage for sale near Spokane, checked against public records for water, power, septic and road access. Source: ${(m.sources || []).join(", ")}.`;
+      const src = (m.sources || [])[0] || "";
+      const when = (src.match(/[A-Z][a-z]{2} \d{1,2},? \d{4}/) || [""])[0];
+      $("sources").firstElementChild.textContent = `Listings: Zillow${when ? ", " + when : ""}`;
     }
   });
   db.collection("marks").onSnapshot(snap => {
