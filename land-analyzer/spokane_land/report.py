@@ -110,6 +110,8 @@ def _slim(r):
     if doc.get("soil"):
         doc["soil"] = {k: v for k, v in doc["soil"].items() if k not in ("share", "worst", "source")}
         doc["soil"]["soils"] = doc["soil"].get("soils", [])[:1]
+    if doc.get("rules"):  # offices and notes live once per county in meta.county_rules
+        doc["rules"] = {k: v for k, v in doc["rules"].items() if k in ("county", "wria", "wria_note")}
     for k in ("wildfire", "internet", "power_company", "cell", "assessed"):
         if doc.get(k):
             doc[k] = {kk: v for kk, v in doc[k].items() if kk != "source" and v not in ("", None)}
@@ -135,6 +137,12 @@ def export_db(results, out_dir, meta, chunk_size=40):
         if d["source"] == "added":
             with open(os.path.join(out_dir, "listings", doc_id(d["id"]) + ".json"), "w", encoding="utf-8") as fh:
                 json.dump(d, fh, default=str)
+    county_rules = {}
+    for r in results:
+        ru = r.get("rules") or {}
+        if ru.get("county") and ru["county"] not in county_rules:
+            county_rules[ru["county"]] = {"offices": ru.get("offices") or {}, "notes": ru.get("notes") or []}
+    meta = dict(meta, county_rules=county_rules)
     with open(os.path.join(out_dir, "meta.json"), "w", encoding="utf-8") as fh:
         json.dump(dict(meta, generated=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                        count=len(results)), fh)

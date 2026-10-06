@@ -1732,7 +1732,8 @@ function buildPanel(r) {
   const pill = f => `<span class="pill ${tone(f)}">${esc(f?.label || "Unknown")}</span>`;
   const rows = [];
   const row = (ic, name, html) => rows.push(`<tr><th>${ic.startsWith("<") ? ic : icon(ic)}${name}</th><td>${html}</td></tr>`);
-  const site = r.site, z = r.zoning_check, rules = r.rules || {};
+  const site = r.site, z = r.zoning_check, cr = S.meta?.county_rules?.[r.county] || {};
+  const rules = { ...cr, ...(r.rules || {}), notes: [...(cr.notes || []), ...(r.rules?.wria_note ? [r.rules.wria_note] : [])] };
   // zoning + setbacks
   const sb = site?.setbacks_ft;
   row("_zone", "Zoning & setbacks", (z ? `<span class="pill ${{ ok: "good", splittable: "good", undersized: "bad", not_residential: "bad", urban: "ok" }[z.status] || "unk"}">${esc(z.zone || "Zone")}</span>${esc(z.detail)}` : r.zoning ? `Zoned ${esc(r.zoning)}.` : `Zoning not available for ${esc(r.county || "this")} County — ask the county planning office.`)
@@ -1746,7 +1747,7 @@ function buildPanel(r) {
   row("_car", "Driveway & grading", `${cost("access")}${esc(item("access")?.[2] || "")}; ${esc(item("_terrain")?.[2] || "")} (${money(item("_terrain")?.[1])}).`);
   // utilities
   const w = r.water, e = r.electric, sp = r.septic;
-  row("water", "Water", `${cost("water")}${pill(w)}${esc(item("water")?.[2] || "")}.${(has(w, ["well", "public", "shared_well", "public_area"]) ? [] : rules.water_limits || []).map(x => ` <b>${esc(x.label)}:</b> ${esc(x.detail || "")}`).join("")}`);
+  row("water", "Water", `${cost("water")}${pill(w)}${esc(item("water")?.[2] || "")}.${(r.checks || []).filter(x => x.key === "water_rule").map(x => ` <b>${esc(x.label)}:</b> ${esc(x.detail || "")}`).join("")}`);
   row("electric", "Power", `${cost("electric")}${pill(e)}${esc(item("electric")?.[2] || "")}.${r.power_company ? ` Utility: ${esc(r.power_company.name)}${r.power_company.phone ? " · " + esc(r.power_company.phone) : ""}.` : ""}`);
   const soil = r.soil;
   row("septic", "Septic / perc", `${cost("septic")}${pill(sp)}${esc(item("septic")?.[2] || "")}.${soil && !has(sp, ["sewer", "installed"]) ? ` USDA soils: ${esc(soil.rating.toLowerCase())}${soil.hard_limits?.length ? " (" + esc(soil.hard_limits.join(", ").toLowerCase()) + ")" : ""}${soil.drainage ? ", " + esc(soil.drainage.toLowerCase()) : ""}.` : ""}${!has(sp, ["sewer", "installed", "approved"]) ? " A perc test / soil log by a designer is the first step." : ""}`);
@@ -2201,7 +2202,7 @@ ${(r.flags || []).length ? `<h2>Warnings</h2><ul>${r.flags.map(f => `<li>${esc(f
 <h2>Can you build here?</h2><table>${r.zoning_check ? row("Zoning", esc(r.zoning_check.detail)) : r.zoning ? row("Zoning", esc(r.zoning)) : ""}${r.soil ? row("Septic soils (USDA)", esc(r.soil.rating + (r.soil.hard_limits?.length ? " — " + r.soil.hard_limits.join(", ") : ""))) : ""}
 ${r.wildfire ? row("Wildfire hazard", esc(r.wildfire.label)) : ""}${r.internet?.down_mbps ? row("Fastest internet nearby", r.internet.down_mbps + " Mbps") : ""}${r.power_company ? row("Power company", esc(r.power_company.name + (r.power_company.phone ? " · " + r.power_company.phone : ""))) : ""}
 ${r.drive_min != null ? row("Drive to downtown Spokane", r.drive_min + " min") : ""}${r.cell ? row("Cell service", esc(r.cell.label + (r.cell.typical_mbps ? ` (typical ${r.cell.typical_mbps} Mbps)` : ""))) : ""}
-${r.school_district ? row("School district", esc(r.school_district)) : ""}${r.rules?.offices?.building ? row("Building permits", esc(r.rules.offices.building.filter(Boolean).join(" · "))) : ""}${r.rules?.offices?.septic ? row("Septic permits", esc(r.rules.offices.septic.filter(Boolean).join(" · "))) : ""}
+${r.school_district ? row("School district", esc(r.school_district)) : ""}${(() => { const o = S.meta?.county_rules?.[r.county]?.offices || {}; return (o.building ? row("Building permits", esc(o.building.filter(Boolean).join(" · "))) : "") + (o.septic ? row("Septic permits", esc(o.septic.filter(Boolean).join(" · "))) : ""); })()}
 ${r.permits ? row("Building nearby", esc(r.permits.summary)) : ""}${r.terrain ? row("Terrain", esc(r.terrain.position_label + "; " + r.terrain.slope_label)) : ""}</table>
 <h2>Evidence</h2>${ev}
 <h2>Questions to ask the seller</h2><ol>${questions(r).map(x => `<li>${esc(x)}</li>`).join("")}</ol>

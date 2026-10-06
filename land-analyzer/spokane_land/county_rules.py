@@ -99,7 +99,7 @@ def for_parcel(county, state, lat, lon):
                               f"3,000 gal/day on average, with a {fee} fee at building permit and a note on the title",
                     "source": "RCW 90.94.020"})
             elif nr in (54, 57):
-                out["notes"].append(f"WRIA {nr} {name}: over the Spokane aquifer the state's Spokane River flow rule "
+                out["wria_note"] = (f"WRIA {nr} {name}: over the Spokane aquifer the state's Spokane River flow rule "
                                     "(WAC 173-557) can curtail new household wells unless mitigated; public water is preferred.")
     return out
 

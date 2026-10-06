@@ -373,7 +373,7 @@ def analyze(listing, facts):
         "internet": facts.get("internet"),
         "power_company": facts.get("power_company"),
         "zoning_check": zcheck,
-        "checks": derived_checks(findings, zcheck, facts) + list(facts.get("checks") or []),
+        "checks": derived_checks(findings, zcheck, facts, listing.lot_acres) + list(facts.get("checks") or []),
         "site": facts.get("site"),
         "cell": facts.get("cell"),
         "school_district": facts.get("school_district"),
@@ -391,7 +391,7 @@ def analyze(listing, facts):
     return result
 
 
-def derived_checks(findings, zcheck, facts):
+def derived_checks(findings, zcheck, facts, listed_acres=None):
     """Deal-breaker entries for things the main analysis already found."""
     out = []
     acc = findings["access"]
@@ -415,7 +415,13 @@ def derived_checks(findings, zcheck, facts):
         out.append({"key": "zoning", "level": "warn", "label": zcheck["label"], "detail": zcheck["detail"], "source": "zoning",
                     "ask": "Is this a legal lot of record that can get a building permit?"})
     site = facts.get("site")
-    if site and site.get("buildable_acres") is not None:
+    partial = bool(site and listed_acres and site.get("parcel_acres") and site["parcel_acres"] < 0.6 * listed_acres)
+    if partial:
+        out.append({"key": "room", "level": "warn",
+                    "label": f"Only part of this listing was checked ({site['parcel_acres']} of {listed_acres:g} acres)",
+                    "detail": "the listing seems to cover more than one county parcel; building room was measured on the one the map pin hits",
+                    "source": "parcel shape"})
+    elif site and site.get("buildable_acres") is not None:
         ba = site["buildable_acres"]
         lost = ", ".join(f"{k} {v} ac" for k, v in (site.get("lost_to") or {}).items())
         # On sewer + public water only the house needs room; otherwise also a well and a drainfield.

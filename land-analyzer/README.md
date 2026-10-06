@@ -79,7 +79,8 @@ How a refresh works (for Claude or anyone maintaining it):
    `--previous` marks listings that are new since the last refresh, records
    price cuts (`price_history`), and lists listings that disappeared
    (`meta.refresh`). Duplicate listings of the same parcel are merged.
-3. Upload `dbx/chunks/*.json` to the `chunks` collection, `dbx/listings/*.json`
+3. Upload `dbx/chunks/*.json` to the `chunks` collection, `dbx/photos/*.json` to
+   `photos` (when run with `--photos 25`), `dbx/listings/*.json`
    to `listings` and `dbx/meta.json` to `meta/info` (ArtifactData `batch`),
    delete chunk documents beyond the new count, and mark processed requests
    `status: "done"`.
