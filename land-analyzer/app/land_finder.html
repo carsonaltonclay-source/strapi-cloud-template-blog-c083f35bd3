@@ -324,6 +324,64 @@ a { color: var(--accent); }
 .req button { border: none; background: none; color: var(--muted); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 30;
   background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; }
+/* R4-1 clusters */
+.m-cl circle.bg { fill: var(--panel); stroke: none; }
+.m-cl path { fill: none; stroke-width: 3.5; vector-effect: non-scaling-stroke; }
+.m-cl text { fill: var(--ink); font-family: var(--f-display); font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.m-cl { cursor: zoom-in; }
+.m-cl:hover circle.bg { fill: var(--accent-soft); }
+/* R4-2 water labels */
+.m-wlabel { fill: var(--map-water-line); font-family: var(--f-body); font-style: italic; font-weight: 500; paint-order: stroke; stroke: var(--map-land); stroke-width: 3px; stroke-linejoin: round; letter-spacing: 0.02em; }
+/* R4-3/4 badges + eyebrow */
+.c-eyebrow { font: 600 10.5px/1 var(--f-display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.c-eyebrow .fresh { color: var(--good); }
+.badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.bdg { display: inline-flex; align-items: center; gap: 4px; font: 600 11px/1 var(--f-body); padding: 4px 8px; border-radius: 999px; border: 1px solid transparent; }
+.bdg.new { background: var(--accent); color: var(--accent-ink); }
+.bdg.value { background: var(--good-bg); color: var(--good); border-color: color-mix(in srgb, var(--good) 30%, transparent); }
+.bdg svg.i { width: 12px; height: 12px; }
+.bdg.views { background: var(--accent-soft); color: var(--accent); }
+.bdg.big { background: var(--soft); color: var(--ink); border-color: var(--line); }
+.bdg.stale { background: var(--warn-bg); color: var(--warn); }
+/* R4-5 theme switch */
+.theme-sw { position: absolute; top: 14px; right: 14px; z-index: 2; display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent); }
+.theme-sw button { border: none; background: none; border-radius: 999px; padding: 4px 9px; font-size: 12px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; }
+.theme-sw button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.theme-sw svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+@media (max-width: 760px) { .theme-sw { top: 10px; right: 10px; } .theme-sw .lbl { display: none; } }
+.mast > .theme-sw { position: absolute; }
+/* R4-6 starred tray */
+.tray { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 24;
+  display: inline-flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 6px 6px 14px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16); max-width: calc(100vw - 140px); }
+.tray b { font: 700 15px/1 var(--f-display); white-space: nowrap; color: var(--star); }
+.tray .thumbs { display: flex; }
+.tray .thumbs svg { width: 30px; height: 30px; border-radius: 7px; border: 2px solid var(--panel); margin-left: -8px; background: var(--soft); }
+.tray .thumbs svg:first-child { margin-left: 0; }
+.tray button { border: none; border-radius: 999px; background: var(--accent); color: var(--accent-ink); padding: 7px 14px; font-weight: 600; font-size: 13px; white-space: nowrap; }
+@media (max-width: 520px) { .tray .thumbs { display: none; } .tray { left: 16px; transform: none; } }
+/* R4-7 grow-in */
+@media (prefers-reduced-motion: no-preference) {
+  .glance.grow .g-bar button { animation: growx .7s cubic-bezier(.2,.7,.2,1) both; transform-origin: left center; }
+  .glance.grow .hist rect { animation: growy .6s ease-out both; transform-origin: bottom; transform-box: fill-box; }
+}
+@keyframes growx { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes growy { from { transform: scaleY(0); } to { transform: none; } }
+/* R4-8 richer tooltip */
+.tip-head { display: grid; grid-template-columns: 48px minmax(0, 1fr) 38px; gap: 8px; align-items: center; }
+.tip .plat { width: 48px; height: 48px; border-radius: 8px; }
+.tip .ring { width: 38px; height: 38px; }
+.tip .ring span { width: 30px; height: 30px; font-size: 13px; }
+.tip { width: 250px; }
+/* R4-9 legend toggles */
+.legend button { border: none; background: none; padding: 1px 2px; font: inherit; color: inherit; border-radius: 4px; display: inline-flex; align-items: center; }
+.legend button[aria-pressed="false"] { opacity: 0.4; text-decoration: line-through; }
+/* R4-10 loading bar */
+.loadbar { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; height: 3px; z-index: 40; overflow: hidden; background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.loadbar i { position: absolute; top: 0; bottom: 0; width: 35%; background: var(--accent); left: -35%; }
+@media (prefers-reduced-motion: no-preference) { .loadbar i { animation: slide 1.1s ease-in-out infinite; } }
+@keyframes slide { to { left: 100%; } }
 /* 1. evidence panels */
 .ev-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 @media (max-width: 620px) { .ev-grid { grid-template-columns: 1fr; } }
@@ -416,6 +474,11 @@ a { color: var(--accent); }
 <div class="wrap">
   <header class="mast">
     <svg class="topo" id="topo" aria-hidden="true"></svg>
+    <div class="theme-sw" role="group" aria-label="Color theme">
+      <button data-theme-set="auto" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v16" /><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg><span class="lbl">Auto</span></button>
+      <button data-theme-set="light" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg><span class="lbl">Light</span></button>
+      <button data-theme-set="dark" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span class="lbl">Dark</span></button>
+    </div>
     <div>
       <span class="eyebrow" id="radiusTag">Spokane, WA · 25-mile radius</span>
       <div class="brand">
@@ -475,7 +538,7 @@ a { color: var(--accent); }
       <svg id="map" viewBox="-420 -420 840 840" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of listings around Spokane">
         <g id="base"></g><g id="distG"></g><g id="dots"></g><g id="shields"></g><g id="labels"></g>
       </svg>
-      <div class="legend"><span><i style="background:var(--bar-good)"></i>Build-ready</span><span><i style="background:var(--bar-ok)"></i>Needs work</span><span><i style="background:var(--bar-bad)"></i>High risk</span>
+      <div class="legend"><button data-rate="Build-ready" aria-pressed="true" title="Show or hide build-ready parcels"><i style="background:var(--bar-good)"></i>Build-ready</button><button data-rate="Needs work" aria-pressed="true" title="Show or hide parcels that need work"><i style="background:var(--bar-ok)"></i>Needs work</button><button data-rate="High risk" aria-pressed="true" title="Show or hide high-risk parcels"><i style="background:var(--bar-bad)"></i>High risk</button>
         <span class="sz"><i style="width:5px;height:5px"></i><i style="width:9px;height:9px"></i><i style="width:13px;height:13px"></i>&nbsp;acres</span><span class="muted">dashed ring = your distance</span></div>
       <div class="map-tools">
         <button id="zin" aria-label="Zoom in">+</button>
@@ -533,6 +596,8 @@ a { color: var(--accent); }
   </section>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="loadbar" id="loadbar" aria-hidden="true"><i></i></div>
+<div class="tray" id="tray" hidden><b id="trayCount">★ 0</b><span class="thumbs" id="trayThumbs"></span><button id="trayBtn">Show starred</button></div>
 <button class="fab" id="fab" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg><span id="fabLabel">Top</span></button>
 
 <script>
@@ -592,6 +657,7 @@ const GROUPS = {
 
 const PAGE = 40;
 let VIEW = "cards";
+const HIDDEN_RATINGS = new Set();
 try { VIEW = localStorage.getItem("landfinder.view") || "cards"; } catch (e) {}
 const S = { listings: [], meta: null, requests: [], marks: {}, sel: null, hover: null, open: new Set(), shown: PAGE, glance: null,
             f: { water: false, power: false, access: false, star: false }, db: null, canWrite: true, loaded: false, medians: {},
@@ -627,7 +693,11 @@ function drawTopo() {
 const svg = $("map");
 const VB0 = { x: -420, y: -420, w: 840, h: 840 };
 let vb = { ...VB0 };
-function setVB() { svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); scaleMarks(); }
+let reclusterRaf = 0;
+function setVB() {
+  svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); scaleMarks();
+  if (clusterW && Math.abs(vb.w - clusterW) / clusterW > 0.08) { cancelAnimationFrame(reclusterRaf); reclusterRaf = requestAnimationFrame(() => drawDots(lastDots)); }
+}
 function el(tag, attrs, parent) {
   const n = document.createElementNS(SVGNS, tag);
   for (const k in attrs) n.setAttribute(k, attrs[k]);
@@ -668,6 +738,20 @@ function drawBase() {
     const big = name === "Spokane" || name === "Spokane Valley" || name === "Coeur d'Alene";
     const n = el("text", { x, y, class: "m-label", "data-s": big ? 1.3 : 0.95, "text-anchor": "middle" }, L); n.textContent = name;
   });
+  // Lake and river names
+  const WL = new Set(["Long Lk", "Coeur D'Alene Lake", "Newman Lk", "Liberty Lk", "Eloika Lk", "Loon Lk", "Spirit Lk", "Hauser Lk",
+                      "Twin Lks", "Sprague Lk", "Silver Lk", "Medical Lk", "Diamond Lk", "Sacheen Lk", "Hayden Lk", "Fernan Lk", "Chatcolet Lk", "Pend Oreille Riv"]);
+  const seen = new Set();
+  BASEMAP.water.filter(w => WL.has(w.name) && !seen.has(w.name) && seen.add(w.name)).forEach(w => {
+    const ring = w.rings.reduce((a, b) => b.length > a.length ? b : a);
+    const lon = ring.reduce((a, p) => a + p[0], 0) / ring.length, lat = ring.reduce((a, p) => a + p[1], 0) / ring.length;
+    const [x, y] = px(lon, lat);
+    const t = el("text", { x, y, class: "m-wlabel", "data-s": 0.82, "text-anchor": "middle" }, L);
+    t.textContent = w.name.replace(/ Lks$/, " Lakes").replace(/ Lk$/, " Lake").replace(/ Riv$/, " River").replace("Coeur D'Alene Lake", "Lake Coeur d'Alene");
+  });
+  [["Spokane River", -117.53, 47.735], ["Little Spokane River", -117.36, 47.83]].forEach(([n, lon, lat]) => {
+    const [x, y] = px(lon, lat); const t = el("text", { x, y, class: "m-wlabel", "data-s": 0.8, "text-anchor": "middle" }, L); t.textContent = n;
+  });
   const [sx] = px(-117.0399, 0);
   [["WA", sx - 14], ["ID", sx + 14]].forEach(([s, x]) => { const n = el("text", { x, y: 300, class: "m-label county", "data-s": 0.9, "text-anchor": "middle" }, L); n.textContent = s; });
 
@@ -702,8 +786,8 @@ function scaleMarks() {
   const u = unitPx() || 0.8, fs = 12 / u;
   $("labels").querySelectorAll("text").forEach(t => t.setAttribute("font-size", (fs * +t.dataset.s).toFixed(2)));
   $("shields").querySelectorAll("g").forEach(g => g.setAttribute("transform", `translate(${g.dataset.x} ${g.dataset.y}) scale(${(1 / u).toFixed(3)})`));
-  $("dots").querySelectorAll("circle").forEach(c => c.setAttribute("r", (+c.dataset.px / u).toFixed(2)));
-  $("dots").querySelectorAll("text").forEach(t => { t.setAttribute("font-size", (13 / u).toFixed(2)); t.setAttribute("y", (+t.dataset.y - (+t.dataset.off) / u).toFixed(1)); });
+  $("dots").querySelectorAll("circle.m-dot, circle.m-halo").forEach(c => c.setAttribute("r", (+c.dataset.px / u).toFixed(2)));
+  $("dots").querySelectorAll("text.m-callout").forEach(t => { t.setAttribute("font-size", (13 / u).toFixed(2)); t.setAttribute("y", (+t.dataset.y - (+t.dataset.off) / u).toFixed(1)); });
   // scale bar: pick a round mileage that draws 60-130 px
   const pxPerMile = u * MI, miles = [0.5, 1, 2, 5, 10, 20, 25].find(m => m * pxPerMile >= 60) || 25;
   $("scaleLabel").textContent = `${miles} mi`; $("scaleBar").style.width = Math.round(miles * pxPerMile) + "px";
@@ -725,7 +809,7 @@ function zoom(f, cx, cy) {
 }
 svg.addEventListener("wheel", e => { e.preventDefault(); const [x, y] = svgPoint(e); zoom(e.deltaY > 0 ? 1.18 : 1 / 1.18, x, y); }, { passive: false });
 let drag = null;
-svg.addEventListener("pointerdown", e => { if (e.target.classList.contains("m-dot")) return; drag = { x: e.clientX, y: e.clientY, vb: { ...vb } }; svg.setPointerCapture(e.pointerId); svg.classList.add("dragging"); hideTip(); });
+svg.addEventListener("pointerdown", e => { if (e.target.classList.contains("m-dot") || e.target.closest(".m-cl")) return; drag = { x: e.clientX, y: e.clientY, vb: { ...vb } }; svg.setPointerCapture(e.pointerId); svg.classList.add("dragging"); hideTip(); });
 svg.addEventListener("pointermove", e => {
   if (!drag) return;
   const r = svg.getBoundingClientRect(), s = Math.max(vb.w / r.width, vb.h / r.height);
@@ -736,15 +820,42 @@ $("zin").onclick = () => zoom(1 / 1.5); $("zout").onclick = () => zoom(1.5); $("
 new ResizeObserver(() => { scaleMarks(); drawTopo(); }).observe(document.body);
 
 const byId = new Map();
+let lastDots = [], clusterW = 0;
 function drawDots(list) {
+  lastDots = list; clusterW = vb.w;
   const g = $("dots"); g.textContent = "";
-  const order = list.filter(r => r.lat != null).sort((a, b) => (b.acres || 0) - (a.acres || 0)); // small dots on top
-  for (const r of order) {
-    const [x, y] = px(r.lon, r.lat);
+  const u = unitPx() || 0.8, cell = 34 / u;
+  const pts = list.filter(r => r.lat != null && r.id !== S.sel).map(r => { const [x, y] = px(r.lon, r.lat); return { r, x, y }; });
+  const cells = new Map();
+  for (const p of pts) {
+    const k = Math.floor(p.x / cell) + "," + Math.floor(p.y / cell);
+    (cells.get(k) || cells.set(k, []).get(k)).push(p);
+  }
+  const singles = [], clusters = [];
+  for (const grp of cells.values()) (grp.length >= 6 ? clusters : singles).push(...(grp.length >= 6 ? [grp] : grp));
+  singles.sort((a, b) => (b.r.acres || 0) - (a.r.acres || 0)); // small dots on top
+  for (const { r, x, y } of singles)
     el("circle", { cx: x, cy: y, r: 4, "data-px": dotPx(r).toFixed(1), "data-id": r.id, class: "m-dot", fill: toneVar(ratingTone(r.rating)) }, g);
+  for (const grp of clusters) {
+    const n = grp.length, cx = grp.reduce((a, p) => a + p.x, 0) / n, cy = grp.reduce((a, p) => a + p.y, 0) / n;
+    const rpx = Math.min(22, 11 + Math.log2(n) * 2.4), R = rpx / u;
+    const cg = el("g", { class: "m-cl", "data-cx": cx, "data-cy": cy, "data-n": n, "data-rpx": rpx }, g);
+    el("circle", { cx, cy, r: R, class: "bg" }, cg);
+    // donut showing the build-ready / needs-work / high-risk mix
+    const counts = ["good", "ok", "bad"].map(t => [t, grp.filter(p => ratingTone(p.r.rating) === t).length]);
+    let a0 = -Math.PI / 2;
+    for (const [t, c] of counts) {
+      if (!c) continue;
+      const a1 = a0 + (c / n) * Math.PI * 2 - (c === n ? 0.0001 : 0);
+      const rr = R - 1.6 / u, large = a1 - a0 > Math.PI ? 1 : 0;
+      el("path", { d: `M${cx + rr * Math.cos(a0)} ${cy + rr * Math.sin(a0)}A${rr} ${rr} 0 ${large} 1 ${cx + rr * Math.cos(a1)} ${cy + rr * Math.sin(a1)}`, stroke: toneVar(t) }, cg);
+      a0 = a1;
+    }
+    const tx = el("text", { x: cx, y: cy, "font-size": (12 / u).toFixed(2) }, cg); tx.textContent = n;
+    const ti = el("title", {}, cg); ti.textContent = `${n} parcels here: ${counts.map(([t, c]) => `${c} ${t === "good" ? "build-ready" : t === "ok" ? "need work" : "high risk"}`).join(", ")}. Click to zoom in.`;
   }
   const sel = S.sel && byId.get(S.sel);
-  if (sel && sel.lat != null) {
+  if (sel && sel.lat != null && list.includes(sel)) {
     const [x, y] = px(sel.lon, sel.lat);
     el("circle", { cx: x, cy: y, r: 4, "data-px": (dotPx(sel) + 2).toFixed(1), class: "m-dot hl", fill: toneVar(ratingTone(sel.rating)), "data-id": sel.id }, g);
     el("circle", { cx: x, cy: y, r: 4, "data-px": (dotPx(sel) + 2).toFixed(1), class: "m-halo" }, g);
@@ -753,6 +864,12 @@ function drawDots(list) {
   }
   scaleMarks();
 }
+$("dots").addEventListener("click", e => {
+  const c = e.target.closest(".m-cl"); if (!c) return;
+  e.stopPropagation();
+  const k = 0.42, nw = Math.max(vb.w * k, 40), cx = +c.dataset.cx, cy = +c.dataset.cy;
+  vb = { x: cx - nw / 2, y: cy - nw * (vb.h / vb.w) / 2, w: nw, h: nw * (vb.h / vb.w) }; setVB();
+});
 /* distance ring */
 function drawDist() {
   const g = $("distG"); g.textContent = "";
@@ -780,9 +897,12 @@ $("dist").addEventListener("change", () => {
 // 4. hover preview card
 const tip = $("tip");
 function showTip(r, evt) {
-  tip.innerHTML = `<b>${money(r.price)}</b> <span class="muted">· ${r.acres ?? "?"} ac</span><div class="t-addr">${esc(r.address || r.parcel_id || "")}${r.city ? ", " + esc(r.city) : ""}</div>${utils(r)}${terrainRow(r, true)}`;
+  const rt = ratingTone(r.rating);
+  tip.innerHTML = `<div class="tip-head">${plat(r)}<div style="min-width:0"><b>${money(r.price)}</b><div class="muted">${r.acres ?? "?"} ac · ${kmoney(r.price_per_acre)}/ac</div></div>
+    <div class="ring ${rt}" style="--p:${r.score}"><span>${r.score}</span></div></div>
+    <div class="t-addr" style="margin-top:6px">${esc(r.address || r.parcel_id || "")}${r.city ? ", " + esc(r.city) : ""}</div>${utils(r)}${terrainRow(r, true)}`;
   tip.hidden = false;
-  const box = $("mapbox").getBoundingClientRect(), tw = 220, th = tip.offsetHeight;
+  const box = $("mapbox").getBoundingClientRect(), tw = 250, th = tip.offsetHeight;
   let x = evt.clientX - box.left + 14, y = evt.clientY - box.top + 14;
   if (x + tw > box.width - 8) x = evt.clientX - box.left - tw - 14;
   if (y + th > box.height - 8) y = evt.clientY - box.top - th - 14;
@@ -839,6 +959,7 @@ function filtered() {
     if (S.f.access && has(r.access, ["landlocked"])) return false;
     if (S.f.star && !S.marks[r._doc]?.star) return false;
     if (g && !has(r[S.glance.cat], g[3])) return false;
+    if (HIDDEN_RATINGS.has(r.rating)) return false;
     if (r.miles_from_spokane != null && r.miles_from_spokane > S.radius && r.source !== "added") return false;
     if (tf) {
       const t = r.terrain;
@@ -880,6 +1001,21 @@ function plat(r) {
          `<text class="north" x="36" y="68" text-anchor="middle" style="font-weight:500">${ft >= 5280 ? (ft / 5280).toFixed(1) + " mi" : ft.toLocaleString() + " ft"}</text></svg>`;
 }
 
+function eyebrow(r) {
+  const town = (r.city || r.county || "").toUpperCase();
+  const d = r.days_on_market;
+  const age = d == null ? "" : d <= 1 ? "Listed today" : d < 60 ? `Listed ${d} days ago` : d < 365 ? `Listed ${Math.round(d / 30)} months ago` : `On market ${(d / 365).toFixed(d < 730 ? 1 : 0)} yrs`;
+  return `<div class="c-eyebrow">${esc(town)}${town && age ? " · " : ""}${age ? `<span class="${d <= 14 ? "fresh" : ""}">${esc(age)}</span>` : ""}</div>`;
+}
+function badges(r) {
+  const out = [], v = valueRatio(r), t = r.terrain;
+  if (r.days_on_market != null && r.days_on_market <= 14) out.push(`<span class="bdg new">New listing</span>`);
+  if (v && v.ratio <= 0.6) out.push(`<span class="bdg value">Great value</span>`);
+  if (t && t.position === "hilltop") out.push(`<span class="bdg views">${icon("_terrain")}Hilltop views</span>`);
+  if (r.acres >= 20) out.push(`<span class="bdg big">Big acreage</span>`);
+  if (r.days_on_market >= 365) out.push(`<span class="bdg stale">On market 1+ yr</span>`);
+  return out.length ? `<div class="badges">${out.join("")}</div>` : "";
+}
 const SEVERE = /landlocked|flood|failed|no water wells|steep ground|conflicting/i;
 const sortFlags = f => [...f].sort((a, b) => SEVERE.test(b) - SEVERE.test(a));
 
@@ -936,7 +1072,7 @@ function card(r, i) {
   let html = `<article class="card r-${rt}${r.id === S.sel ? " sel" : ""}${i < 12 && !reduceMotion ? " rise" : ""}" style="--i:${i}" id="c-${esc(r._doc)}" data-id="${esc(r.id)}">
     <div class="c-head">
       ${plat(r)}
-      <div style="min-width:0"><div class="price">${money(r.price)}</div><div class="addr">${esc(loc)}</div><div class="facts">${esc(facts)}</div></div>
+      <div style="min-width:0">${eyebrow(r)}<div class="price">${money(r.price)}</div><div class="addr">${esc(loc)}</div><div class="facts">${esc(facts)}</div>${badges(r)}</div>
       <div class="scorecol"><div class="ring ${rt}" style="--p:${r.score}" title="${esc(r.rating)} — score ${r.score} of 100"><span>${r.score}<small>${rt === "good" ? "ready" : rt === "ok" ? "work" : "risk"}</small></span></div>
         <div class="sb" aria-label="Score breakdown">${CATS.map(([c, n]) => { const pt = r[c]?.points ?? 8; return `<i title="${n}: ${pt} of 25" style="--w:${Math.round(pt / 25 * 100)}%;--c:${toneVar(tone(r[c]))}"></i>`; }).join("")}</div></div>
     </div>
@@ -1039,6 +1175,12 @@ function render() {
   renderGlanceSum(list);
   renderHeadline();
   renderGlanceChip();
+  renderTray();
+  $("loadbar").hidden = S.loaded || S.db === false;
+  if (S.listings.length && !S.animated) {
+    S.animated = true;
+    if (!reduceMotion) { $("glance").classList.add("grow"); countUp(); setTimeout(() => $("glance").classList.remove("grow"), 1200); }
+  }
   $("clearAll").hidden = !anyFilter();
   document.querySelector(".chip-select").classList.toggle("on", !!$("terrainF").value);
 }
@@ -1088,13 +1230,14 @@ $("glance").addEventListener("click", e => {
   S.shown = PAGE; render();
 });
 function anyFilter() {
-  return !!($("q").value || $("maxPrice").value || $("minAcres").value || $("terrainF").value || S.glance || Object.values(S.f).some(Boolean));
+  return !!(HIDDEN_RATINGS.size || $("q").value || $("maxPrice").value || $("minAcres").value || $("terrainF").value || S.glance || Object.values(S.f).some(Boolean));
 }
 $("clearAll").addEventListener("click", () => {
   ["q", "maxPrice", "minAcres", "terrainF"].forEach(id => $(id).value = "");
   for (const k in S.f) S.f[k] = false;
   ["fWater", "fPower", "fAccess", "fStar"].forEach(id => $(id).setAttribute("aria-pressed", "false"));
-  S.glance = null; S.shown = PAGE; render();
+  S.glance = null; HIDDEN_RATINGS.clear(); document.querySelectorAll("[data-rate]").forEach(b => b.setAttribute("aria-pressed", "true"));
+  S.shown = PAGE; render();
 });
 $("glanceChip").addEventListener("click", e => { if (e.target.closest("#clearGlance")) { S.glance = null; S.shown = PAGE; render(); } });
 
@@ -1108,6 +1251,17 @@ function renderGlanceSum(list) {
   const n = list.length || 1, pct = (c, st) => Math.round(list.filter(r => has(r[c], st)).length / n * 100);
   const hill = Math.round(list.filter(r => r.terrain?.on_hill).length / n * 100);
   $("glanceSum").textContent = `${pct("water", ["needs_well", "none", "well_possible"])}% need a well · ${pct("access", ["public_road", "road_frontage"])}% on a public road · ${hill}% on a hill`;
+}
+function countUp() {
+  const els = [...document.querySelectorAll("#headline b")];
+  const targets = els.map(b => { const m = b.textContent.match(/^(\$?)([\d,.]+)(K|M)?$/); return m && { b, pre: m[1], n: parseFloat(m[2].replace(/,/g, "")), suf: m[3] || "", dec: (m[2].split(".")[1] || "").length }; }).filter(Boolean);
+  const t0 = performance.now(), D = 800;
+  const step = now => {
+    const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 3);
+    for (const t of targets) { const v = t.n * e; t.b.textContent = t.pre + (t.dec ? v.toFixed(t.dec) : Math.round(v).toLocaleString()) + t.suf; }
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 function renderHeadline() {
   const L = S.listings.filter(r => r.miles_from_spokane == null || r.miles_from_spokane <= S.radius);
@@ -1215,6 +1369,37 @@ function setMaxRadius(max) {
   $("dist").value = S.radius;
   render(); fitRadius();
 }
+
+/* R4-5 theme switch */
+function applyTheme(t) {
+  if (t === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === t));
+  try { localStorage.setItem("landfinder.theme", t); } catch (e) {}
+}
+document.querySelector(".theme-sw").addEventListener("click", e => { const b = e.target.closest("[data-theme-set]"); if (b) applyTheme(b.dataset.themeSet); });
+try { const t = localStorage.getItem("landfinder.theme"); if (t && t !== "auto") applyTheme(t); } catch (e) {}
+
+/* R4-9 legend toggles */
+document.querySelector(".legend").addEventListener("click", e => {
+  const b = e.target.closest("[data-rate]"); if (!b) return;
+  const k = b.dataset.rate, on = HIDDEN_RATINGS.has(k);
+  on ? HIDDEN_RATINGS.delete(k) : HIDDEN_RATINGS.add(k);
+  b.setAttribute("aria-pressed", on); S.shown = PAGE; render();
+});
+
+/* R4-6 starred tray */
+function renderTray() {
+  const starred = S.listings.filter(r => S.marks[r._doc]?.star);
+  $("tray").hidden = !starred.length || !S.db;
+  if (!starred.length) return;
+  $("trayCount").textContent = `★ ${starred.length} starred`;
+  $("trayThumbs").innerHTML = starred.slice(0, 4).map(plat).join("");
+  $("trayBtn").textContent = S.f.star ? "Show all" : "Show starred";
+}
+$("trayBtn").addEventListener("click", () => {
+  S.f.star = !S.f.star; $("fStar").setAttribute("aria-pressed", S.f.star); S.shown = PAGE; render();
+  $("cards").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+});
 
 /* 9. floating Map / Top button */
 const narrow = matchMedia("(max-width: 900px)");
