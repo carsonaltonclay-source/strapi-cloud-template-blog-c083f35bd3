@@ -70,14 +70,30 @@ def doc_id(listing_id):
     return re.sub(r"[^A-Za-z0-9_\-.~:@+]", "_", listing_id)[:180]
 
 
-def export_db(results, out_dir, meta):
-    """One JSON file per listing (database collection "listings") plus meta.json."""
-    os.makedirs(os.path.join(out_dir, "listings"), exist_ok=True)
+def export_db(results, out_dir, meta, chunk_size=40):
+    """Database export for the hosted app.
+
+    Bulk market listings go into collection "chunks" (one document per
+    ``chunk_size`` listings, so a full refresh is one batch upload);
+    properties added by hand go into "listings", one document each, keyed by
+    their request id so they can be updated on their own. Also meta.json.
+    """
+    for sub in ("chunks", "listings"):
+        os.makedirs(os.path.join(out_dir, sub), exist_ok=True)
+    docs = []
     for r in results:
-        doc = dict(r, remarks=(r.get("remarks") or "")[:4000])
+        doc = dict(r, remarks=(r.get("remarks") or "")[:2000])
         doc.pop("errors", None)
-        with open(os.path.join(out_dir, "listings", doc_id(r["id"]) + ".json"), "w", encoding="utf-8") as fh:
-            json.dump(doc, fh, default=str)
+        doc.pop("notes", None)
+        docs.append(doc)
+    bulk = [d for d in docs if d["source"] != "added"]
+    for i in range(0, len(bulk), chunk_size):
+        with open(os.path.join(out_dir, "chunks", f"chunk-{i // chunk_size:03d}.json"), "w", encoding="utf-8") as fh:
+            json.dump({"items": bulk[i:i + chunk_size]}, fh, default=str, separators=(",", ":"))
+    for d in docs:
+        if d["source"] == "added":
+            with open(os.path.join(out_dir, "listings", doc_id(d["id"]) + ".json"), "w", encoding="utf-8") as fh:
+                json.dump(d, fh, default=str)
     with open(os.path.join(out_dir, "meta.json"), "w", encoding="utf-8") as fh:
         json.dump(dict(meta, generated=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                        count=len(results)), fh)

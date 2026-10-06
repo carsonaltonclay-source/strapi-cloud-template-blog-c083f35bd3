@@ -217,6 +217,7 @@ const CATS = [["water", "Water"], ["electric", "Power"], ["septic", "Septic"], [
 const SVGNS = "http://www.w3.org/2000/svg";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const docId = id => String(id).replace(/[^A-Za-z0-9_\-.~:@+]/g, "_").slice(0, 180);
 const money = v => v == null ? "—" : "$" + Math.round(v).toLocaleString();
 const px = (lon, lat) => [(lon - LON0) * K * 1000, (LAT0 - lat) * 1000];
 const tone = f => !f || f.status === "unknown" ? "unk" : f.points >= 19 ? "good" : f.points >= 12 ? "ok" : "bad";
@@ -496,11 +497,17 @@ drawBase(); render();
   S.db = db;
   const user = await window.claude.use("user");
   if (user && (await user.can("data.write")) === false) { S.canWrite = false; $("addPanel").hidden = true; }
+  // Market listings arrive in bundles ("chunks"); hand-added ones one per doc ("listings").
+  let bulk = [], single = [];
+  const merge = () => { S.loaded = true; S.listings = [...bulk, ...single]; liveRender(); };
+  db.collection("chunks").limit(500).onSnapshot(snap => {
+    bulk = snap.docs.flatMap(d => (d.data().items || []).map(r => ({ ...r, _doc: docId(r.id) })));
+    merge();
+  }, merge);
   db.collection("listings").limit(1000).onSnapshot(snap => {
-    S.loaded = true;
-    S.listings = snap.docs.map(d => ({ ...d.data(), _doc: d.id }));
-    liveRender();
-  }, () => { S.loaded = true; render(); });
+    single = snap.docs.map(d => ({ ...d.data(), _doc: d.id }));
+    merge();
+  }, merge);
   db.doc("meta/info").onSnapshot(d => {
     const m = d.exists ? d.data() : null; S.meta = m;
     if (m) {
