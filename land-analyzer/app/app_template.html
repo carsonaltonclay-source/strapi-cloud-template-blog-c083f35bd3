@@ -43,6 +43,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-body); margin: 0; }
 .wrap { max-width: 1440px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 40px; display: flex; flex-direction: column; gap: 14px; }
 h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
@@ -140,7 +141,7 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 .dist input[type=range] { width: 150px; accent-color: var(--accent); padding: 0; border: none; background: none; }
 @media (max-width: 520px) { .dist { flex: 1 1 100%; } .dist input[type=range] { flex: 1; width: auto; } }
 .m-dist { fill: color-mix(in srgb, var(--accent) 6%, transparent); stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: 7 5; vector-effect: non-scaling-stroke; pointer-events: none; }
-.m-dist-label { fill: var(--accent); font-family: var(--f-display); font-weight: 700; paint-order: stroke; stroke: var(--map-land); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+.m-dist-label { fill: var(--accent); font-family: var(--f-display); font-weight: 700; paint-order: stroke; stroke: var(--map-land); stroke-width: calc(4px / var(--u, 1)); stroke-linejoin: round; pointer-events: none; }
 .count-pill { font: 600 13px/1 var(--f-display); letter-spacing: 0.04em; color: var(--muted); margin-left: auto; white-space: nowrap; }
 
 .main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; align-items: start; }
@@ -165,7 +166,7 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 .m-relief { mix-blend-mode: multiply; opacity: 0.9; pointer-events: none; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .m-relief { opacity: 1; filter: contrast(1.7) brightness(1.05); } }
 :root[data-theme="dark"] .m-relief { opacity: 1; filter: contrast(1.7) brightness(1.05); }
-.m-callout { fill: var(--ink); font-family: var(--f-display); font-weight: 700; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+.m-callout { fill: var(--ink); font-family: var(--f-display); font-weight: 700; paint-order: stroke; stroke: var(--panel); stroke-width: calc(4px / var(--u, 1)); stroke-linejoin: round; pointer-events: none; }
 .scale { position: absolute; left: 10px; bottom: 10px; background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line);
   border-radius: 8px; padding: 4px 8px 5px; font: 600 11px/1 var(--f-display); letter-spacing: 0.04em; color: var(--muted); }
 .scale i { display: block; height: 5px; border: 1.5px solid var(--ink); border-top: none; margin-top: 4px; }
@@ -180,7 +181,7 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 .m-ring { fill: none; stroke: var(--map-ring); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .m-ring.minor { stroke-width: 0.8; stroke-dasharray: 2 4; opacity: 0.7; }
 #labels, #shields { pointer-events: none; }
-.m-label { fill: var(--map-label); font-family: var(--f-display); font-weight: 600; paint-order: stroke; stroke: var(--map-land); stroke-width: 3.5px; stroke-linejoin: round; }
+.m-label { fill: var(--map-label); font-family: var(--f-display); font-weight: 600; paint-order: stroke; stroke: var(--map-land); stroke-width: calc(3.5px / var(--u, 1)); stroke-linejoin: round; }
 .m-label.county { font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
 .m-dot { stroke: #fff; stroke-width: 1.2; stroke-opacity: 0.9; vector-effect: non-scaling-stroke; cursor: pointer; fill-opacity: 0.9; }
 .m-dot:hover, .m-dot.hl { fill-opacity: 1; stroke: var(--ink); stroke-width: 2; }
@@ -324,6 +325,99 @@ a { color: var(--accent); }
 .req button { border: none; background: none; color: var(--muted); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 30;
   background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; }
+/* R5 tokens: sequential purple for price heat (distinct from status colors) */
+:root { --seq-1: #eceaf6; --seq-2: #cfc9ea; --seq-3: #a99fd8; --seq-4: #7f72c0; --seq-5: #5a4aa3; --seq-6: #3b2d7a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --seq-1: #2a2640; --seq-2: #3b3466; --seq-3: #54488f; --seq-4: #7566b5; --seq-5: #9b8ed6; --seq-6: #c6bdf0; } }
+:root[data-theme="dark"] { --seq-1: #2a2640; --seq-2: #3b3466; --seq-3: #54488f; --seq-4: #7566b5; --seq-5: #9b8ed6; --seq-6: #c6bdf0; }
+/* R5-1 heat map */
+.m-hex { stroke: var(--panel); stroke-width: 1; vector-effect: non-scaling-stroke; fill-opacity: 0.88; cursor: zoom-in; }
+.m-hex:hover { stroke: var(--ink); stroke-width: 2; }
+.mapmode { position: absolute; left: 10px; bottom: 46px; display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent); }
+.mapmode button { border: none; background: none; border-radius: 999px; padding: 5px 11px; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.mapmode button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.heatlegend { position: absolute; left: 10px; top: 10px; background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 10px; font-size: 11.5px; color: var(--muted); }
+.heatlegend .ramp { display: flex; margin: 4px 0 2px; } .heatlegend .ramp i { width: 26px; height: 9px; }
+.heatlegend .ramp i:first-child { border-radius: 3px 0 0 3px; } .heatlegend .ramp i:last-child { border-radius: 0 3px 3px 0; }
+.heatlegend .ends { display: flex; justify-content: space-between; }
+.mapbox.heat .legend { display: none; }
+
+/* R5-2 price range */
+.price-rng { display: inline-flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 4px 12px 2px; width: 230px; flex: none; }
+.pr-label { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+.pr-label b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.pr-track { position: relative; height: 34px; }
+.pr-track svg { position: absolute; left: 8px; right: 8px; top: 0; width: calc(100% - 16px); height: 20px; }
+.pr-track svg rect { fill: var(--line); } .pr-track svg rect.in { fill: var(--accent); opacity: 0.55; }
+.pr-track .line { position: absolute; left: 8px; right: 8px; bottom: 9px; height: 3px; border-radius: 2px; background: var(--line); }
+.pr-track .line i { position: absolute; top: 0; bottom: 0; background: var(--accent); border-radius: 2px; }
+.pr-track input[type=range] { position: absolute; left: 0; right: 0; bottom: 1px; width: 100%; height: 18px; margin: 0; padding: 0; border: none;
+  background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+.pr-track input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: var(--panel); border: 2px solid var(--accent); cursor: pointer; }
+.pr-track input[type=range]::-moz-range-thumb { pointer-events: auto; width: 13px; height: 13px; border-radius: 50%; background: var(--panel); border: 2px solid var(--accent); cursor: pointer; }
+.pr-track input[type=range]::-webkit-slider-runnable-track { background: none; }
+.pr-track input[type=range]::-moz-range-track { background: none; }
+/* R5-3 acreage chips + R5-4 distance presets */
+.acre-seg { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 3px; flex: none; }
+.acre-seg span { font-size: 12px; color: var(--muted); padding: 0 6px 0 8px; }
+.acre-seg button, .presets button { border: none; background: none; border-radius: 999px; padding: 4px 9px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.acre-seg button[aria-pressed="true"], .presets button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.presets { display: inline-flex; gap: 1px; margin-left: 2px; }
+@media (max-width: 520px) { .presets { display: none; } }
+/* R5-5 top picks */
+.picks { display: flex; flex-direction: column; gap: 8px; }
+.picks-h { display: flex; align-items: baseline; gap: 10px; }
+.picks-h h3 { font-size: 16px; } .picks-h span { color: var(--muted); font-size: 12.5px; }
+.picks-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+.pick { flex: 0 0 196px; scroll-snap-align: start; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 12px; padding: 10px;
+  display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 4px 10px; align-items: center; transition: border-color .15s, transform .15s; }
+.pick:hover { border-color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { .pick:hover { transform: translateY(-2px); } }
+.pick .plat { width: 52px; height: 52px; grid-row: span 2; }
+.pick b { font: 700 17px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.pick .w { font-size: 12px; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick .v { grid-column: 1 / -1; font-size: 11.5px; font-weight: 600; color: var(--good); display: flex; justify-content: space-between; }
+.pick .v em { font-style: normal; color: var(--muted); font-weight: 500; }
+/* R5-6 compare */
+.cmp { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; font-size: 13px; color: var(--muted); padding: 6px 10px; display: inline-flex; gap: 5px; align-items: center; }
+.cmp[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.foot-r { display: inline-flex; gap: 6px; }
+.tray > span { display: inline-flex; align-items: center; gap: 10px; }
+.tray > span + span:not([hidden]) { border-left: 1px solid var(--line); padding-left: 10px; }
+.tray > span[hidden] { display: none; }
+.tray .x { background: var(--soft); color: var(--muted); width: 28px; height: 28px; padding: 0; }
+.tray #cmpCount { color: var(--accent); }
+.modal { position: fixed; inset: 0; z-index: 50; background: rgb(10 14 12 / 0.45); display: grid; place-items: center; padding: 16px; }
+.sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; width: min(980px, 100%); max-height: calc(100vh - 32px); overflow: auto;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.3); }
+.sheet header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); z-index: 1; }
+.sheet header button { border: none; background: var(--soft); border-radius: 50%; width: 32px; height: 32px; font-size: 15px; }
+.cmp-wrap { overflow-x: auto; }
+.cmp-t { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 13px; }
+.cmp-t th, .cmp-t td { padding: 9px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.cmp-t th[scope=row] { color: var(--muted); font-weight: 500; white-space: nowrap; width: 130px; }
+.cmp-t thead th { vertical-align: bottom; }
+.cmp-t thead .plat { width: 64px; height: 64px; }
+.cmp-t .best { font-weight: 700; color: var(--good); }
+.cmp-t .pill { font-size: 12px; }
+/* R5-7 smart empty */
+.sugg-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px; }
+.sugg { border: 1px solid var(--accent); color: var(--accent); background: var(--panel); border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; }
+.sugg:hover { background: var(--accent-soft); }
+/* R5-8 glance preview */
+#dots.previewing .m-dot:not(.match) { fill-opacity: 0.12; stroke-opacity: 0.2; }
+#dots.previewing .m-cl, #dots.previewing .m-hex { opacity: 0.25; }
+#dots.previewing .m-dot.match { stroke: var(--ink); stroke-width: 1.6; }
+/* R5-9 footprint + downtown */
+.m-foot { fill: color-mix(in srgb, var(--accent) 22%, transparent); stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; pointer-events: none; }
+/* R5-10 list headers */
+.lhead { display: grid; grid-template-columns: 6px 88px 62px minmax(0, 1fr) auto 58px; gap: 12px; align-items: center; padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--line); background: var(--soft); font: 600 11px/1 var(--f-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.lhead button { border: none; background: none; padding: 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; text-align: left; display: inline-flex; gap: 4px; align-items: center; }
+.lhead button.on { color: var(--ink); }
+.lhead .m { text-align: right; justify-content: flex-end; }
+@media (max-width: 520px) { .lhead { grid-template-columns: 6px 74px minmax(0, 1fr) auto; } .lhead .a, .lhead .m { display: none; } }
 /* R4-1 clusters */
 .m-cl circle.bg { fill: var(--panel); stroke: none; }
 .m-cl path { fill: none; stroke-width: 3.5; vector-effect: non-scaling-stroke; }
@@ -331,7 +425,7 @@ a { color: var(--accent); }
 .m-cl { cursor: zoom-in; }
 .m-cl:hover circle.bg { fill: var(--accent-soft); }
 /* R4-2 water labels */
-.m-wlabel { fill: var(--map-water-line); font-family: var(--f-body); font-style: italic; font-weight: 500; paint-order: stroke; stroke: var(--map-land); stroke-width: 3px; stroke-linejoin: round; letter-spacing: 0.02em; }
+.m-wlabel { fill: var(--map-water-line); font-family: var(--f-body); font-style: italic; font-weight: 500; paint-order: stroke; stroke: var(--map-land); stroke-width: calc(3px / var(--u, 1)); stroke-linejoin: round; letter-spacing: 0.02em; }
 /* R4-3/4 badges + eyebrow */
 .c-eyebrow { font: 600 10.5px/1 var(--f-display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 .c-eyebrow .fresh { color: var(--good); }
@@ -500,7 +594,8 @@ a { color: var(--accent); }
     <div class="c-row">
       <input id="q" type="search" placeholder="Search address, town, parcel #" aria-label="Search">
       <div class="dist"><label for="dist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.5"/></svg>Within <b id="distVal">25</b> mi</label>
-        <input id="dist" type="range" min="1" max="25" step="1" value="25" aria-describedby="distVal"></div>
+        <input id="dist" type="range" min="1" max="25" step="1" value="25" aria-describedby="distVal">
+        <span class="presets" id="presets"><button data-mi="5">5</button><button data-mi="10">10</button><button data-mi="25">25</button><button data-mi="50">50</button></span></div>
       <select id="sort" aria-label="Sort">
         <option value="score">Sort: Best score</option>
         <option value="value">Sort: Best value</option>
@@ -511,8 +606,15 @@ a { color: var(--accent); }
       </select>
     </div>
     <div class="c-row chips">
-      <input id="maxPrice" type="number" min="0" step="5000" placeholder="Max price" aria-label="Max price">
-      <input id="minAcres" type="number" min="0" step="0.5" placeholder="Min acres" aria-label="Min acres">
+      <div class="price-rng" role="group" aria-label="Price range">
+        <div class="pr-label"><span>Price</span><b id="prLabel">Any price</b></div>
+        <div class="pr-track"><svg id="prHist" preserveAspectRatio="none" aria-hidden="true"></svg><div class="line"><i id="prFill"></i></div>
+          <input id="pMin" type="range" min="0" max="13" step="1" value="0" aria-label="Minimum price">
+          <input id="pMax" type="range" min="0" max="13" step="1" value="13" aria-label="Maximum price"></div>
+      </div>
+      <div class="acre-seg" role="group" aria-label="Minimum acres"><span>Acres</span>
+        <button data-a="0" aria-pressed="true">Any</button><button data-a="1" aria-pressed="false">1+</button><button data-a="5" aria-pressed="false">5+</button>
+        <button data-a="10" aria-pressed="false">10+</button><button data-a="20" aria-pressed="false">20+</button><button data-a="40" aria-pressed="false">40+</button></div>
       <button class="chip" id="fWater" aria-pressed="false"></button>
       <button class="chip" id="fPower" aria-pressed="false"></button>
       <button class="chip" id="fAccess" aria-pressed="false"></button>
@@ -546,6 +648,8 @@ a { color: var(--accent); }
         <button id="zreset" aria-label="Reset map" style="font-size:13px">⤢</button>
       </div>
       <div class="tip" id="tip" hidden></div>
+      <div class="mapmode" role="group" aria-label="Map style"><button data-mode="dots" aria-pressed="true">Dots</button><button data-mode="heat" aria-pressed="false">Price heat</button></div>
+      <div class="heatlegend" id="heatLegend" hidden>Median price per acre<div class="ramp"><i style="background:var(--seq-1)"></i><i style="background:var(--seq-2)"></i><i style="background:var(--seq-3)"></i><i style="background:var(--seq-4)"></i><i style="background:var(--seq-5)"></i><i style="background:var(--seq-6)"></i></div><div class="ends"><span>$2K</span><span>$500K+</span></div></div>
       <div class="scale" id="scale" aria-hidden="true"><span id="scaleLabel">5 mi</span><i id="scaleBar" style="width:80px"></i></div>
       <div class="north" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3l4 9h-8z" fill="var(--ink)"/><path d="M12 21l-4-9h8z" fill="var(--line)"/></svg></div>
     </div>
@@ -597,7 +701,13 @@ a { color: var(--accent); }
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="loadbar" id="loadbar" aria-hidden="true"><i></i></div>
-<div class="tray" id="tray" hidden><b id="trayCount">★ 0</b><span class="thumbs" id="trayThumbs"></span><button id="trayBtn">Show starred</button></div>
+<div class="tray" id="tray" hidden>
+  <span id="tStar"><b id="trayCount">★ 0</b><span class="thumbs" id="trayThumbs"></span><button id="trayBtn">Show starred</button></span>
+  <span id="tCmp" hidden><b id="cmpCount">⇄ 0</b><button id="cmpBtn">Compare</button><button class="x" id="cmpClear" aria-label="Clear compare list">✕</button></span>
+</div>
+<div class="modal" id="cmpModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cmpTitle">
+  <header><h2 id="cmpTitle">Compare parcels</h2><button id="cmpClose" aria-label="Close">✕</button></header>
+  <div class="cmp-wrap" id="cmpBody"></div></div></div>
 <button class="fab" id="fab" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg><span id="fabLabel">Top</span></button>
 
 <script>
@@ -658,6 +768,9 @@ const GROUPS = {
 const PAGE = 40;
 let VIEW = "cards";
 const HIDDEN_RATINGS = new Set();
+const PSTEPS = [0, 1e4, 25e3, 5e4, 75e3, 1e5, 15e4, 2e5, 3e5, 5e5, 75e4, 1e6, 2e6, Infinity];
+const COMPARE = new Set();
+let MAPMODE = "dots", MIN_ACRES = 0, PREVIEW = null;
 try { VIEW = localStorage.getItem("landfinder.view") || "cards"; } catch (e) {}
 const S = { listings: [], meta: null, requests: [], marks: {}, sel: null, hover: null, open: new Set(), shown: PAGE, glance: null,
             f: { water: false, power: false, access: false, star: false }, db: null, canWrite: true, loaded: false, medians: {},
@@ -696,7 +809,7 @@ let vb = { ...VB0 };
 let reclusterRaf = 0;
 function setVB() {
   svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); scaleMarks();
-  if (clusterW && Math.abs(vb.w - clusterW) / clusterW > 0.08) { cancelAnimationFrame(reclusterRaf); reclusterRaf = requestAnimationFrame(() => drawDots(lastDots)); }
+  if (clusterW && Math.abs(vb.w - clusterW) / clusterW > 0.08) { cancelAnimationFrame(reclusterRaf); reclusterRaf = requestAnimationFrame(() => drawMap(lastDots)); }
 }
 function el(tag, attrs, parent) {
   const n = document.createElementNS(SVGNS, tag);
@@ -721,7 +834,10 @@ function drawBase() {
   BASEMAP.roads.filter(r => r.kind !== "primary").forEach(r => el("path", { d: pathD(r.paths), class: "m-road2" }, g));
   BASEMAP.roads.filter(r => r.kind === "primary").forEach(r => el("path", { d: pathD(r.paths), class: "m-road" }, g));
   [10, 25, 50].forEach(m => el("circle", { cx: 0, cy: 0, r: m * MI, class: "m-ring minor" }, g));
-  el("path", { d: "M-7 0H7M0 -7V7", stroke: "var(--map-ring)", "stroke-width": 2, "vector-effect": "non-scaling-stroke" }, g);
+  { const dg = el("g", { "data-x": 0, "data-y": 0 }, SH);
+    const pts = Array.from({ length: 10 }, (_, i) => { const a = Math.PI / 5 * i - Math.PI / 2, r = i % 2 ? 3.6 : 8; return (r * Math.cos(a)).toFixed(1) + "," + (r * Math.sin(a)).toFixed(1); }).join(" ");
+    el("polygon", { points: pts, fill: "var(--accent)", stroke: "var(--panel)", "stroke-width": 1.5 }, dg);
+    const dt = el("text", { x: 11, y: 4, fill: "var(--accent)", "font-size": 11, "font-weight": 700, "font-family": "var(--f-display)", stroke: "var(--map-land)", "stroke-width": 3, "paint-order": "stroke" }, dg); dt.textContent = "Downtown"; }
   const countyPts = { Spokane: [-117.2, 47.47], Stevens: [-117.75, 48.12], Lincoln: [-118.1, 47.5], Kootenai: [-116.75, 47.62],
                       "Pend Oreille": [-117.2, 48.3], Whitman: [-117.5, 47.08], Bonner: [-116.6, 48.3], Benewah: [-116.62, 47.2], Adams: [-118.45, 47.0] };
   for (const [name, [lon, lat]] of Object.entries(countyPts)) {
@@ -784,6 +900,7 @@ function unitPx() { const r = svg.getBoundingClientRect(); return r.width ? Math
 const dotPx = r => Math.min(9, 3.2 + Math.sqrt(Math.max(r.acres || 0.2, 0.05)) * 0.95);
 function scaleMarks() {
   const u = unitPx() || 0.8, fs = 12 / u;
+  svg.style.setProperty("--u", u.toFixed(4)); // keeps text halos a constant on-screen width
   $("labels").querySelectorAll("text").forEach(t => t.setAttribute("font-size", (fs * +t.dataset.s).toFixed(2)));
   $("shields").querySelectorAll("g").forEach(g => g.setAttribute("transform", `translate(${g.dataset.x} ${g.dataset.y}) scale(${(1 / u).toFixed(3)})`));
   $("dots").querySelectorAll("circle.m-dot, circle.m-halo").forEach(c => c.setAttribute("r", (+c.dataset.px / u).toFixed(2)));
@@ -820,6 +937,48 @@ $("zin").onclick = () => zoom(1 / 1.5); $("zout").onclick = () => zoom(1.5); $("
 new ResizeObserver(() => { scaleMarks(); drawTopo(); }).observe(document.body);
 
 const byId = new Map();
+function drawMap(list) { MAPMODE === "heat" ? drawHeat(list) : drawDots(list); }
+const SQ3 = Math.sqrt(3);
+function drawHeat(list) {
+  lastDots = list; clusterW = vb.w;
+  const g = $("dots"); g.textContent = "";
+  const u = unitPx() || 0.8, Rh = Math.max(1.2 * MI, 18 / u);
+  const bins = new Map();
+  for (const r of list) {
+    if (r.lat == null || !(r.price_per_acre > 0)) continue;
+    const [x, y] = px(r.lon, r.lat);
+    let q = (SQ3 / 3 * x - y / 3) / Rh, rr = (2 / 3 * y) / Rh, s3 = -q - rr;
+    let rq = Math.round(q), rr2 = Math.round(rr), rs = Math.round(s3);
+    const dq = Math.abs(rq - q), dr = Math.abs(rr2 - rr), ds = Math.abs(rs - s3);
+    if (dq > dr && dq > ds) rq = -rr2 - rs; else if (dr > ds) rr2 = -rq - rs;
+    const k = rq + "," + rr2;
+    (bins.get(k) || bins.set(k, { q: rq, r: rr2, v: [] }).get(k)).v.push(r.price_per_acre);
+  }
+  const lo = Math.log(2e3), hi = Math.log(5e5);
+  for (const b of bins.values()) {
+    const v = b.v.sort((a, c) => a - c), med = v[Math.floor(v.length / 2)];
+    const cls = Math.max(1, Math.min(6, 1 + Math.floor((Math.log(med) - lo) / (hi - lo) * 6)));
+    const cx = Rh * SQ3 * (b.q + b.r / 2), cy = Rh * 1.5 * b.r;
+    const d = Array.from({ length: 6 }, (_, i) => { const a = Math.PI / 180 * (60 * i - 30); return (i ? "L" : "M") + (cx + Rh * 0.97 * Math.cos(a)).toFixed(1) + " " + (cy + Rh * 0.97 * Math.sin(a)).toFixed(1); }).join("") + "Z";
+    const h = el("path", { d, class: "m-hex", fill: `var(--seq-${cls})`, "data-cx": cx, "data-cy": cy, "data-n": v.length, "data-med": med }, g);
+    const t = el("title", {}, h); t.textContent = `${v.length} parcel${v.length > 1 ? "s" : ""} · median ${kmoney(med)}/acre. Click to zoom in.`;
+  }
+  drawSelected(list, g);
+  scaleMarks();
+}
+$("dots").addEventListener("click", e => {
+  const h = e.target.closest(".m-hex"); if (!h) return;
+  const nw = Math.max(vb.w * 0.45, 40), cx = +h.dataset.cx, cy = +h.dataset.cy;
+  vb = { x: cx - nw / 2, y: cy - nw * (vb.h / vb.w) / 2, w: nw, h: nw * (vb.h / vb.w) }; setVB();
+});
+document.querySelector(".mapmode").addEventListener("click", e => {
+  const b = e.target.closest("[data-mode]"); if (!b) return;
+  MAPMODE = b.dataset.mode;
+  document.querySelectorAll(".mapmode [data-mode]").forEach(x => x.setAttribute("aria-pressed", x === b));
+  $("mapbox").classList.toggle("heat", MAPMODE === "heat"); $("heatLegend").hidden = MAPMODE !== "heat";
+  drawMap(lastDots);
+});
+
 let lastDots = [], clusterW = 0;
 function drawDots(list) {
   lastDots = list; clusterW = vb.w;
@@ -832,7 +991,8 @@ function drawDots(list) {
     (cells.get(k) || cells.set(k, []).get(k)).push(p);
   }
   const singles = [], clusters = [];
-  for (const grp of cells.values()) (grp.length >= 6 ? clusters : singles).push(...(grp.length >= 6 ? [grp] : grp));
+  const minCl = vb.w < 70 ? Infinity : 6; // no clustering once zoomed in to street level
+  for (const grp of cells.values()) (grp.length >= minCl ? clusters : singles).push(...(grp.length >= minCl ? [grp] : grp));
   singles.sort((a, b) => (b.r.acres || 0) - (a.r.acres || 0)); // small dots on top
   for (const { r, x, y } of singles)
     el("circle", { cx: x, cy: y, r: 4, "data-px": dotPx(r).toFixed(1), "data-id": r.id, class: "m-dot", fill: toneVar(ratingTone(r.rating)) }, g);
@@ -854,15 +1014,24 @@ function drawDots(list) {
     const tx = el("text", { x: cx, y: cy, "font-size": (12 / u).toFixed(2) }, cg); tx.textContent = n;
     const ti = el("title", {}, cg); ti.textContent = `${n} parcels here: ${counts.map(([t, c]) => `${c} ${t === "good" ? "build-ready" : t === "ok" ? "need work" : "high risk"}`).join(", ")}. Click to zoom in.`;
   }
+  drawSelected(list, g);
+  scaleMarks();
+}
+function drawSelected(list, g) {
   const sel = S.sel && byId.get(S.sel);
   if (sel && sel.lat != null && list.includes(sel)) {
     const [x, y] = px(sel.lon, sel.lat);
+    // true-scale lot outline once zoomed in close enough to see it (centred on the map pin, so approximate)
+    if (sel.shape && sel.shape.length > 2 && vb.w < 160) {
+      const k = 1000 / 111320;
+      const d = sel.shape.map(([mx, my], i) => (i ? "L" : "M") + (x + mx * k).toFixed(2) + " " + (y - my * k).toFixed(2)).join("") + "Z";
+      const f = el("path", { d, class: "m-foot" }, g); const t = el("title", {}, f); t.textContent = "Approximate lot outline";
+    }
     el("circle", { cx: x, cy: y, r: 4, "data-px": (dotPx(sel) + 2).toFixed(1), class: "m-dot hl", fill: toneVar(ratingTone(sel.rating)), "data-id": sel.id }, g);
     el("circle", { cx: x, cy: y, r: 4, "data-px": (dotPx(sel) + 2).toFixed(1), class: "m-halo" }, g);
     const lab = el("text", { x, y, "data-y": y, "data-off": dotPx(sel) + 9, "text-anchor": "middle", class: "m-callout" }, g);
     lab.textContent = kmoney(sel.price);
   }
-  scaleMarks();
 }
 $("dots").addEventListener("click", e => {
   const c = e.target.closest(".m-cl"); if (!c) return;
@@ -947,13 +1116,13 @@ function valueRatio(r) {
 /* ---------- list ---------- */
 const has = (f, set) => f && set.includes(f.status);
 function filtered() {
-  const q = $("q").value.trim().toLowerCase(), maxP = parseFloat($("maxPrice").value), minA = parseFloat($("minAcres").value);
+  const q = $("q").value.trim().toLowerCase(), minP = PSTEPS[+$("pMin").value], maxP = PSTEPS[+$("pMax").value], minA = MIN_ACRES;
   const g = S.glance && GROUPS[S.glance.cat].find(x => x[0] === S.glance.key);
   const tf = $("terrainF").value;
   const list = S.listings.filter(r => {
     if (q && ![r.address, r.city, r.parcel_id, r.zip, r.county, r.mls].join(" ").toLowerCase().includes(q)) return false;
-    if (!isNaN(maxP) && r.price != null && r.price > maxP) return false;
-    if (!isNaN(minA) && r.acres != null && r.acres < minA) return false;
+    if (r.price != null && (r.price < minP || r.price > maxP)) return false;
+    if (minA && r.acres != null && r.acres < minA) return false;
     if (S.f.water && !has(r.water, ["well", "public", "shared_well", "public_area"])) return false;
     if (S.f.power && !has(r.electric, ["on_site", "at_road", "likely_near"])) return false;
     if (S.f.access && has(r.access, ["landlocked"])) return false;
@@ -1044,6 +1213,46 @@ function valueMeter(r) {
     <div class="v-track" aria-hidden="true"><span class="v-mark" style="left:${pos}%"></span></div></div>`;
 }
 
+// R5-5 top picks: best value among build-ready (or near) parcels in the current view
+function topPicks(list) {
+  if (list.length < 10 || S.f.star) return "";
+  const picks = list.filter(r => r.score >= 72 && r.price).map(r => ({ r, v: valueRatio(r)?.ratio })).filter(x => x.v != null && x.v < 0.85)
+    .sort((a, b) => a.v - b.v).slice(0, 8);
+  if (picks.length < 3) return "";
+  return `<section class="picks" aria-label="Top picks"><div class="picks-h"><h3>Top picks</h3><span>Best value among the strongest parcels shown</span></div>
+    <div class="picks-row">${picks.map(({ r, v }) => `<button class="pick" data-pick="${esc(r.id)}">${plat(r)}<b>${money(r.price)}</b>
+      <span class="w">${r.acres ?? "?"} ac · ${esc(r.city || r.county || "")}</span><span class="v">${Math.round((1 - v) * 100)}% below typical<em>${r.score}</em></span></button>`).join("")}</div></section>`;
+}
+// R5-7 smart empty state: offer the relaxations that would bring results back
+function suggestions() {
+  const tries = [];
+  const count = fn => { const undo = fn(); const n = filtered().length; undo(); return n; };
+  if (S.radius < S.maxRadius) tries.push(["radius", `Widen to ${S.maxRadius} mi`, () => { const o = S.radius; S.radius = S.maxRadius; return () => S.radius = o; }]);
+  if (+$("pMin").value > 0 || +$("pMax").value < 13) tries.push(["price", "Any price", () => { const a = $("pMin").value, b = $("pMax").value; $("pMin").value = 0; $("pMax").value = 13; return () => { $("pMin").value = a; $("pMax").value = b; }; }]);
+  if (MIN_ACRES) tries.push(["acres", "Any acreage", () => { const o = MIN_ACRES; MIN_ACRES = 0; return () => MIN_ACRES = o; }]);
+  if ($("terrainF").value) tries.push(["terrain", "Any terrain", () => { const o = $("terrainF").value; $("terrainF").value = ""; return () => $("terrainF").value = o; }]);
+  if ($("q").value) tries.push(["q", "Clear search", () => { const o = $("q").value; $("q").value = ""; return () => $("q").value = o; }]);
+  for (const [k, lab] of [["water", "Has water"], ["power", "Power close"], ["access", "Not landlocked"], ["star", "Starred"]])
+    if (S.f[k]) tries.push(["f-" + k, `Drop "${lab}"`, () => { S.f[k] = false; return () => S.f[k] = true; }]);
+  if (S.glance) tries.push(["glance", "Clear summary filter", () => { const o = S.glance; S.glance = null; return () => S.glance = o; }]);
+  if (HIDDEN_RATINGS.size) tries.push(["ratings", "Show all ratings", () => { const o = [...HIDDEN_RATINGS]; HIDDEN_RATINGS.clear(); return () => o.forEach(x => HIDDEN_RATINGS.add(x)); }]);
+  const opts = tries.map(([k, lab, fn]) => [k, lab, count(fn)]).filter(x => x[2] > 0).sort((a, b) => b[2] - a[2]).slice(0, 3);
+  return opts.length ? opts.map(([k, lab, n]) => `<button class="sugg" data-sugg="${k}">${esc(lab)} · +${n.toLocaleString()}</button>`).join("")
+    : `<button class="sugg" data-sugg="all">Clear all filters</button>`;
+}
+function applySuggestion(k) {
+  if (k === "radius") { S.radius = S.maxRadius; $("dist").value = S.radius; fitRadius(); }
+  else if (k === "price") { $("pMin").value = 0; $("pMax").value = 13; priceLabel(); }
+  else if (k === "acres") setAcres(0);
+  else if (k === "terrain") $("terrainF").value = "";
+  else if (k === "q") $("q").value = "";
+  else if (k.startsWith("f-")) { const f = k.slice(2); S.f[f] = false; $({ water: "fWater", power: "fPower", access: "fAccess", star: "fStar" }[f]).setAttribute("aria-pressed", "false"); }
+  else if (k === "glance") S.glance = null;
+  else if (k === "ratings") { HIDDEN_RATINGS.clear(); document.querySelectorAll("[data-rate]").forEach(b => b.setAttribute("aria-pressed", "true")); }
+  else $("clearAll").click();
+  S.shown = PAGE; render();
+}
+
 function lrow(r) {
   const rt = ratingTone(r.rating);
   const cats = [...CATS, ["_terrain", "Terrain"]];
@@ -1084,7 +1293,8 @@ function card(r, i) {
     ${mark.note && !open ? `<div class="src">📝 ${esc(mark.note)}</div>` : ""}
     <div class="c-foot">
       <button class="more" data-open="${esc(r.id)}" aria-expanded="${open}">${open ? "Hide details" : "Why? Show the evidence"}</button>
-      ${S.db && S.canWrite ? `<button class="star" data-star="${esc(r._doc)}" aria-pressed="${!!mark.star}">${mark.star ? "★ Starred" : "☆ Star"}</button>` : ""}
+      <span class="foot-r"><button class="cmp" data-cmp="${esc(r.id)}" aria-pressed="${COMPARE.has(r.id)}">⇄ ${COMPARE.has(r.id) ? "Comparing" : "Compare"}</button>
+      ${S.db && S.canWrite ? `<button class="star" data-star="${esc(r._doc)}" aria-pressed="${!!mark.star}">${mark.star ? "★ Starred" : "☆ Star"}</button>` : ""}</span>
     </div>`;
   if (open) {
     const scout = r.county === "Spokane" && r.parcel_id
@@ -1158,24 +1368,28 @@ function render() {
     if (selIdx >= S.shown) S.shown = Math.ceil((selIdx + 1) / PAGE) * PAGE;
     const rest = list.length - S.shown;
     const page = list.slice(0, S.shown);
+    const sortKey = $("sort").value;
+    const hd = (k, label, cls = "") => `<button class="${cls}${sortKey === k ? " on" : ""}" data-sort="${k}">${label}${sortKey === k ? (k === "acres" ? " ▼" : " ▲") : ""}</button>`;
+    const lhead = `<div class="lhead"><span></span>${hd("price", "Price")}${hd("acres", "Acres", "a")}<span>Location</span><span>Status</span>${hd("miles", "Miles", "m")}</div>`;
     const body = VIEW === "list"
-      ? `<div class="rowlist">${page.map(r => S.open.has(r.id) ? `</div>${card(r, 99)}<div class="rowlist">` : lrow(r)).join("")}</div>`.replace(/<div class="rowlist"><\/div>/g, "")
-      : page.map(card).join("");
+      ? `<div class="rowlist">${lhead}${page.map(r => S.open.has(r.id) ? `</div>${card(r, 99)}<div class="rowlist">` : lrow(r)).join("")}</div>`.replace(/<div class="rowlist"><\/div>/g, "")
+      : topPicks(list) + page.map(card).join("");
     $("cards").innerHTML = list.length
       ? body +
         `<div class="more-row" id="moreRow"><span>Showing ${Math.min(S.shown, list.length).toLocaleString()} of ${list.length.toLocaleString()}</span>
           <span class="prog"><i style="width:${Math.round(Math.min(S.shown, list.length) / list.length * 100)}%"></i></span>
           ${rest > 0 ? `<button class="btn" id="showMore">Load ${Math.min(rest, PAGE)} more</button>` : ""}</div>`
-      : `<div class="empty">${LAND_ICON}<b>Nothing matches these filters</b><span>Try a higher max price or clear a filter.</span></div>`;
+      : `<div class="empty">${LAND_ICON}<b>Nothing matches these filters</b><span>Try one of these:</span><div class="sugg-row">${suggestions()}</div></div>`;
   }
   observeMore();
   drawDist();
-  drawDots(list);
+  drawMap(list);
   renderGlance(list);
   renderGlanceSum(list);
   renderHeadline();
   renderGlanceChip();
   renderTray();
+  priceHist(); priceLabel(); markPresets();
   $("loadbar").hidden = S.loaded || S.db === false;
   if (S.listings.length && !S.animated) {
     S.animated = true;
@@ -1230,15 +1444,25 @@ $("glance").addEventListener("click", e => {
   S.shown = PAGE; render();
 });
 function anyFilter() {
-  return !!(HIDDEN_RATINGS.size || $("q").value || $("maxPrice").value || $("minAcres").value || $("terrainF").value || S.glance || Object.values(S.f).some(Boolean));
+  return !!(HIDDEN_RATINGS.size || $("q").value || +$("pMin").value > 0 || +$("pMax").value < 13 || MIN_ACRES || $("terrainF").value || S.glance || Object.values(S.f).some(Boolean));
 }
 $("clearAll").addEventListener("click", () => {
-  ["q", "maxPrice", "minAcres", "terrainF"].forEach(id => $(id).value = "");
+  ["q", "terrainF"].forEach(id => $(id).value = "");
+  $("pMin").value = 0; $("pMax").value = 13; setAcres(0);
   for (const k in S.f) S.f[k] = false;
   ["fWater", "fPower", "fAccess", "fStar"].forEach(id => $(id).setAttribute("aria-pressed", "false"));
   S.glance = null; HIDDEN_RATINGS.clear(); document.querySelectorAll("[data-rate]").forEach(b => b.setAttribute("aria-pressed", "true"));
   S.shown = PAGE; render();
 });
+function setPreview(cat, key) {
+  const dots = $("dots");
+  if (!cat) { dots.classList.remove("previewing"); dots.querySelectorAll(".match").forEach(c => c.classList.remove("match")); return; }
+  const st = GROUPS[cat].find(x => x[0] === key)[3];
+  dots.classList.add("previewing");
+  dots.querySelectorAll("circle.m-dot[data-id]").forEach(c => { const r = byId.get(c.dataset.id); c.classList.toggle("match", !!r && has(r[cat], st)); });
+}
+$("glance").addEventListener("pointerover", e => { const b = e.target.closest("[data-gc]"); if (b) setPreview(b.dataset.gc, b.dataset.gk); });
+$("glance").addEventListener("pointerout", e => { const b = e.target.closest("[data-gc]"); if (b && !b.contains(e.relatedTarget)) setPreview(null); });
 $("glanceChip").addEventListener("click", e => { if (e.target.closest("#clearGlance")) { S.glance = null; S.shown = PAGE; render(); } });
 
 // 6. load the next page automatically when the end of the list scrolls into view
@@ -1279,7 +1503,7 @@ function select(id, scroll) {
 }
 
 /* ---------- events ---------- */
-["q", "maxPrice", "minAcres", "sort", "terrainF"].forEach(id => $(id).addEventListener("input", () => { S.shown = PAGE; render(); }));
+["q", "sort", "terrainF"].forEach(id => $(id).addEventListener("input", () => { S.shown = PAGE; render(); }));
 [["fWater", "water"], ["fPower", "power"], ["fAccess", "access"], ["fStar", "star"]].forEach(([id, k]) =>
   $(id).addEventListener("click", e => { S.f[k] = !S.f[k]; S.shown = PAGE; e.currentTarget.setAttribute("aria-pressed", S.f[k]); render(); }));
 
@@ -1295,6 +1519,17 @@ function setView(v) {
 $("vCards").onclick = () => setView("cards"); $("vList").onclick = () => setView("list");
 $("cards").addEventListener("click", async e => {
   if (e.target.id === "showMore") { S.shown += PAGE; render(); return; }
+  const sg = e.target.closest("[data-sugg]"); if (sg) { applySuggestion(sg.dataset.sugg); return; }
+  const sk = e.target.closest(".lhead [data-sort]"); if (sk) { $("sort").value = sk.dataset.sort; S.shown = PAGE; render(); return; }
+  const pk = e.target.closest("[data-pick]"); if (pk) { select(pk.dataset.pick, true); return; }
+  const cb = e.target.closest("[data-cmp]");
+  if (cb) {
+    const id = cb.dataset.cmp;
+    if (COMPARE.has(id)) COMPARE.delete(id);
+    else if (COMPARE.size >= 3) { toast("You can compare up to 3 parcels. Remove one first."); return; }
+    else COMPARE.add(id);
+    render(); return;
+  }
   const cp = e.target.closest("[data-copy]");
   if (cp) {
     const v = cp.dataset.copy;
@@ -1370,6 +1605,39 @@ function setMaxRadius(max) {
   render(); fitRadius();
 }
 
+/* R5-2 price range */
+function priceLabel() {
+  const a = +$("pMin").value, b = +$("pMax").value;
+  $("prLabel").textContent = a === 0 && b === 13 ? "Any price" : `${a === 0 ? "$0" : kmoney(PSTEPS[a])} – ${b === 13 ? "any" : kmoney(PSTEPS[b])}`;
+  $("prFill").style.left = (a / 13 * 100) + "%"; $("prFill").style.right = (100 - b / 13 * 100) + "%";
+}
+function priceHist() {
+  const pool = S.listings.filter(r => r.miles_from_spokane == null || r.miles_from_spokane <= S.radius);
+  const counts = PSTEPS.slice(0, -1).map((lo, i) => pool.filter(r => r.price >= lo && r.price < PSTEPS[i + 1]).length);
+  const max = Math.max(1, ...counts), a = +$("pMin").value, b = +$("pMax").value, W = 100 / counts.length;
+  $("prHist").setAttribute("viewBox", "0 0 100 20");
+  $("prHist").innerHTML = counts.map((c, i) => `<rect class="${i >= a && i < b ? "in" : ""}" x="${(i * W + 0.4).toFixed(2)}" y="${(20 - c / max * 19).toFixed(2)}" width="${(W - 0.8).toFixed(2)}" height="${(c / max * 19).toFixed(2)}"/>`).join("");
+}
+["pMin", "pMax"].forEach(id => $(id).addEventListener("input", e => {
+  let a = +$("pMin").value, b = +$("pMax").value;
+  if (a >= b) { if (id === "pMin") $("pMin").value = a = b - 1; else $("pMax").value = b = a + 1; }
+  priceLabel(); S.shown = PAGE; render();
+}));
+/* R5-3 acreage chips */
+function setAcres(v) {
+  MIN_ACRES = v;
+  document.querySelectorAll(".acre-seg [data-a]").forEach(b => b.setAttribute("aria-pressed", +b.dataset.a === v));
+}
+document.querySelector(".acre-seg").addEventListener("click", e => { const b = e.target.closest("[data-a]"); if (!b) return; setAcres(+b.dataset.a); S.shown = PAGE; render(); });
+/* R5-4 distance presets */
+function markPresets() { document.querySelectorAll("#presets [data-mi]").forEach(b => { b.setAttribute("aria-pressed", +b.dataset.mi === S.radius); b.hidden = +b.dataset.mi > S.maxRadius; }); }
+$("presets").addEventListener("click", e => {
+  const b = e.target.closest("[data-mi]"); if (!b) return;
+  S.radius = Math.min(+b.dataset.mi, S.maxRadius); $("dist").value = S.radius; S.shown = PAGE;
+  try { localStorage.setItem("landfinder.radius", S.radius); } catch (err) {}
+  render(); fitRadius();
+});
+
 /* R4-5 theme switch */
 function applyTheme(t) {
   if (t === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
@@ -1390,12 +1658,47 @@ document.querySelector(".legend").addEventListener("click", e => {
 /* R4-6 starred tray */
 function renderTray() {
   const starred = S.listings.filter(r => S.marks[r._doc]?.star);
-  $("tray").hidden = !starred.length || !S.db;
-  if (!starred.length) return;
-  $("trayCount").textContent = `★ ${starred.length} starred`;
-  $("trayThumbs").innerHTML = starred.slice(0, 4).map(plat).join("");
-  $("trayBtn").textContent = S.f.star ? "Show all" : "Show starred";
+  for (const id of [...COMPARE]) if (!byId.has(id)) COMPARE.delete(id);
+  $("tStar").hidden = !starred.length || !S.db;
+  $("tCmp").hidden = !COMPARE.size;
+  $("tray").hidden = $("tStar").hidden && $("tCmp").hidden;
+  if (starred.length) {
+    $("trayCount").textContent = `★ ${starred.length} starred`;
+    $("trayThumbs").innerHTML = starred.slice(0, 4).map(plat).join("");
+    $("trayBtn").textContent = S.f.star ? "Show all" : "Show starred";
+  }
+  $("cmpCount").textContent = `⇄ ${COMPARE.size} to compare`;
+  $("cmpBtn").disabled = COMPARE.size < 2;
+  $("cmpBtn").textContent = COMPARE.size < 2 ? "Pick 1 more" : "Compare";
 }
+function openCompare() {
+  const rs = [...COMPARE].map(id => byId.get(id)).filter(Boolean);
+  const best = (vals, low) => { const nums = vals.filter(v => v != null); if (nums.length < 2) return null; return low ? Math.min(...nums) : Math.max(...nums); };
+  const row = (label, vals, fmt, opts = {}) => {
+    const b = opts.best ? best(vals, opts.low) : null;
+    return `<tr><th scope="row">${label}</th>${vals.map(v => `<td class="${b != null && v === b ? "best" : ""}">${fmt(v)}</td>`).join("")}</tr>`;
+  };
+  const statusRow = (c, name) => `<tr><th scope="row">${name}</th>${rs.map(r => `<td><span class="pill ${tone(r[c])}">${esc(r[c]?.label || "Unknown")}</span></td>`).join("")}</tr>`;
+  $("cmpBody").innerHTML = `<table class="cmp-t"><thead><tr><th></th>${rs.map(r => `<th scope="col">${plat(r)}<div class="price" style="font-size:20px;margin-top:6px">${money(r.price)}</div><div class="src">${esc([r.address, r.city].filter(Boolean).join(", "))}</div></th>`).join("")}</tr></thead><tbody>
+    ${row("Score", rs.map(r => r.score), v => `${v} / 100`, { best: true })}
+    ${row("Acres", rs.map(r => r.acres), v => v ?? "—", { best: true })}
+    ${row("Price per acre", rs.map(r => r.price_per_acre), v => kmoney(v), { best: true, low: true })}
+    ${row("Miles from Spokane", rs.map(r => r.miles_from_spokane), v => v ?? "—", { best: true, low: true })}
+    ${statusRow("water", "Water")}${statusRow("electric", "Power")}${statusRow("septic", "Septic")}${statusRow("access", "Access")}
+    ${row("Terrain", rs.map(r => r.terrain?.position_label), v => esc(v || "—"))}
+    ${row("Average slope", rs.map(r => r.terrain?.slope_mean_pct), v => v != null ? v + "%" : "—", { best: true, low: true })}
+    ${row("Flat ground", rs.map(r => r.terrain?.flat_pct), v => v != null ? v + "%" : "—", { best: true })}
+    ${row("Days on market", rs.map(r => r.days_on_market), v => v ?? "—")}
+    ${row("Warnings", rs.map(r => r.flags?.length || 0), v => v ? `${v}` : "None", { best: true, low: true })}
+    <tr><th scope="row"></th>${rs.map(r => `<td>${r.url ? `<a class="act primary" target="_blank" rel="noopener" href="${esc(r.url)}">Open listing</a>` : ""}</td>`).join("")}</tr>
+  </tbody></table>`;
+  $("cmpModal").hidden = false; $("cmpClose").focus();
+}
+$("cmpBtn").addEventListener("click", () => { if (COMPARE.size >= 2) openCompare(); });
+$("cmpClear").addEventListener("click", () => { COMPARE.clear(); render(); });
+$("cmpClose").addEventListener("click", () => { $("cmpModal").hidden = true; });
+$("cmpModal").addEventListener("click", e => { if (e.target === $("cmpModal")) $("cmpModal").hidden = true; });
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("cmpModal").hidden) $("cmpModal").hidden = true; });
 $("trayBtn").addEventListener("click", () => {
   S.f.star = !S.f.star; $("fStar").setAttribute("aria-pressed", S.f.star); S.shown = PAGE; render();
   $("cards").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
