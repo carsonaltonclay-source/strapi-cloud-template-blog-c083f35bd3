@@ -9,6 +9,7 @@ import re
 
 CSV_FIELDS = [
     "score", "rating", "price", "acres", "price_per_acre", "miles_from_spokane",
+    "on_hill", "terrain", "slope_pct", "flat_pct", "elevation_ft",
     "water", "water_confidence", "electric", "electric_confidence",
     "septic", "septic_confidence", "access", "access_confidence",
     "address", "city", "state", "zip", "county", "parcel_id", "parcel_match", "zoning",
@@ -32,6 +33,12 @@ def write_csv(results, path):
                 row[f"{cat}_confidence"] = r[cat]["confidence"]
                 row[f"{cat}_detail"] = _detail(r[cat])
             row["flags"] = " | ".join(r["flags"])
+            t = r.get("terrain") or {}
+            row["on_hill"] = {True: "yes", False: "no"}.get(t.get("on_hill"), "")
+            row["terrain"] = f"{t['position_label']}; {t['slope_label']}" if t else ""
+            row["slope_pct"] = t.get("slope_mean_pct", "")
+            row["flat_pct"] = t.get("flat_pct", "")
+            row["elevation_ft"] = t.get("elevation_ft", "")
             w.writerow(row)
 
 

@@ -248,6 +248,12 @@ def gis_evidence(listing, facts):
         else:
             ev["access"].append(Evidence("landlocked", conf, "No mapped road within 0.5 mile", src))
 
+    # ---- terrain ---------------------------------------------------------------------
+    t = facts.get("terrain")
+    if t and t["slope_class"] in ("steep", "very_steep") and (t["flat_pct"] or 0) < 25:
+        flags.append(f"Steep ground: average slope {t['slope_mean_pct']}%, only {t['flat_pct'] or 0}% of the "
+                     "parcel is gentle enough to build on easily")
+
     # ---- misc flags ------------------------------------------------------------------
     if facts.get("flood"):
         flags.append(f"FEMA flood hazard zone {', '.join(facts['flood'])}")
@@ -348,6 +354,7 @@ def analyze(listing, facts):
         "score": score,
         "rating": "Build-ready" if score >= 80 else "Needs work" if score >= 50 else "High risk",
         "shape": parcel_sketch(parcel),
+        "terrain": facts.get("terrain"),
         "flags": flags,
         "errors": facts.get("errors", []),
         "notes": facts.get("notes", []),

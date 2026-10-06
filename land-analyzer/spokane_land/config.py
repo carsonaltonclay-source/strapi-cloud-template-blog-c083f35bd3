@@ -46,6 +46,7 @@ LAYERS = {
     "tiger_secondary_roads": f"{TIGER_GIS}/Transportation/MapServer/6",
 }
 
+ELEVATION_IMAGE_SERVER = "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer"
 CENSUS_GEOCODER = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
 REDFIN_CSV = "https://www.redfin.com/stingray/api/gis-csv"
 

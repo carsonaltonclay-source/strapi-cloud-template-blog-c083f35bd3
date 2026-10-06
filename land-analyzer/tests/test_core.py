@@ -176,6 +176,12 @@ class AnalyzeTests(unittest.TestCase):
         self.assertTrue(4 <= len(r["shape"]) <= 48)
         self.assertAlmostEqual(max(xs) - min(xs), 64, delta=3)  # ~1-acre square, 63.6 m sides
 
+    def test_steep_flag(self):
+        t = {"slope_class": "steep", "flat_pct": 10, "slope_mean_pct": 38, "on_hill": True}
+        r = analyze(self.listing(), facts(terrain=t))
+        self.assertEqual(r["terrain"], t)
+        self.assertTrue(any("Steep ground" in x for x in r["flags"]))
+
     def test_score_range(self):
         best = analyze(self.listing(water_source="Public", electric="On Property",
                                     sewer="Public Sewer", road_access="County Road"), facts())

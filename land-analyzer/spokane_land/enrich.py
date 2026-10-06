@@ -15,6 +15,7 @@ from .config import (
 )
 from .http import HttpError, get_json
 from .models import Parcel
+from .terrain import analyze_terrain
 
 # WA/ID border north of the Clearwater River runs along this meridian.
 WA_ID_BORDER_LON = -117.0399
@@ -194,6 +195,10 @@ class Enricher:
                 facts, "id_water_areas", geometry=target, out_fields="Name,Owner"), "Name")
 
         facts["roads"] = self.roads(listing, parcel, state, facts)
+        facts["terrain"] = analyze_terrain(parcel.geometry if parcel else None, listing.lat, listing.lon,
+                                           parcel.acres if parcel and parcel.acres else listing.lot_acres)
+        if facts["terrain"] is None:
+            facts["errors"].append("terrain: elevation service gave no answer")
         return facts
 
     @staticmethod
