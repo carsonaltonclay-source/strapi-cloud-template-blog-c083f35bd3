@@ -1,10 +1,10 @@
 """Is the parcel on a hill? Slope and landform from USGS 3DEP elevation.
 
-Three requests to the national elevation service per parcel:
+Two requests to the national elevation service per parcel:
   * slope statistics + histogram inside the parcel (how steep, how much flat ground)
-  * elevation statistics inside the parcel (relief from low to high corner)
-  * elevation statistics for the surrounding area (is the parcel high or low
-    compared with its neighbourhood -> hilltop / hillside / valley)
+  * elevation samples at points inside the parcel and on rings around it
+    (relief across the lot, and whether it sits high or low compared with its
+    neighbourhood -> hilltop / hillside / valley)
 """
 
 import json
@@ -50,6 +50,39 @@ def _stats(geometry, slope=False, pixel_m=10):
     return st, hist
 
 
+def _samples(shape, clat, clon):
+    """Elevations (m) at a grid inside the parcel and on 3 rings around it."""
+    ring = max(shape["rings"], key=len)
+    xs, ys = [p[0] for p in ring], [p[1] for p in ring]
+    inside_pts = [(clon, clat)]
+    for i in range(1, 6):
+        for j in range(1, 6):
+            x = min(xs) + (max(xs) - min(xs)) * i / 6
+            y = min(ys) + (max(ys) - min(ys)) * j / 6
+            if geo.point_in_polygon(x, y, shape["rings"]):
+                inside_pts.append((x, y))
+    around_pts = []
+    for r_m in (300, 550, NEIGHBORHOOD_M):
+        around_pts += geo.circle_polygon(clat, clon, r_m, 8)[:-1]
+    pts = inside_pts + around_pts
+    data = get_json(ELEVATION_IMAGE_SERVER + "/getSamples", {
+        "geometry": json.dumps({"points": [[round(x, 6), round(y, 6)] for x, y in pts], "spatialReference": {"wkid": 4326}}),
+        "geometryType": "esriGeometryMultipoint", "returnFirstValueOnly": "true", "f": "json",
+    }, post=True)
+    vals = {}
+    for smp in data.get("samples", []):
+        try:
+            v = float(smp["value"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if v > -1000:
+            vals[smp.get("locationId")] = v
+    n_in = len(inside_pts)
+    inside = [v for k, v in vals.items() if k is not None and k < n_in]
+    around = [v for k, v in vals.items() if k is not None and k >= n_in]
+    return inside, around
+
+
 def _pixel_for(acres):
     """~10 m pixels for normal lots, coarser for huge ones (keeps requests fast)."""
     if not acres:
@@ -73,13 +106,14 @@ def analyze_terrain(parcel_geometry, lat, lon, acres=None):
     px = _pixel_for(acres)
     try:
         slope, hist = _stats(shape, slope=True, pixel_m=px)
-        elev, _ = _stats(shape, pixel_m=px)
-        area = {"rings": [geo.circle_polygon(clat, clon, NEIGHBORHOOD_M, 24)], "spatialReference": {"wkid": 4326}}
-        around, _ = _stats(area, pixel_m=30)
+        inside, around = _samples(shape, clat, clon)
     except HttpError:
         return None
-    if not slope or not elev or slope.get("count", 0) == 0:
+    if not slope or slope.get("count", 0) == 0 or not inside:
         return None
+    elev = {"mean": sum(inside) / len(inside), "min": min(inside), "max": max(inside)}
+    around = ({"mean": sum(around) / len(around), "min": min(around + inside), "max": max(around + inside),
+               "count": len(around)} if around else None)
 
     mean_slope = slope["mean"]
     flat_pct = None
