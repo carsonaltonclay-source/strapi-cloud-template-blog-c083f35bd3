@@ -94,7 +94,7 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-cont
 .m-dot { stroke: var(--panel); vector-effect: non-scaling-stroke; cursor: pointer; }
 .m-dot.sel { stroke: var(--ink); }
 
-.list { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.list, #cards { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .list-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
@@ -222,7 +222,8 @@ const px = (lon, lat) => [(lon - LON0) * K * 1000, (LAT0 - lat) * 1000];
 const tone = f => !f || f.status === "unknown" ? "unk" : f.points >= 19 ? "good" : f.points >= 12 ? "ok" : "bad";
 const ratingTone = r => r === "Build-ready" ? "good" : r === "Needs work" ? "ok" : "bad";
 
-const S = { listings: [], meta: null, requests: [], marks: {}, sel: null, open: new Set(),
+const PAGE = 50;
+const S = { listings: [], meta: null, requests: [], marks: {}, sel: null, open: new Set(), shown: PAGE,
             f: { water: false, power: false, access: false, star: false }, db: null, canWrite: true };
 
 /* ---------- map ---------- */
@@ -394,7 +395,13 @@ function render() {
       ? "Listings are stored with this app and can't load here. Open it from claude.ai while signed in."
       : S.loaded ? "No listings yet. Add a property below, or ask Claude to refresh the land listings." : "Loading listings…"}</div>`;
   } else {
-    $("cards").innerHTML = list.length ? list.map(card).join("") : `<div class="empty">No listings match these filters.</div>`;
+    const selIdx = list.findIndex(r => r.id === S.sel);
+    if (selIdx >= S.shown) S.shown = Math.ceil((selIdx + 1) / PAGE) * PAGE;
+    const rest = list.length - S.shown;
+    $("cards").innerHTML = list.length
+      ? list.slice(0, S.shown).map(card).join("") +
+        (rest > 0 ? `<button class="btn" id="showMore" style="align-self:center">Show ${Math.min(rest, PAGE)} more (${rest} left)</button>` : "")
+      : `<div class="empty">No listings match these filters.</div>`;
   }
   drawDots(list);
   tally(list);
@@ -420,11 +427,12 @@ function select(id, scroll) {
 }
 
 /* ---------- events ---------- */
-["q", "maxPrice", "minAcres", "sort"].forEach(id => $(id).addEventListener("input", render));
+["q", "maxPrice", "minAcres", "sort"].forEach(id => $(id).addEventListener("input", () => { S.shown = PAGE; render(); }));
 [["fWater", "water"], ["fPower", "power"], ["fAccess", "access"], ["fStar", "star"]].forEach(([id, k]) =>
-  $(id).addEventListener("click", e => { S.f[k] = !S.f[k]; e.currentTarget.setAttribute("aria-pressed", S.f[k]); render(); }));
+  $(id).addEventListener("click", e => { S.f[k] = !S.f[k]; S.shown = PAGE; e.currentTarget.setAttribute("aria-pressed", S.f[k]); render(); }));
 
 $("cards").addEventListener("click", async e => {
+  if (e.target.id === "showMore") { S.shown += PAGE; render(); return; }
   const o = e.target.closest("[data-open]");
   if (o) { const id = o.dataset.open; S.open.has(id) ? S.open.delete(id) : S.open.add(id); S.sel = id; render(); return; }
   const s = e.target.closest("[data-star]");
