@@ -373,6 +373,8 @@ def analyze(listing, facts):
         "internet": facts.get("internet"),
         "power_company": facts.get("power_company"),
         "zoning_check": zcheck,
+        "comps": facts.get("comps"),
+        "assessed": facts.get("assessed"),
         "flags": flags,
         "errors": facts.get("errors", []),
         "notes": facts.get("notes", []),

@@ -8,7 +8,7 @@ import datetime
 import re
 import statistics
 
-from . import arcgis, buildability, geo
+from . import arcgis, buildability, comps, geo
 from .config import (
     CENSUS_GEOCODER, LAYERS, NEIGHBOR_SEARCH_RADIUS_M, POINT_PARCEL_SNAP_M,
     ROAD_FRONTAGE_TOLERANCE_M, ROAD_SEARCH_RADIUS_M, WELL_SEARCH_RADIUS_M,
@@ -204,7 +204,11 @@ class Enricher:
             ("wildfire", buildability.wildfire, (shape, listing.lat, listing.lon)),
             ("internet", buildability.internet, (listing.lat, listing.lon, state)),
             ("power_company", buildability.power_company, (listing.lat, listing.lon, state)),
-        ):
+        ) + ((
+            ("comps", comps.comparable_sales, (listing.lat, listing.lon, listing.lot_acres or (parcel.acres if parcel else None),
+                                               parcel.parcel_id)),
+            ("assessed", comps.assessed_value, (parcel.parcel_id,)),
+        ) if in_spokane else ()):
             try:
                 facts[key] = fn(*args)
             except Exception as e:  # noqa: BLE001 - best-effort extras must never sink a parcel

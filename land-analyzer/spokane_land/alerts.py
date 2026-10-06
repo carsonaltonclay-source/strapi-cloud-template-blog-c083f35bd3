@@ -3,7 +3,8 @@
 Saved searches are made in the hosted app (database collection "searches",
 one document per search: {name, notify, state}). ``state`` holds the app's
 filters; ``matches`` below mirrors the app's ``passes()`` (app/app_template.html)
-— keep the two in sync.
+— keep the two in sync. The monthly-budget filter depends on each viewer's own
+loan assumptions, so alerts ignore it (as they ignore "Starred" and tracking status).
 
     python -m spokane_land.alerts searches.json output/land_report.json --out alert
 
@@ -46,6 +47,8 @@ def matches(r, st):
         return False
     if f.get("soil") and not (_status(r, "septic") in ("sewer", "installed", "approved")
                               or (r.get("soil") or {}).get("outlook") in SOIL_OK):
+        return False
+    if f.get("clean") and any(c.get("level") == "bad" for c in r.get("checks") or []):
         return False
     if f.get("fire"):
         c = (r.get("wildfire") or {}).get("class")

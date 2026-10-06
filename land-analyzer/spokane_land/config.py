@@ -20,6 +20,8 @@ LAYERS = {
     "sc_parcels": f"{SPOKANE_GIS}/Assessor/Parcels/MapServer/0",
     # Owner, land use ("Vacant Land", ...), last sale.
     "sc_property": f"{SPOKANE_GIS}/SCOUT/PropertyLookup/MapServer/0",
+    # Assessed land value (current assessment year).
+    "sc_assessed": f"{SPOKANE_GIS}/Assessor/SCOUTSimple/MapServer/0",
     # Public water purveyor service areas.
     "sc_water_districts": f"{SPOKANE_GIS}/OpenData/Boundary/MapServer/10",
     "sc_municipal": f"{SPOKANE_GIS}/OpenData/Boundary/MapServer/3",

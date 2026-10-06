@@ -4,7 +4,7 @@ import argparse
 import concurrent.futures
 import sys
 
-from . import drive, geo, history
+from . import comps, drive, geo, history
 from .analyze import analyze
 from .config import DEFAULT_RADIUS_MILES, SPOKANE_LAT, SPOKANE_LON
 from .enrich import Enricher
@@ -118,6 +118,9 @@ def main(argv=None):
 
     previous = history.load_previous(args.previous) if args.previous else []
     refresh = history.apply(kept, previous)
+    for r in kept:
+        r["price_check"] = comps.price_verdict(r.get("price"), r.get("comps"), r.get("assessed"),
+                                               r.get("days_on_market"), r.get("price_cut"))
     if previous:
         print(f"Since last refresh: {refresh['new']} new, {refresh['price_cuts']} price cuts, "
               f"{refresh['removed']} gone", file=sys.stderr)

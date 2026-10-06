@@ -93,6 +93,41 @@ def _snippet(text, start, end, pad=45):
     return ("…" if a > 0 else "") + s + ("…" if b < len(text) else "")
 
 
+# --- Red flags in the listing text ---------------------------------------------
+
+# (key, level, label, regex). level "bad" = can stop a purchase, "warn" = read the fine print.
+RED_FLAGS = [
+    ("unbuildable", "bad", "Listing says it may not be buildable",
+     r"\b(not|non)" + _W + r"buildable\b|\bunbuildable\b|\bno\s+building\s+(allowed|permitted|rights)\b|\bnot\s+a\s+building\s+(lot|site)\b"),
+    ("conservation", "bad", "Conservation easement limits building",
+     r"\bconservation\s+easement\b"),
+    ("hoa", "warn", "HOA / association dues",
+     r"\bHOA\b|\bhome\s*owners?'?\s+association\b|\bassociation\s+(dues|fees?)\b|\bannual\s+dues\b"),
+    ("ccrs", "warn", "Covenants or deed restrictions",
+     r"\bCC\s*&\s*R'?s?\b|\bCCRs?\b|\bcovenants\b|\bdeed\s+restrict|\brestrictive\s+covenant"),
+    ("no_mobile", "warn", "No manufactured / mobile homes",
+     r"\bno\s+(single" + _W + r"wide\s+|double" + _W + r"wide\s+)?(mobile|manufactured)(\s+homes?)?\b|\b(mobile|manufactured)\s+homes?\s+(are\s+)?not\s+(allowed|permitted)\b|\bstick" + _W + r"built\s+only\b"),
+    ("min_size", "warn", "Minimum house size required",
+     r"\bminimum\s+(of\s+)?[\d,]{3,6}\s*(sq\.?\s*f(ee)?t|square\s+f(ee|oo)t|sf)\b"),
+    ("line_easement", "warn", "Power-line or pipeline easement across the land",
+     r"\b(BPA|transmission|high" + _W + r"voltage|power" + _W + r"line|pipe" + _W + r"line|gas\s+line)\s+(easement|corridor|right" + _W + r"of" + _W + r"way)\b"),
+    ("road_agreement", "warn", "Shared road maintenance agreement",
+     r"\broad\s+maintenance\s+(agreement|association|fee)"),
+]
+_RED = [(k, lvl, lab, re.compile(rx, re.I)) for k, lvl, lab, rx in RED_FLAGS]
+
+
+def red_flags(text):
+    """[{key, level, label, detail}] for restrictions mentioned in the listing text."""
+    out = []
+    for key, level, label, rx in _RED:
+        m = rx.search(text or "")
+        if m:
+            out.append({"key": key, "level": level, "label": label,
+                        "detail": f'"{_snippet(text, m.start(), m.end())}"', "source": "listing remarks"})
+    return out
+
+
 # --- Structured MLS (RESO Data Dictionary) values -----------------------------
 
 def from_structured(listing):
