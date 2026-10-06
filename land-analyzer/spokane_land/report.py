@@ -14,6 +14,8 @@ CSV_FIELDS = [
     "septic", "septic_confidence", "access", "access_confidence",
     "address", "city", "state", "zip", "county", "parcel_id", "parcel_match", "zoning",
     "land_use", "days_on_market", "status", "mls", "source", "url", "lat", "lon",
+    "buildable", "buildable_acres", "deal_breakers", "to_check", "price_vs_sales", "sales_estimate", "assessed_value",
+    "driveway_ft", "site_slope_pct", "cell_service", "school_district",
     "all_in_total", "drive_min", "soil_septic", "wildfire", "internet_mbps", "power_company", "zoning_check",
     "first_seen", "price_cut",
     "flags", "water_detail", "electric_detail", "septic_detail", "access_detail",
@@ -36,6 +38,17 @@ def write_csv(results, path):
                 row[f"{cat}_detail"] = _detail(r[cat])
             row["flags"] = " | ".join(r["flags"])
             row["all_in_total"] = (r.get("cost") or {}).get("total") or ""
+            row["buildable"] = (r.get("buildable") or {}).get("label", "")
+            site = r.get("site") or {}
+            row["buildable_acres"] = site.get("buildable_acres", "")
+            row["driveway_ft"] = (site.get("site") or {}).get("driveway_ft", "")
+            row["site_slope_pct"] = (site.get("site") or {}).get("slope_pct", "")
+            row["deal_breakers"] = " | ".join(c["label"] for c in r.get("checks") or [] if c["level"] == "bad")
+            row["to_check"] = " | ".join(c["label"] for c in r.get("checks") or [] if c["level"] == "warn")
+            row["price_vs_sales"] = (r.get("price_check") or {}).get("label", "")
+            row["sales_estimate"] = (r.get("comps") or {}).get("est_value") or ""
+            row["assessed_value"] = (r.get("assessed") or {}).get("land_value") or ""
+            row["cell_service"] = (r.get("cell") or {}).get("label", "")
             row["soil_septic"] = (r.get("soil") or {}).get("rating", "")
             row["wildfire"] = (r.get("wildfire") or {}).get("label", "")
             row["internet_mbps"] = (r.get("internet") or {}).get("down_mbps") or ""
@@ -97,7 +110,7 @@ def _slim(r):
     if doc.get("soil"):
         doc["soil"] = {k: v for k, v in doc["soil"].items() if k not in ("share", "worst", "source")}
         doc["soil"]["soils"] = doc["soil"].get("soils", [])[:1]
-    for k in ("wildfire", "internet", "power_company"):
+    for k in ("wildfire", "internet", "power_company", "cell", "assessed"):
         if doc.get(k):
             doc[k] = {kk: v for kk, v in doc[k].items() if kk != "source" and v not in ("", None)}
     return doc

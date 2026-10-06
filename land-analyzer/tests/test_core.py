@@ -222,7 +222,14 @@ class CostTests(unittest.TestCase):
     def test_ready_lot_costs_little(self):
         c = cost.all_in(self.result("well", "on_site", "installed", "public_road"), {})
         d = cost.DEFAULTS
-        self.assertEqual(c["improvements"], d["driveway"] + d["prep_flat"])
+        drive = d["driveway_base"] + d["default_driveway_ft"] * d["driveway_per_ft"]
+        self.assertEqual(c["improvements"], drive + d["prep_flat"])
+        # A known house site sets the driveway length and the grading class.
+        site = {"site": {"driveway_ft": 400, "slope_pct": 18}}
+        c = cost.all_in(self.result("well", "on_site", "installed", "public_road"), {"site": site})
+        items = {i["key"]: i["cost"] for i in c["items"]}
+        self.assertEqual(items["access"], d["driveway_base"] + 400 * d["driveway_per_ft"])
+        self.assertEqual(items["prep"], d["prep_steep"])
         self.assertEqual(c["total"], 100000 + c["improvements"])
 
     def test_raw_land(self):
@@ -234,9 +241,9 @@ class CostTests(unittest.TestCase):
         self.assertEqual(items["water"], 200 * d["well_per_ft"] + d["well_system"])
         self.assertEqual(items["power"], d["power_service"] + 1000 * d["power_per_ft"])
         self.assertEqual(items["septic"], d["septic_engineered"])
-        self.assertEqual(items["access"], d["landlocked_access"])
+        self.assertEqual(items["access"], d["landlocked_access"] + d["driveway_base"] + d["default_driveway_ft"] * d["driveway_per_ft"])
         self.assertEqual(items["prep"], d["prep_steep"])
-        self.assertEqual(c["inputs"], {"well_ft": 200, "power_ft": 1150, "soil": "hard"})
+        self.assertEqual(c["inputs"], {"well_ft": 200, "power_ft": 1150, "soil": "hard", "driveway_ft": None, "site_slope": None})
         f["soil"]["outlook"] = "design"
         c = cost.all_in(self.result("needs_well", "likely_near", "required", "landlocked"), f)
         self.assertEqual(c["items"][2]["cost"], d["septic_pressure"])
@@ -294,6 +301,37 @@ class AlertTests(unittest.TestCase):
         subject, txt, _ = alerts.render(groups, "https://example.test")
         self.assertIn("2 new matches", subject)
         self.assertIn("PRICE CUT", txt)
+
+
+class VerdictTests(unittest.TestCase):
+    def listing(self, **kw):
+        return Listing(source="t", id="v1", price=100000, lot_acres=5, lat=LAT, lon=LON, **kw)
+
+    def test_ready_lot_is_buildable(self):
+        r = analyze(self.listing(water_source="Public", electric="On Property", sewer="Public Sewer"),
+                    facts(site={"buildable_acres": 3.2, "buildable_pct": 80, "site": {"slope_pct": 3, "driveway_ft": 120}}))
+        self.assertEqual(r["buildable"]["level"], "yes")
+        self.assertEqual(r["cost"]["inputs"]["driveway_ft"], 120)
+
+    def test_raw_land_needs_work(self):
+        r = analyze(self.listing(), facts())
+        self.assertEqual(r["buildable"]["level"], "work")
+        self.assertIn("drill a well", r["buildable"]["reasons"][-1])
+
+    def test_no_room_is_not_buildable(self):
+        r = analyze(self.listing(), facts(site={"buildable_acres": 0.02, "buildable_pct": 1, "lost_to": {"hazard": 4.5}}))
+        self.assertEqual(r["buildable"]["level"], "no")
+        self.assertTrue(any(c["key"] == "room" and c["level"] == "bad" for c in r["checks"]))
+
+    def test_landlocked_is_questionable(self):
+        f = facts(roads={"has_shape": True, "roads": [
+            {"name": "W Far Rd", "class": "Local", "public": True, "private_hint": False, "dist_m": 250.0}]})
+        r = analyze(self.listing(), f)
+        self.assertEqual(r["buildable"]["level"], "doubt")
+
+    def test_red_flags_from_text(self):
+        self.assertEqual([x["key"] for x in remarks.red_flags("HOA $300/yr, CC&Rs, no mobile homes. Not buildable.")],
+                         ["unbuildable", "hoa", "ccrs", "no_mobile"])
 
 
 if __name__ == "__main__":

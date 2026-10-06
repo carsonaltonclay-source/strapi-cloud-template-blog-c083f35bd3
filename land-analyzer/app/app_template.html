@@ -565,6 +565,27 @@ a { color: var(--accent); }
 .g-leg button.zero { opacity: 0.45; }
 
 
+
+/* J buildability report */
+.verdict { display: inline-flex; align-items: center; gap: 6px; font: 700 12px/1 var(--f-body); padding: 5px 10px; border-radius: 999px; margin-top: 6px; }
+.verdict.yes { background: var(--good-bg); color: var(--good); } .verdict.work { background: var(--accent-soft); color: var(--accent); }
+.verdict.doubt { background: var(--warn-bg); color: var(--warn); } .verdict.no { background: var(--bad-bg); color: var(--bad); }
+.verdict svg.i { width: 13px; height: 13px; }
+.br-head { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; padding: 10px 12px; border-radius: 10px; margin-bottom: 8px; }
+.br-head.yes { background: var(--good-bg); } .br-head.work { background: var(--accent-soft); } .br-head.doubt { background: var(--warn-bg); } .br-head.no { background: var(--bad-bg); }
+.br-head b { font: 700 17px/1.2 var(--f-display); }
+.br-head ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
+.br { width: 100%; border-collapse: collapse; font-size: 13px; }
+.br th { text-align: left; vertical-align: top; width: 150px; padding: 8px 10px 8px 0; font-weight: 600; border-top: 1px solid var(--line); white-space: nowrap; }
+.br th svg.i { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; color: var(--muted); }
+.br td { padding: 8px 0; border-top: 1px solid var(--line); line-height: 1.45; }
+.br td .pill { font-size: 11.5px; padding: 1px 7px; margin-right: 6px; }
+.br td .cost { float: right; font-weight: 700; font-variant-numeric: tabular-nums; margin-left: 10px; }
+.br td a { color: var(--accent); }
+@media (max-width: 560px) { .br th { display: block; width: auto; padding-bottom: 0; border-top: 1px solid var(--line); } .br td { display: block; border-top: none; padding-top: 3px; } .br tr { display: block; } }
+.plat .site { fill: var(--bad); stroke: var(--panel); stroke-width: 1.2; }
+.photo svg circle { fill: #ff5a4f; stroke: #fff; stroke-width: 2; vector-effect: non-scaling-stroke; }
+
 /* H1 price check */
 .pc-bar { position: relative; height: 26px; margin: 8px 0 4px; }
 .pc-bar .rng { position: absolute; top: 9px; height: 8px; border-radius: 4px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
@@ -723,6 +744,8 @@ a { color: var(--accent); }
       <button class="chip" id="fFire" aria-pressed="false"></button>
       <button class="chip" id="fFresh" aria-pressed="false" hidden></button>
       <button class="chip" id="fClean" aria-pressed="false"></button>
+      <label class="chip chip-select bv" for="bvF"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>
+        <select id="bvF" aria-label="Buildable"><option value="">Any buildability</option><option value="work">Buildable (incl. with work)</option><option value="yes">Buildable as-is</option><option value="doubt">Questionable or worse</option></select></label>
       <label class="chip chip-select mo" for="moF"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
         <select id="moF" aria-label="Monthly budget">
           <option value="">Any monthly cost</option><option value="500">Under $500/mo</option><option value="1000">Under $1,000/mo</option>
@@ -939,7 +962,7 @@ const COST_DEFAULTS = {
   well_per_ft: 75, well_system: 10000, default_well_ft: 300, water_hookup: 15000, shared_well: 5000,
   power_service: 6000, power_per_ft: 30, offgrid_solar: 45000,
   septic_conventional: 18000, septic_standard: 22000, septic_pressure: 28000, septic_engineered: 40000, sewer_hookup: 12000,
-  driveway: 6000, easement_extra: 4000, landlocked_access: 25000,
+  driveway_base: 2500, driveway_per_ft: 25, default_driveway_ft: 150, easement_extra: 4000, landlocked_access: 25000,
   prep_flat: 3000, prep_rolling: 7000, prep_steep: 20000, prep_very_steep: 35000,
   down_pct: 30, rate_pct: 8.5, term_yrs: 15, tax_wa_pct: 1.0, tax_id_pct: 0.7,
 };
@@ -949,7 +972,8 @@ const COST_FIELDS = [
   ["electric", "Power", [["power_service", "Service from the road", "$"], ["power_per_ft", "Line extension past 150 ft", "$/ft"], ["offgrid_solar", "Off-grid solar", "$"]]],
   ["septic", "Septic", [["septic_standard", "Standard septic", "$"], ["septic_conventional", "Septic with approved design", "$"],
     ["septic_pressure", "Pressure septic (gravelly / rocky soils)", "$"], ["septic_engineered", "Mound / engineered septic", "$"], ["sewer_hookup", "Sewer hookup", "$"]]],
-  ["access", "Access", [["driveway", "Driveway", "$"], ["easement_extra", "Easement paperwork", "$"], ["landlocked_access", "Buy access + build road", "$"]]],
+  ["access", "Access & driveway", [["driveway_base", "Driveway approach + culvert", "$"], ["driveway_per_ft", "Gravel driveway", "$/ft"],
+    ["default_driveway_ft", "Driveway length if unknown", "ft"], ["easement_extra", "Easement paperwork", "$"], ["landlocked_access", "Buy access + build road", "$"]]],
   ["_terrain", "Site prep", [["prep_flat", "Flat lot", "$"], ["prep_rolling", "Rolling lot", "$"], ["prep_steep", "Steep lot", "$"], ["prep_very_steep", "Very steep lot", "$"]]],
   ["_cal", "Land loan & taxes", [["down_pct", "Down payment", "%"], ["rate_pct", "Interest rate", "%"], ["term_yrs", "Loan length", "yrs"],
     ["tax_wa_pct", "Property tax, Washington", "%"], ["tax_id_pct", "Property tax, Idaho", "%"]]],
@@ -991,12 +1015,14 @@ function allIn(r) {
   else if (soil === "hard") items.push(["septic", d.septic_engineered, "Engineered / mound septic (shallow bedrock, wet or tight soils)"]);
   else if (soil === "design") items.push(["septic", d.septic_pressure, "Pressure-distribution septic (fast-draining or rocky soils)"]);
   else items.push(["septic", d.septic_standard, "Standard septic system"]);
-  const a = st("access");
-  items.push(a === "landlocked" ? ["access", d.landlocked_access, "Buy an access easement + build a road (very uncertain)"]
-    : a === "easement" ? ["access", d.driveway + d.easement_extra, "Driveway + easement paperwork"]
-    : a === "seasonal" ? ["access", d.driveway * 2, "Driveway + road improvements"]
-    : a === "private_road" ? ["access", Math.round(d.driveway * 1.3), "Driveway off a private road"] : ["access", d.driveway, "Driveway"]);
-  const sc = r.terrain?.slope_class;
+  const a = st("access"), dft = inp.driveway_ft || d.default_driveway_ft, drive = d.driveway_base + dft * d.driveway_per_ft;
+  const what = inp.driveway_ft ? `${Math.round(dft).toLocaleString()} ft driveway to the best house site` : `Driveway (~${Math.round(dft).toLocaleString()} ft assumed)`;
+  items.push(a === "landlocked" ? ["access", Math.round(d.landlocked_access + drive), "Buy an access easement + build a road (very uncertain)"]
+    : a === "easement" ? ["access", Math.round(drive + d.easement_extra), what + " + easement paperwork"]
+    : a === "seasonal" ? ["access", Math.round(drive * 1.5), what + " + road improvements"]
+    : a === "private_road" ? ["access", Math.round(drive * 1.15), what + " off a private road"] : ["access", Math.round(drive), what]);
+  const ss = inp.site_slope;
+  const sc = ss != null ? (ss < 8 ? "flat" : ss < 15 ? "rolling" : ss < 25 ? "steep" : "very_steep") : r.terrain?.slope_class;
   items.push(sc === "very_steep" ? ["_terrain", d.prep_very_steep, "Major grading on very steep ground"] : sc === "steep" ? ["_terrain", d.prep_steep, "Grading + foundation work on a steep lot"]
     : sc === "rolling" ? ["_terrain", d.prep_rolling, "Grading on rolling ground"] : ["_terrain", d.prep_flat, "Clearing and building pad"]);
   const improvements = items.reduce((t, x) => t + x[1], 0);
@@ -1346,7 +1372,7 @@ function currentSearch() {
   const g = S.glance && GROUPS[S.glance.cat].find(x => x[0] === S.glance.key);
   const a = +$("pMin").value, b = +$("pMax").value;
   return { q: $("q").value.trim(), pMin: a, pMax: b, min_price: PSTEPS[a] || null, max_price: b === 13 ? null : PSTEPS[b],
-           min_acres: MIN_ACRES, radius: S.radius, f: { ...S.f }, terrain: $("terrainF").value, max_monthly: +$("moF").value || null, status: $("stF").value,
+           min_acres: MIN_ACRES, radius: S.radius, f: { ...S.f }, terrain: $("terrainF").value, max_monthly: +$("moF").value || null, status: $("stF").value, buildable: $("bvF").value,
            glance: g ? { cat: S.glance.cat, key: S.glance.key, statuses: g[3] } : null, hidden: [...HIDDEN_RATINGS], sort: $("sort").value };
 }
 function passes(r, st) {
@@ -1361,6 +1387,7 @@ function passes(r, st) {
   if (f.fire && !lowFire(r)) return false;
   if (f.fresh && !isFresh(r)) return false;
   if (f.clean && hasBad(r)) return false;
+  if (st.buildable) { const lv = r.buildable?.level; if (st.buildable === "yes" ? lv !== "yes" : st.buildable === "work" ? !["yes", "work"].includes(lv) : !["doubt", "no"].includes(lv)) return false; }
   if (st.max_monthly) { const m = monthly(r); if (!m || m.total > st.max_monthly) return false; }
   if (st.status) { const sv = S.marks[r._doc]?.status; if (st.status === "*" ? !sv : sv !== st.status) return false; }
   if (f.star && !S.marks[r._doc]?.star) return false;
@@ -1408,7 +1435,8 @@ function plat(r) {
   const ox = 34 - (minx + maxx) / 2 * sc, oy = 32 + (miny + maxy) / 2 * sc;
   const d = s.map(([x, y], i) => (i ? "L" : "M") + (ox + x * sc).toFixed(1) + " " + (oy - y * sc).toFixed(1)).join("") + "Z";
   const ft = Math.round(span / 0.3048);
-  return `<svg class="plat" viewBox="0 0 72 72" role="img" aria-label="Parcel outline, about ${ft.toLocaleString()} ft across"><path class="lot" d="${d}"/>` +
+  const st = r.site?.site?.xy, dot = st ? `<circle class="site" cx="${(ox + st[0] * sc).toFixed(1)}" cy="${(oy - st[1] * sc).toFixed(1)}" r="2.6"><title>Best house site</title></circle>` : "";
+  return `<svg class="plat" viewBox="0 0 72 72" role="img" aria-label="Parcel outline, about ${ft.toLocaleString()} ft across"><path class="lot" d="${d}"/>${dot}` +
          `<text class="north" x="64" y="11" text-anchor="middle">N</text><path d="M64 13v6" stroke="var(--muted)" stroke-width="1.2"/>` +
          `<text class="north" x="36" y="68" text-anchor="middle" style="font-weight:500">${ft >= 5280 ? (ft / 5280).toFixed(1) + " mi" : ft.toLocaleString() + " ft"}</text></svg>`;
 }
@@ -1436,6 +1464,11 @@ function badges(r) {
 const SEVERE = /landlocked|flood|failed|no water wells|steep ground|conflicting/i;
 const sortFlags = f => [...f].sort((a, b) => SEVERE.test(b) - SEVERE.test(a));
 
+const VERDICT_ICON = { yes: "M5 12l5 5L20 7", work: "M14 6l4 4-9 9H5v-4zM12 8l4 4", doubt: "M12 4 2 20h20zM12 10v4M12 17v.5", no: "M6 6l12 12M18 6 6 18" };
+function verdictPill(r) {
+  const v = r.buildable; if (!v) return "";
+  return `<div class="verdict ${v.level}" title="${esc((v.reasons || []).join("; "))}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="${VERDICT_ICON[v.level]}"/></svg>${esc(v.label)}</div>`;
+}
 // G2 quick build checks on the card
 const ZONE_SHORT = { ok: ["good", "Zoning OK"], splittable: ["good", "Zoning OK"], undersized: ["bad", "Below zone minimum"],
                      not_residential: ["bad", "Zone bars homes"], urban: ["ok", "Urban zone"] };
@@ -1453,6 +1486,7 @@ function buildChips(r) {
   if (r.soil && SOIL_TONE[r.soil.outlook] && !has(r.septic, ["sewer", "installed", "sewer_area"]))
     out.push(`<span class="bchip ${SOIL_TONE[r.soil.outlook]}" title="USDA soil survey: ${esc(r.soil.rating)} for septic drain fields">${icon("_soil")}${SOIL_SHORT[r.soil.outlook]}</span>`);
   if (r.wildfire && r.wildfire.class <= 5) out.push(`<span class="bchip ${FIRE_TONE(r.wildfire.class)}" title="USFS wildfire hazard potential">${icon("_fire")}${esc(r.wildfire.label)} fire risk</span>`);
+  if (r.cell) out.push(`<span class="bchip ${{ good: "good", ok: "ok", poor: "bad", none: "bad" }[r.cell.class] || ""}" title="${esc(r.cell.detail || "")}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg>${r.cell.class === "none" ? "No cell data" : r.cell.class === "good" ? "Cell OK" : r.cell.class === "ok" ? "Some cell" : "Weak cell"}</span>`);
   if (r.internet?.down_mbps) out.push(`<span class="bchip ${NET_TONE[r.internet.class] || ""}" title="Fastest measured home internet within a mile">${icon("_net")}${r.internet.down_mbps >= 1000 ? "1 Gbps+" : r.internet.down_mbps + " Mbps"}</span>`);
   return out.length ? `<div class="bchips">${out.join("")}</div>` : "";
 }
@@ -1513,6 +1547,7 @@ function suggestions() {
   if (MIN_ACRES) tries.push(["acres", "Any acreage", () => { const o = MIN_ACRES; MIN_ACRES = 0; return () => MIN_ACRES = o; }]);
   if ($("terrainF").value) tries.push(["terrain", "Any terrain", () => { const o = $("terrainF").value; $("terrainF").value = ""; return () => $("terrainF").value = o; }]);
   if ($("q").value) tries.push(["q", "Clear search", () => { const o = $("q").value; $("q").value = ""; return () => $("q").value = o; }]);
+  if ($("bvF").value) tries.push(["bv", "Any buildability", () => { const o = $("bvF").value; $("bvF").value = ""; return () => $("bvF").value = o; }]);
   if ($("moF").value) tries.push(["monthly", "Any monthly cost", () => { const o = $("moF").value; $("moF").value = ""; return () => $("moF").value = o; }]);
   for (const [k, lab] of [["water", "Has water"], ["power", "Power close"], ["access", "Not landlocked"], ["star", "Starred"], ["soil", "Septic-friendly soil"], ["fire", "Low fire risk"], ["fresh", "New or price cut"], ["clean", "No deal-breakers"]])
     if (S.f[k]) tries.push(["f-" + k, `Drop "${lab}"`, () => { S.f[k] = false; return () => S.f[k] = true; }]);
@@ -1528,6 +1563,7 @@ function applySuggestion(k) {
   else if (k === "acres") setAcres(0);
   else if (k === "terrain") $("terrainF").value = "";
   else if (k === "monthly") $("moF").value = "";
+  else if (k === "bv") $("bvF").value = "";
   else if (k === "q") $("q").value = "";
   else if (k.startsWith("f-")) { const f = k.slice(2); S.f[f] = false; $(CHIP_IDS[f]).setAttribute("aria-pressed", "false"); }
   else if (k === "glance") S.glance = null;
@@ -1564,7 +1600,7 @@ function card(r, i) {
   let html = `<article class="card r-${rt}${r.id === S.sel ? " sel" : ""}${i < 12 && !reduceMotion ? " rise" : ""}" style="--i:${i}" id="c-${esc(r._doc)}" data-id="${esc(r.id)}">
     <div class="c-head">
       ${plat(r)}
-      <div style="min-width:0">${eyebrow(r)}<div class="price">${money(r.price)}</div>${allinLine(r)}<div class="addr">${esc(loc)}</div><div class="facts">${esc(facts)}</div>${badges(r)}</div>
+      <div style="min-width:0">${eyebrow(r)}<div class="price">${money(r.price)}</div>${allinLine(r)}<div class="addr">${esc(loc)}</div><div class="facts">${esc(facts)}</div>${verdictPill(r)}${badges(r)}</div>
       <div class="scorecol"><div class="ring ${rt}" style="--p:${r.score}" title="${esc(r.rating)} — score ${r.score} of 100"><span>${r.score}<small>${rt === "good" ? "ready" : rt === "ok" ? "work" : "risk"}</small></span></div>
         <div class="sb" aria-label="Score breakdown">${CATS.map(([c, n]) => { const pt = r[c]?.points ?? 8; return `<i title="${n}: ${pt} of 25" style="--w:${Math.round(pt / 25 * 100)}%;--c:${toneVar(tone(r[c]))}"></i>`; }).join("")}</div></div>
     </div>
@@ -1634,22 +1670,21 @@ function card(r, i) {
 
 function photoPanel(r) {
   if (!r.photo) return "";
-  const ph = S.photos[r._doc];
-  if (ph === undefined && S.db) loadPhoto(r._doc);
+  const grp = S.photoDocs[r.photo.doc], ph = grp ? grp[r._doc] || "" : undefined;
+  if (grp === undefined && S.db) loadPhoto(r.photo.doc);
   return `<section class="evc wide"><header>${icon("_photo")}<b>From above</b><span class="src">${esc(r.photo.date ? "Aerial photo " + r.photo.date : "Aerial photo")}</span></header>
-    <div class="photo-row"><figure class="photo">${ph ? `<img alt="Aerial photo of the parcel" src="${ph}">${outline(r)}` : `<div class="bone" style="position:absolute;inset:0"></div>`}<figcaption>${esc(r.photo.credit || "USGS")}</figcaption></figure>
-    <p class="src" style="margin:0">Yellow line: the county parcel boundary (approximate). Check for trees to clear, an existing driveway or structures, and neighbors' homes.</p></div></section>`;
+    <div class="photo-row"><figure class="photo">${grp === undefined || grp === null ? `<div class="bone" style="position:absolute;inset:0"></div>` : ph ? `<img alt="Aerial photo of the parcel" src="${ph}">${outline(r)}` : `<div class="src" style="padding:12px">Photo not available.</div>`}<figcaption>${esc(r.photo.credit || "USGS")}</figcaption></figure>
+    <p class="src" style="margin:0">Yellow line: the parcel boundary (approximate). ${r.photo.site ? "Red dot: the best house site found (gentlest buildable ground closest to the road). " : ""}Look for trees to clear, an existing driveway or buildings, and neighbors' homes.</p></div></section>`;
 }
 function outline(r) {
-  const b = r.photo.bbox, rings = r.photo.rings; if (!b || !rings) return "";
-  const [x0, y0, x1, y1] = b, w = x1 - x0, h = y1 - y0;
-  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="${rings.map(ring => "M" + ring.map(([x, y]) => `${((x - x0) / w * 100).toFixed(1)},${((y1 - y) / h * 100).toFixed(1)}`).join("L") + "Z").join("")}"/></svg>`;
+  const ph = r.photo; if (!ph.path) return "";
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="${ph.path}"/>${ph.site ? `<circle cx="${ph.site[0]}" cy="${ph.site[1]}" r="1.6"/>` : ""}</svg>`;
 }
-S.photos = {};
+S.photoDocs = {};
 async function loadPhoto(doc) {
-  S.photos[doc] = null;
-  try { const d = await S.db.doc("photos/" + doc).get(); S.photos[doc] = d.exists ? d.data().img : ""; }
-  catch (e) { S.photos[doc] = ""; }
+  S.photoDocs[doc] = null;
+  try { const d = await S.db.doc("photos/" + doc).get(); S.photoDocs[doc] = d.exists ? d.data().imgs || {} : {}; }
+  catch (e) { S.photoDocs[doc] = {}; }
   liveRender();
 }
 function pricePanel(r) {
@@ -1692,33 +1727,49 @@ function costPanel(r) {
     <div class="cost-note"><span>Rough planning numbers${changed ? ", using your own assumptions" : " for the Spokane area"}. Get quotes before you buy.</span><button class="linkbtn" data-costs="1">Cost assumptions…</button></div></section>`;
 }
 function buildPanel(r) {
-  const li = (ic, html, tag) => `<li class="bl">${icon(ic)}<span>${html}${tag ? `<span class="tag">${esc(tag)}</span>` : ""}</span></li>`;
-  const items = [];
-  const z = r.zoning_check;
-  if (z) items.push(li("_zone", `<b>Zoning:</b> ${esc(z.detail)}`, "Spokane County zoning code"));
-  else if (r.state === "ID" || (r.county && r.county !== "Spokane")) items.push(li("_zone", `<b>Zoning:</b> not checked for ${esc(r.county || "this")} County. Ask the county planning office about minimum lot size.`));
-  if (r.soil && !has(r.septic, ["sewer", "installed"])) {
-    const what = { good: "Soils suit a standard drain field.", design: "Common for this area: fast-draining gravel or rocky soil usually means a pressure-distribution system.",
-                   hard: `${esc((r.soil.hard_limits || []).join(" and ") || "Poor soils")} — likely a mound or engineered system; get a perc test first.`, unknown: "Not rated (often urban or disturbed ground)." }[r.soil.outlook] || "";
-    items.push(li("_soil", `<b>Septic soils:</b> <span class="pill ${SOIL_TONE[r.soil.outlook] || "unk"}">${esc(r.soil.rating)}</span> ${what}${r.soil.reasons?.length ? ` USDA limits: ${esc(r.soil.reasons.join("; ").toLowerCase())}.` : ""}${r.soil.soils?.length ? ` Soil: ${esc(r.soil.soils[0])}.` : ""}`, "USDA NRCS soil survey"));
-  }
-  if (r.wildfire) items.push(li("_fire", `<b>Wildfire hazard:</b> <span class="pill ${FIRE_TONE(r.wildfire.class)}">${esc(r.wildfire.label)}</span>${r.wildfire.class >= 4 && r.wildfire.class <= 5 ? " Expect defensible-space rules and higher insurance." : ""}`, "USFS"));
-  if (r.internet) items.push(li("_net", r.internet.down_mbps
-    ? `<b>Internet:</b> fastest home connection measured within a mile is <b>${r.internet.down_mbps} Mbps</b> (typical ${r.internet.typical_mbps} Mbps, ${r.internet.tests.toLocaleString()} speed tests)`
-    : `<b>Internet:</b> no home speed tests within a mile — ask providers before you buy`, "Ookla via WA Broadband Office"));
-  else if (r.state === "ID") items.push(li("_net", `<b>Internet:</b> no public speed data for Idaho parcels here`));
-  if (r.power_company) {
-    const pc = r.power_company, web = pc.website && /^https?:\/\//i.test(pc.website) ? pc.website : pc.website ? "https://" + pc.website : "";
-    items.push(li("_plug", `<b>Power company:</b> ${esc(pc.name)}${pc.phone ? ` · <a href="tel:${esc(pc.phone.replace(/[^0-9+]/g, ""))}">${esc(pc.phone)}</a>` : ""}${web ? ` · <a target="_blank" rel="noopener" href="${esc(web)}">website</a>` : ""}. Ask them for a line-extension quote.`, "WA service areas"));
-  }
-  if (r.drive_min != null) items.push(li("_car", `<b>Drive:</b> about <b>${r.drive_min} minutes</b> to downtown Spokane`, "OSRM"));
-  if (r.first_seen || r.price_history?.length > 1) {
-    const ph = (r.price_history || []).map(h => `${kmoney(h.price)} (${esc(h.date)})`).join(" → ");
-    items.push(li("_bell", `<b>History:</b> ${r.first_seen ? `on the market since about ${esc(r.first_seen)}` : ""}${r.price_history?.length > 1 ? `. Price ${ph}` : ""}`));
-  }
-  if (r.also_listed_as?.length) items.push(li("_build", `<b>Also listed as:</b> ${esc(r.also_listed_as.join("; "))}`));
-  if (!items.length) return "";
-  return `<section class="evc wide"><header>${icon("_build")}<b>Can you build here?</b></header><ul>${items.join("")}</ul></section>`;
+  const v = r.buildable, c = allIn(r), item = k => c.items.find(x => x[0] === k);
+  const cost = k => { const it = item(k); return it ? `<span class="cost">${it[1] ? money(it[1]) : "$0"}</span>` : ""; };
+  const pill = f => `<span class="pill ${tone(f)}">${esc(f?.label || "Unknown")}</span>`;
+  const rows = [];
+  const row = (ic, name, html) => rows.push(`<tr><th>${ic.startsWith("<") ? ic : icon(ic)}${name}</th><td>${html}</td></tr>`);
+  const site = r.site, z = r.zoning_check, rules = r.rules || {};
+  // zoning + setbacks
+  const sb = site?.setbacks_ft;
+  row("_zone", "Zoning & setbacks", (z ? `<span class="pill ${{ ok: "good", splittable: "good", undersized: "bad", not_residential: "bad", urban: "ok" }[z.status] || "unk"}">${esc(z.zone || "Zone")}</span>${esc(z.detail)}` : r.zoning ? `Zoned ${esc(r.zoning)}.` : `Zoning not available for ${esc(r.county || "this")} County — ask the county planning office.`)
+    + (sb ? ` Setbacks used: ${sb.front} ft from the road right-of-way, ${sb.side} ft from other lot lines <span class="tag">${esc(sb.source)}</span>` : ""));
+  if (site) row("_build", "Room to build", `<b>${site.buildable_acres} of ${r.acres ?? "?"} acres</b> are buildable (${site.buildable_pct}%)` +
+    (site.lost_to && Object.keys(site.lost_to).length ? ` — lost to ${Object.entries(site.lost_to).map(([k, a]) => `${{ setback: "setbacks", hazard: "wetland/flood/slide/stream areas", steep: "slopes over 30%" }[k] || k} ${a} ac`).join(", ")}.` : ".")
+    + (site.site ? ` Best house site: ${site.site.slope_pct ?? "?"}% slope, ${site.site.driveway_ft != null ? site.site.driveway_ft.toLocaleString() + " ft from the road" : "distance to road unknown"} (red dot on the sketch).` : ""));
+  // legal access + driveway/grading
+  const accCheck = (r.checks || []).find(x => x.key === "access");
+  row("access", "Legal road access", `${pill(r.access)}${esc(accCheck?.detail || r.access?.evidence?.[0]?.detail || "")}${r.access?.status === "public_road" ? " A public road touching the lot normally gives legal access." : r.access?.status === "landlocked" ? " Without a recorded easement there is no legal way in." : " Confirm the easement is recorded and allows utilities."}`);
+  row("_car", "Driveway & grading", `${cost("access")}${esc(item("access")?.[2] || "")}; ${esc(item("_terrain")?.[2] || "")} (${money(item("_terrain")?.[1])}).`);
+  // utilities
+  const w = r.water, e = r.electric, sp = r.septic;
+  row("water", "Water", `${cost("water")}${pill(w)}${esc(item("water")?.[2] || "")}.${(rules.water_limits || []).map(x => ` <b>${esc(x.label)}:</b> ${esc(x.detail || "")}`).join("")}`);
+  row("electric", "Power", `${cost("electric")}${pill(e)}${esc(item("electric")?.[2] || "")}.${r.power_company ? ` Utility: ${esc(r.power_company.name)}${r.power_company.phone ? " · " + esc(r.power_company.phone) : ""}.` : ""}`);
+  const soil = r.soil;
+  row("septic", "Septic / perc", `${cost("septic")}${pill(sp)}${esc(item("septic")?.[2] || "")}.${soil && !has(sp, ["sewer", "installed"]) ? ` USDA soils: ${esc(soil.rating.toLowerCase())}${soil.hard_limits?.length ? " (" + esc(soil.hard_limits.join(", ").toLowerCase()) + ")" : ""}${soil.drainage ? ", " + esc(soil.drainage.toLowerCase()) : ""}.` : ""}${!has(sp, ["sewer", "installed", "approved"]) ? " A perc test / soil log by a designer is the first step." : ""}`);
+  // flood / drainage
+  const fl = (r.checks || []).find(x => x.key === "flood");
+  if (fl) row("water", "Flood & drainage", `<span class="pill ${{ bad: "bad", warn: "ok", ok: "good" }[fl.level]}">${esc(fl.label)}</span>${esc(fl.detail || "")}`);
+  // cell, internet
+  if (r.cell) row(`<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg>`, "Cell service", `<span class="pill ${{ good: "good", ok: "ok", poor: "bad", none: "bad" }[r.cell.class]}">${esc(r.cell.label)}</span>${esc(r.cell.detail || "")}`);
+  if (r.internet) row("_net", "Internet", r.internet.down_mbps ? `Fastest home connection measured within a mile: <b>${r.internet.down_mbps} Mbps</b>${r.internet.typical_mbps ? ` (typical ${r.internet.typical_mbps})` : ""}.` : "No home speed tests within a mile — ask providers.");
+  // permits + county rules
+  const off = rules.offices || {};
+  const offLink = o => o ? (o[1] ? `<a target="_blank" rel="noopener" href="${esc(o[1])}">${esc(o[0])}</a>` : esc(o[0])) : "";
+  const pm = r.permits;
+  if (off.building || off.septic || pm || (rules.notes || []).length)
+    row("_doc", "Permits & county rules", [off.building ? `Building permit: ${offLink(off.building)}.` : "", off.septic ? `Septic permit: ${offLink(off.septic)}.` : "",
+      ...(rules.notes || []).map(esc), pm ? esc(pm.summary) : ""].filter(Boolean).join(" "));
+  if (r.wildfire) row("_fire", "Wildfire", `<span class="pill ${FIRE_TONE(r.wildfire.class)}">${esc(r.wildfire.label)}</span>${r.wildfire.class >= 4 && r.wildfire.class <= 5 ? "Defensible-space rules and higher insurance." : ""}`);
+  const extra = [r.drive_min != null ? `${r.drive_min} min drive to downtown Spokane` : "", r.school_district ? esc(r.school_district) : ""].filter(Boolean).join(" · ");
+  if (extra) row("_car", "Location", extra);
+  if (r.first_seen || r.price_history?.length > 1) row("_bell", "History", `On the market since about ${esc(r.first_seen || "?")}${r.price_history?.length > 1 ? ". Price " + r.price_history.map(h => `${kmoney(h.price)} (${esc(h.date)})`).join(" → ") : ""}.`);
+  if (r.also_listed_as?.length) row("_build", "Also listed as", esc(r.also_listed_as.join("; ")));
+  const head = v ? `<div class="br-head ${v.level}"><div><b>${esc(v.label)}</b>${v.reasons?.length ? `<ul>${v.reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</div></div>` : "";
+  return `<section class="evc wide"><header>${icon("_build")}<b>Is it actually buildable?</b></header>${head}<table class="br"><tbody>${rows.join("")}</tbody></table></section>`;
 }
 
 const skeleton = () => Array.from({ length: 3 }, () => `<div class="card skel" aria-hidden="true">
@@ -1780,6 +1831,7 @@ function render() {
   renderSaved();
   document.querySelector(".chip-select").classList.toggle("on", !!$("terrainF").value);
   document.querySelector(".chip-select.mo").classList.toggle("on", !!$("moF").value);
+  document.querySelector(".chip-select.bv").classList.toggle("on", !!$("bvF").value);
   document.querySelector(".chip-select.st").classList.toggle("on", !!$("stF").value);
   $("stWrap").hidden = !$("stF").value && !Object.values(S.marks).some(m => m.status);
 }
@@ -1829,10 +1881,10 @@ $("glance").addEventListener("click", e => {
   S.shown = PAGE; render();
 });
 function anyFilter() {
-  return !!(HIDDEN_RATINGS.size || $("q").value || $("moF").value || $("stF").value || +$("pMin").value > 0 || +$("pMax").value < 13 || MIN_ACRES || $("terrainF").value || S.glance || Object.values(S.f).some(Boolean));
+  return !!(HIDDEN_RATINGS.size || $("q").value || $("moF").value || $("stF").value || $("bvF").value || +$("pMin").value > 0 || +$("pMax").value < 13 || MIN_ACRES || $("terrainF").value || S.glance || Object.values(S.f).some(Boolean));
 }
 $("clearAll").addEventListener("click", () => {
-  ["q", "terrainF", "moF", "stF"].forEach(id => $(id).value = "");
+  ["q", "terrainF", "moF", "stF", "bvF"].forEach(id => $(id).value = "");
   $("pMin").value = 0; $("pMax").value = 13; setAcres(0);
   for (const k in S.f) S.f[k] = false;
   Object.values(CHIP_IDS).forEach(id => $(id).setAttribute("aria-pressed", "false"));
@@ -1888,7 +1940,7 @@ function select(id, scroll) {
 }
 
 /* ---------- events ---------- */
-["q", "sort", "terrainF", "moF", "stF"].forEach(id => $(id).addEventListener("input", () => { S.shown = PAGE; render(); }));
+["q", "sort", "terrainF", "moF", "stF", "bvF"].forEach(id => $(id).addEventListener("input", () => { S.shown = PAGE; render(); }));
 Object.entries(CHIP_IDS).map(([k, id]) => [id, k]).forEach(([id, k]) =>
   $(id).addEventListener("click", e => { S.f[k] = !S.f[k]; S.shown = PAGE; e.currentTarget.setAttribute("aria-pressed", S.f[k]); render(); }));
 
@@ -2073,6 +2125,8 @@ function openCompare() {
   };
   const statusRow = (c, name) => `<tr><th scope="row">${name}</th>${rs.map(r => `<td><span class="pill ${tone(r[c])}">${esc(r[c]?.label || "Unknown")}</span></td>`).join("")}</tr>`;
   $("cmpBody").innerHTML = `<table class="cmp-t"><thead><tr><th></th>${rs.map(r => `<th scope="col">${plat(r)}<div class="price" style="font-size:20px;margin-top:6px">${money(r.price)}</div><div class="src">${esc([r.address, r.city].filter(Boolean).join(", "))}</div></th>`).join("")}</tr></thead><tbody>
+    ${row("Buildable?", rs.map(r => r.buildable?.label), v => esc(v || "—"))}
+    ${row("Buildable area", rs.map(r => r.site?.buildable_acres), v => v != null ? v + " ac" : "—", { best: true })}
     ${row("Score", rs.map(r => r.score), v => `${v} / 100`, { best: true })}
     ${row("Acres", rs.map(r => r.acres), v => v ?? "—", { best: true })}
     ${row("Price per acre", rs.map(r => r.price_per_acre), v => kmoney(v), { best: true, low: true })}
@@ -2217,7 +2271,7 @@ $("savedRow").addEventListener("click", async e => {
 function applySearch(st) {
   $("q").value = st.q || ""; $("pMin").value = st.pMin ?? 0; $("pMax").value = st.pMax ?? 13; setAcres(st.min_acres || 0);
   for (const k in S.f) { S.f[k] = !!st.f?.[k]; $(CHIP_IDS[k]).setAttribute("aria-pressed", S.f[k]); }
-  $("terrainF").value = st.terrain || ""; $("moF").value = st.max_monthly || ""; $("stF").value = st.status || "";
+  $("terrainF").value = st.terrain || ""; $("moF").value = st.max_monthly || ""; $("stF").value = st.status || ""; $("bvF").value = st.buildable || "";
   S.glance = st.glance ? { cat: st.glance.cat, key: st.glance.key } : null;
   HIDDEN_RATINGS.clear(); (st.hidden || []).forEach(x => HIDDEN_RATINGS.add(x));
   document.querySelectorAll("[data-rate]").forEach(b => b.setAttribute("aria-pressed", !HIDDEN_RATINGS.has(b.dataset.rate)));

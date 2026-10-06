@@ -46,6 +46,26 @@ LAYERS = {
     # US Census TIGER roads (both states) for areas outside the county network.
     "tiger_local_roads": f"{TIGER_GIS}/Transportation/MapServer/8",
     "tiger_secondary_roads": f"{TIGER_GIS}/Transportation/MapServer/6",
+    # Outside Spokane County: zoning, power company, internet.
+    "wa_zoning_atlas": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/arcgis/rest/services/WAZA_Prototype_Layers/FeatureServer/0",
+    "bonner_zoning": "https://cloudgis.bonnercountyid.gov/server/rest/services/Map_Services/ZoningLanduse_Public/MapServer/2",
+    "us_electric_territories": "https://services3.arcgis.com/OYP7N6mAJJCyH6hd/arcgis/rest/services/Electric_Retail_Service_Territories_HIFLD/FeatureServer/0",
+    "ookla_fixed_tiles": "https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/Speedtest_by_Ookla_Global_Fixed_and_Mobile_Network_Performance_Map_Tiles/FeatureServer/0",
+    "ookla_mobile_tiles": "https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/Speedtest_by_Ookla_Global_Fixed_and_Mobile_Network_Performance_Map_Tiles/FeatureServer/1",
+    # FEMA National Flood Hazard Layer, flood hazard zones (both states).
+    "fema_flood": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28",
+    # Deal-breaker checks.
+    "nwi_wetlands": "https://fwspublicservices.wim.usgs.gov/wetlandsmapservice/rest/services/Wetlands/MapServer/0",
+    "wa_landslides": "https://gis.dnr.wa.gov/site3/rest/services/Geology/Landslide_Inventory_Database/MapServer/131",
+    "sc_stream_buffers": f"{SPOKANE_GIS}/ISDSDE/LandCapacityAnalysis/MapServer/4",
+    "wa_mines": "https://gis.dnr.wa.gov/site1/rest/services/Public_Geology/Active_Surface_Mine_Permit_Sites/MapServer/0",
+    "usgs_mine_points": "https://energy.usgs.gov/arcgis/rest/services/Hosted/USMin_Prospect_and_mine_related_map_features/FeatureServer/17",
+    "wa_groundwater_chem": "https://gis.dnr.wa.gov/site1/rest/services/Public_Geology/Groundwater_Chemistry/MapServer/0",
+    "sc_nitrate_55": f"{SPOKANE_GIS}/WaterResources/WRIA55_LittleSpokane/MapServer/2",
+    "sc_nitrate_56": f"{SPOKANE_GIS}/WaterResources/WRIA56_HangmanCreek/MapServer/2",
+    "sc_nitrate_57": f"{SPOKANE_GIS}/WaterResources/WRIA57_MiddleSpokane/MapServer/1",
+    "id_nitrate_wells": "https://mapcase.deq.idaho.gov/arcgis/rest/services/NPA_2020_WMS/MapServer/2",
+    "tiger_school_unified": f"{TIGER_GIS}/School/MapServer/0",
     # WA State Broadband Office: measured speed-test tiles and electric utility territories.
     "wa_speed_tiles": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/ArcGIS/rest/services/Ookla_Fixed_Tiles_WA_Q1_2019_Q1_2023/FeatureServer/50",
     "wa_electric_territories": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/ArcGIS/rest/services/Electric_Retail_Service_Territories/FeatureServer/0",

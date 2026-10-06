@@ -31,6 +31,22 @@ It also answers "can I actually build here, and what will it cost?":
 | **Power company** with phone number (WA) | WA electric retail service territories |
 | **Drive time** to downtown Spokane | OSRM routing (public server) |
 
+Every parcel also gets an **"Is it actually buildable?"** report and verdict
+(Buildable / Buildable with work / Questionable / Likely not buildable):
+
+| Part | How |
+| --- | --- |
+| **Room to build** | grid of points over the parcel; drops setbacks, wetlands, FEMA flood zones, landslides, stream buffers and slopes over 30% (`homesite.py`); picks the best house site |
+| **Driveway & grading** | driveway length from the nearest road to that site × $/ft; grading cost from the slope at the site |
+| **Flood & drainage** | FEMA National Flood Hazard Layer (both states) + USDA soil drainage class / hydric soils |
+| **Deal-breakers** | wetlands (USFWS NWI), landslides (WA DNR), stream buffers (Spokane Co.), active mines (WA DNR; USGS topo pits in ID), well nitrate (WA DNR, Spokane Co., Idaho DEQ), and listing text: HOA, covenants, no manufactured homes, "not buildable", line easements (`dealbreakers.py`, `remarks.red_flags`) |
+| **Is the price fair?** | Spokane County vacant-land sales within 3–6 miles, similar size, last 3 years, plus the assessed land value (`comps.py`); Idaho doesn't publish sale prices |
+| **Monthly cost** | land-loan payment + property tax, with your own down payment / rate / term in the app |
+| **Cell service** | Ookla mobile speed tests (Esri Living Atlas) |
+| **Zoning outside Spokane County** | WA Zoning Atlas (Stevens, Lincoln, Pend Oreille, towns) and Bonner County; Kootenai County's server was down |
+| **County rules** | setbacks, permit offices, well-water limits (`county_rules.py`) |
+| **Aerial photo** | USDA NAIP via USGS, with the parcel line and house site (`--photos MILES`, needs Pillow) |
+
 Output: `output/land_report.html` (interactive map + filterable table),
 `land_report.csv` (open in Excel/Sheets) and `land_report.json`.
 
@@ -42,7 +58,9 @@ Open it on your phone or computer. It shows every analyzed listing on a map and
 in a ranked list with filters (price, acres, has water, power close, not
 landlocked, septic-friendly soil, low fire risk, new or price cut, starred) and
 sorting by all-in cost or drive time. Tap **Why? Show the evidence** on any listing to see where
-each answer came from. You can star listings and keep notes, change the
+each answer came from. You can star listings, keep notes, track each parcel's status (Interested →
+Called seller → Visited → Perc / due diligence → Offer made), download a
+one-page report for your agent or lender, change the
 cost assumptions behind the all-in estimates (saved in your browser), and
 **save searches**: each saved search shows how many new listings match it, and
 searches with "Email me new matches" get an email after each refresh.

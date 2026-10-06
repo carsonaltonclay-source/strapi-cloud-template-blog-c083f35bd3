@@ -8,7 +8,7 @@ import datetime
 import re
 import statistics
 
-from . import arcgis, buildability, comps, geo
+from . import arcgis, buildability, comps, county_rules, dealbreakers, geo, homesite
 from .config import (
     CENSUS_GEOCODER, LAYERS, NEIGHBOR_SEARCH_RADIUS_M, POINT_PARCEL_SNAP_M,
     ROAD_FRONTAGE_TOLERANCE_M, ROAD_SEARCH_RADIUS_M, WELL_SEARCH_RADIUS_M,
@@ -199,22 +199,45 @@ class Enricher:
                                            parcel.acres if parcel and parcel.acres else listing.lot_acres)
         if facts["terrain"] is None:
             facts["errors"].append("terrain: elevation service gave no answer")
-        for key, fn, args in (
-            ("soil", buildability.soil_septic, (shape, listing.lat, listing.lon)),
-            ("wildfire", buildability.wildfire, (shape, listing.lat, listing.lon)),
-            ("internet", buildability.internet, (listing.lat, listing.lon, state)),
-            ("power_company", buildability.power_company, (listing.lat, listing.lon, state)),
-        ) + ((
-            ("comps", comps.comparable_sales, (listing.lat, listing.lon, listing.lot_acres or (parcel.acres if parcel else None),
-                                               parcel.parcel_id)),
-            ("assessed", comps.assessed_value, (parcel.parcel_id,)),
-        ) if in_spokane else ()):
-            try:
-                facts[key] = fn(*args)
-            except Exception as e:  # noqa: BLE001 - best-effort extras must never sink a parcel
-                facts[key] = None
-                facts["errors"].append(f"{key}: {e}")
+        lat, lon = listing.lat, listing.lon
+        acres = listing.lot_acres or (parcel.acres if parcel else None)
+        county = parcel.county if parcel else ""
+        steps = [
+            ("soil", buildability.soil_septic, (shape, lat, lon)),
+            ("wildfire", buildability.wildfire, (shape, lat, lon)),
+            ("internet", buildability.internet, (lat, lon, state)),
+            ("power_company", buildability.power_company, (lat, lon, state)),
+            ("cell", buildability.cell_service, (lat, lon)),
+            ("school_district", dealbreakers.school_district, (lat, lon)),
+            ("rules", county_rules.for_parcel, (county, state, lat, lon)),
+        ]
+        if in_spokane:
+            steps += [("comps", comps.comparable_sales, (lat, lon, acres, parcel.parcel_id)),
+                      ("assessed", comps.assessed_value, (parcel.parcel_id,)),
+                      ("permits", county_rules.permits_nearby, (lat, lon))]
+        else:
+            steps.append(("zoning_other", buildability.zoning_elsewhere, (lat, lon, county, state, acres)))
+        for key, fn, args in steps:
+            self._extra(facts, key, fn, *args)
+        # Fill gaps the Washington-only layers leave (Idaho, territory holes).
+        if not facts.get("power_company"):
+            self._extra(facts, "power_company", buildability.power_company_national, lat, lon)
+        if not facts.get("internet"):
+            self._extra(facts, "internet", buildability.internet_ookla, lat, lon)
+        self._extra(facts, "checks", dealbreakers.run_all, shape, lat, lon, state, in_spokane, listing.remarks,
+                    facts.get("soil"))
+        zone = ", ".join(facts.get("zoning") or []) or ((facts.get("zoning_other") or {}).get("zone") or "")
+        self._extra(facts, "site", homesite.building_site, shape, (facts.get("roads") or {}).get("roads"),
+                    county_rules.setbacks(county, state, zone))
         return facts
+
+    @staticmethod
+    def _extra(facts, key, fn, *args):
+        try:
+            facts[key] = fn(*args)
+        except Exception as e:  # noqa: BLE001 - best-effort extras must never sink a parcel
+            facts[key] = None
+            facts["errors"].append(f"{key}: {e}")
 
     @staticmethod
     def _names(feats, keys):
@@ -343,7 +366,6 @@ class Enricher:
                     r["dist_m"] = geo.polygon_to_paths_m(shape["rings"], r["paths"])
                 else:
                     r["dist_m"] = geo.point_to_paths_m(listing.lon, listing.lat, r["paths"])
-                del r["paths"]
             if found:
                 break
         found.sort(key=lambda r: r["dist_m"])

@@ -335,7 +335,7 @@ def analyze(listing, facts):
     acres = listing.lot_acres or (parcel.acres if parcel else None)
     dist = (geo.miles_between(SPOKANE_LAT, SPOKANE_LON, listing.lat, listing.lon)
             if listing.lat is not None and listing.lon is not None else None)
-    zcheck = buildability.zoning_check(", ".join(facts.get("zoning") or []), acres)
+    zcheck = buildability.zoning_check(", ".join(facts.get("zoning") or []), acres) or facts.get("zoning_other")
     if zcheck and zcheck["status"] == "not_residential":
         flags.append(zcheck["label"])
     elif zcheck and zcheck["status"] == "undersized":
@@ -373,6 +373,12 @@ def analyze(listing, facts):
         "internet": facts.get("internet"),
         "power_company": facts.get("power_company"),
         "zoning_check": zcheck,
+        "checks": derived_checks(findings, zcheck, facts) + list(facts.get("checks") or []),
+        "site": facts.get("site"),
+        "cell": facts.get("cell"),
+        "school_district": facts.get("school_district"),
+        "rules": facts.get("rules"),
+        "permits": facts.get("permits"),
         "comps": facts.get("comps"),
         "assessed": facts.get("assessed"),
         "flags": flags,
@@ -381,7 +387,77 @@ def analyze(listing, facts):
         "remarks": listing.remarks,
     }
     result["cost"] = cost.all_in(result, facts)
+    result["buildable"] = buildable_verdict(result)
     return result
+
+
+def derived_checks(findings, zcheck, facts):
+    """Deal-breaker entries for things the main analysis already found."""
+    out = []
+    acc = findings["access"]
+    if acc.status == "landlocked":
+        out.append({"key": "access", "level": "bad", "label": "No legal road access shown",
+                    "detail": acc.evidence[0].detail if acc.evidence else "", "source": "Road map vs. parcel boundary",
+                    "ask": "Is there a recorded access easement to a public road? Can I see it on the title report?"})
+    elif acc.status in ("easement", "private_road", "seasonal"):
+        out.append({"key": "access", "level": "warn", "label": CATEGORIES["access"][acc.status][0],
+                    "detail": "make sure a recorded easement gives legal access and covers utilities",
+                    "source": "Road map vs. parcel boundary",
+                    "ask": "Is the access easement recorded, and does it allow utilities? Is there a road maintenance agreement?"})
+    elif acc.status in ("public_road", "road_frontage"):
+        out.append({"key": "access", "level": "ok", "label": "Touches a road", "detail": acc.evidence[0].detail if acc.evidence else "",
+                    "source": "Road map vs. parcel boundary"})
+    if findings["septic"].status == "failed":
+        out.append({"key": "perc", "level": "bad", "label": "Failed perc test reported", "source": "listing"})
+    if zcheck and zcheck["status"] == "not_residential":
+        out.append({"key": "zoning", "level": "bad", "label": zcheck["label"], "detail": zcheck["detail"], "source": "zoning"})
+    elif zcheck and zcheck["status"] == "undersized":
+        out.append({"key": "zoning", "level": "warn", "label": zcheck["label"], "detail": zcheck["detail"], "source": "zoning",
+                    "ask": "Is this a legal lot of record that can get a building permit?"})
+    site = facts.get("site")
+    if site and site.get("buildable_acres") is not None:
+        ba = site["buildable_acres"]
+        lost = ", ".join(f"{k} {v} ac" for k, v in (site.get("lost_to") or {}).items())
+        if ba < 0.1:
+            out.append({"key": "room", "level": "bad", "label": "No room for a house after setbacks, slopes and hazards",
+                        "detail": f"lost to {lost}" if lost else "", "source": "parcel shape, elevation and hazard maps"})
+        elif ba < 0.35:
+            out.append({"key": "room", "level": "warn", "label": f"Tight building area: about {ba} acre",
+                        "detail": "house, well (100 ft from the drainfield) and septic need roughly half an acre"
+                                  + (f"; lost to {lost}" if lost else ""), "source": "parcel shape, elevation and hazard maps"})
+    for rule in (facts.get("rules") or {}).get("water_limits") or []:
+        out.append(rule)
+    return out
+
+
+NO_BUILD_KEYS = {"zoning", "perc", "room", "unbuildable", "conservation"}
+
+
+def buildable_verdict(r):
+    """Is it actually buildable? yes / work / doubt / no with the reasons."""
+    bad = [c for c in r.get("checks") or [] if c["level"] == "bad"]
+    warn = [c for c in r.get("checks") or [] if c["level"] == "warn"]
+    hard_soil = (r.get("soil") or {}).get("outlook") == "hard" and r["septic"]["status"] not in ("installed", "sewer", "approved")
+    steep = (r.get("site") or {}).get("site", {}).get("slope_pct") or 0
+    work = []
+    if r["water"]["status"] in ("needs_well", "none", "well_possible", "district_wells"):
+        work.append("drill a well")
+    if r["electric"]["status"] in ("possible", "far", "none"):
+        work.append("bring power a long way")
+    if hard_soil:
+        work.append("engineered septic")
+    if steep > 15:
+        work.append("grading on a slope")
+    if any(c["key"] in NO_BUILD_KEYS for c in bad):
+        level, label = "no", "Likely not buildable"
+    elif bad:
+        level, label = "doubt", "Questionable"
+    elif warn or work:
+        level, label = "work", "Buildable with work"
+    else:
+        level, label = "yes", "Buildable"
+    reasons = [c["label"] for c in bad] + [c["label"] for c in warn][:3] + ([("Needs: " + ", ".join(work))] if work else [])
+    return {"level": level, "label": label, "reasons": reasons[:5]}
 
 
 def parcel_sketch(parcel, max_points=48):

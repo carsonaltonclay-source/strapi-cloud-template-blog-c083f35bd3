@@ -2,6 +2,7 @@
 
 import argparse
 import concurrent.futures
+import os
 import sys
 
 from . import comps, drive, geo, history
@@ -36,6 +37,8 @@ def build_parser():
     p.add_argument("--workers", type=int, default=4, help="parallel GIS lookups (default 4)")
     p.add_argument("--previous", metavar="FILE",
                    help="last run's land_report.json: marks new listings, price cuts and removed listings")
+    p.add_argument("--photos", type=float, metavar="MILES",
+                   help="with --db-export: aerial photos for parcels within MILES of Spokane (needs Pillow)")
     p.add_argument("--no-drive", action="store_true", help="skip drive times (public OSRM routing server)")
     p.add_argument("--no-cache", action="store_true", help="ignore the 24h HTTP cache")
     return p
@@ -79,10 +82,13 @@ def main(argv=None):
         listings = [l for l in listings if l.price is None or l.price <= args.max_price]
 
     enricher = Enricher(use_cache=not args.no_cache)
-    results = []
+    results, shapes = [], {}
 
     def work(listing):
         facts = enricher.enrich(listing)
+        p = facts.get("parcel")
+        if p and p.geometry and p.geometry.get("rings"):
+            shapes[listing.id] = p.geometry["rings"]
         return analyze(listing, facts)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
@@ -132,6 +138,12 @@ def main(argv=None):
         "sources": sources,
         "refresh": refresh,
     }
+    if args.db_export and args.photos is not None:
+        from . import photos
+        cache = os.path.join(os.path.dirname(args.db_export.rstrip("/")) or ".", "photo-cache")
+        n = photos.build(kept, shapes, args.db_export, cache,
+                         select=lambda r: (r["miles_from_spokane"] or 0) <= args.photos or r["source"] == "added")
+        print(f"Aerial photos: {n}", file=sys.stderr)
     paths = write_all(kept, args.out, meta)
     if args.db_export:
         n = export_db(kept, args.db_export, meta)

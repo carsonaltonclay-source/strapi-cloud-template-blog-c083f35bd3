@@ -50,6 +50,11 @@ def matches(r, st):
         return False
     if f.get("clean") and any(c.get("level") == "bad" for c in r.get("checks") or []):
         return False
+    bv = st.get("buildable")
+    if bv:
+        lv = (r.get("buildable") or {}).get("level")
+        if (bv == "yes" and lv != "yes") or (bv == "work" and lv not in ("yes", "work")) or (bv == "doubt" and lv not in ("doubt", "no")):
+            return False
     if f.get("fire"):
         c = (r.get("wildfire") or {}).get("class")
         if c is None or 2 < c < 6:

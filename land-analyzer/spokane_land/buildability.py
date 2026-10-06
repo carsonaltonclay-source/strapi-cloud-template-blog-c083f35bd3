@@ -8,6 +8,7 @@
 """
 
 import json
+import math
 
 from . import arcgis, geo
 from .config import LAYERS, SDA_URL, WILDFIRE_IMAGE_SERVER
@@ -52,7 +53,7 @@ def soil_septic(geometry, lat, lon):
             return None
         wkt = f"POINT({lon:.6f} {lat:.6f})"
     sql = (
-        "SELECT m.mukey, mu.muname, c.compname, c.comppct_r, ci.ruledepth, ci.interphrc, ci.interphr "
+        "SELECT m.mukey, mu.muname, c.compname, c.comppct_r, c.drainagecl, c.hydricrating, ci.ruledepth, ci.interphrc, ci.interphr "
         f"FROM SDA_Get_Mukey_from_intersection_with_WktWgs84('{wkt}') AS m "
         "JOIN mapunit mu ON mu.mukey = m.mukey JOIN component c ON c.mukey = m.mukey "
         "JOIN cointerp ci ON ci.cokey = c.cokey "
@@ -67,12 +68,17 @@ def soil_septic(geometry, lat, lon):
     if len(table) < 2:
         return None
     cols, rows = table[0], [dict(zip(table[0], r)) for r in table[1:]]
-    weight, reasons, soils, hard_by_comp = {}, {}, [], {}
+    weight, reasons, soils, hard_by_comp, drainage, hydric = {}, {}, [], {}, {}, 0.0
     for r in rows:
         pct = float(r.get("comppct_r") or 0)
         if str(r.get("ruledepth")) == "0":
             cls = r.get("interphrc") or "Not rated"
             weight[cls] = weight.get(cls, 0) + pct
+            dcl = r.get("drainagecl")
+            if dcl:
+                drainage[dcl] = drainage.get(dcl, 0) + pct
+            if r.get("hydricrating") == "Yes":
+                hydric += pct
             name = r.get("muname") or ""
             if name and name not in soils:
                 soils.append(name)
@@ -102,6 +108,8 @@ def soil_septic(geometry, lat, lon):
         "worst": worst,
         "outlook": outlook,
         "hard_limits": [k for k, _ in sorted(hard.items(), key=lambda kv: -kv[1])][:2],
+        "drainage": max(drainage, key=drainage.get) if drainage else None,
+        "hydric_pct": round(hydric / total * 100) if total else 0,
         "share": {k: round(v / total * 100) for k, v in weight.items()},
         "reasons": [k for k, _ in sorted(reasons.items(), key=lambda kv: -kv[1])][:3],
         "soils": soils[:3],
@@ -200,20 +208,166 @@ def zoning_check(zoning, acres):
                 "label": f"{z} zone" + (": urban lot sizes" if urban else ""),
                 "detail": f"Zoned {z}." + (" Urban zones allow small lots but need public water and sewer." if urban else "")}
     z, need = max(known, key=lambda kv: kv[1])
-    need_txt = f"{need:g} acres" if need >= 1 else "10,000 sq ft"
+    return _lot_verdict(z, need, acres, "Spokane County")
+
+
+def _need_txt(need):
+    return f"{need:g} acres" if need >= 1 else f"{round(need * 43560, -2):,.0f} sq ft"
+
+
+def _lot_verdict(z, need, acres, county):
+    need_txt = _need_txt(need)
     if acres is None:
         return {"status": "unknown", "zone": z, "min_acres": need, "label": f"{z}: {need_txt} per home",
-                "detail": f"{z} requires {need_txt} per home; lot size unknown."}
+                "detail": f"{z} requires {need_txt} per home; lot size unknown.", "county": county}
     if acres + 0.05 < need:
         return {"status": "undersized", "zone": z, "min_acres": need,
                 "label": f"Smaller than {z} minimum ({need_txt})",
                 "detail": f"{acres:g} ac is below the {need_txt} per home that {z} requires for new lots. "
-                          "Older lots of record are often still buildable — confirm with the county before buying."}
+                          "Older lots of record are often still buildable — confirm with the county before buying.",
+                "county": county}
     splits = int(acres // need) if need else 0
     if splits >= 2:
         return {"status": "splittable", "zone": z, "min_acres": need,
                 "label": f"Meets {z} minimum; room for up to {splits} lots",
                 "detail": f"{z} allows one home per {need_txt}. At {acres:g} ac this parcel could in principle be divided into "
-                          f"{splits} lots (short plat rules, access and water still apply)."}
+                          f"{splits} lots (short plat rules, access and water still apply).", "county": county}
     return {"status": "ok", "zone": z, "min_acres": need, "label": f"Meets {z} minimum ({need_txt})",
-            "detail": f"{acres:g} ac meets the {need_txt} per home that {z} requires."}
+            "detail": f"{acres:g} ac meets the {need_txt} per home that {z} requires.", "county": county}
+
+
+# ---- zoning outside Spokane County ------------------------------------------------
+
+# WA Dept. of Commerce Washington Zoning Atlas: general category -> verdict when there is no lot minimum.
+WAZA_NO_HOMES = {"COM": "commercial", "IND": "industrial", "PUB": "public facilities"}
+WAZA_URBAN = {"LIR", "MR", "MXU"}
+
+# Bonner County Revised Code 12-411, Table 4-1 (minimum lot size, acres).
+BONNER_MIN_ACRES = {"F": 40, "A/f-20": 20, "A/f-10": 10, "R-10": 10, "R-5": 5}
+BONNER_NO_HOMES = ("Commercial", "Industrial")
+
+
+def zoning_elsewhere(lat, lon, county, state, acres):
+    """Zoning verdict for WA counties other than Spokane (WA Zoning Atlas) and Bonner County ID."""
+    if lat is None:
+        return None
+    try:
+        if state == "WA":
+            feats = arcgis.query(LAYERS["wa_zoning_atlas"], geometry=(lon, lat),
+                                 out_fields="ZoneID,ZoneName,WAZAZoneGeneral,DenMinLotSizeSqFt,Jurisdiction")
+            if not feats:
+                return None
+            a = feats[0]["attributes"]
+            z = f"{a.get('ZoneName') or a.get('ZoneID')} ({a.get('ZoneID')})" if a.get("ZoneID") else (a.get("ZoneName") or "")
+            where = a.get("Jurisdiction") or f"{county} County"
+            gen, sqft = a.get("WAZAZoneGeneral"), a.get("DenMinLotSizeSqFt")
+            if gen in WAZA_NO_HOMES:
+                return _no_homes(z, where)
+            if gen == "TRB":
+                return {"status": "unknown", "zone": z, "min_acres": None, "label": "Tribal lands",
+                        "detail": "Tribal lands: county zoning doesn't apply; ask the tribe's planning office.", "county": where}
+            if gen in WAZA_URBAN or (sqft and 0 < sqft < 43560 / 2):
+                return {"status": "urban", "zone": z, "min_acres": None, "label": f"{z}: town lot sizes",
+                        "detail": f"Zoned {z} in {where}; small lots, usually needing town water and sewer.", "county": where}
+            if sqft and sqft > 0:
+                v = _lot_verdict(z, sqft / 43560, acres, where)
+                v["detail"] += " (WA Zoning Atlas)"
+                return v
+            return {"status": "unknown", "zone": z, "min_acres": None, "label": f"{z} zone",
+                    "detail": f"Zoned {z} in {where}; no minimum lot size on file — ask the county.", "county": where}
+        if county == "Bonner":
+            feats = arcgis.query(LAYERS["bonner_zoning"], geometry=(lon, lat), out_fields="zonedesc")
+            if not feats:
+                return None
+            z = feats[0]["attributes"].get("zonedesc") or ""
+            code = z[z.rfind("(") + 1:z.rfind(")")] if "(" in z else ""
+            if any(k in z for k in BONNER_NO_HOMES):
+                return _no_homes(z, "Bonner County")
+            if code in BONNER_MIN_ACRES:
+                return _lot_verdict(z, BONNER_MIN_ACRES[code], acres, "Bonner County")
+            if z.startswith("Suburban"):
+                return {"status": "urban", "zone": z, "min_acres": 2.5, "label": f"{z}: 2.5 ac without town water/sewer",
+                        "detail": "Bonner County Suburban zone: 2.5 acres per lot without public water and sewer, smaller with them.",
+                        "county": "Bonner County"}
+            return {"status": "unknown", "zone": z, "min_acres": None, "label": f"{z} zone",
+                    "detail": f"Zoned {z}; ask Bonner County Planning about lot size.", "county": "Bonner County"}
+    except HttpError:
+        return None
+    return None
+
+
+def _no_homes(z, where):
+    return {"status": "not_residential", "zone": z, "min_acres": None, "label": f"{z} zone: homes generally not allowed",
+            "detail": f"Zoned {z} in {where}; a new house is generally not a permitted use. Check with the planning office.",
+            "county": where}
+
+
+# ---- power company and internet outside Washington's state layers -------------------
+
+def power_company_national(lat, lon):
+    """DOE/ORNL electric retail service territories (both states)."""
+    if lat is None:
+        return None
+    try:
+        feats = arcgis.query(LAYERS["us_electric_territories"], geometry=(lon, lat), out_fields="NAME,TYPE,TELEPHONE,WEBSITE")
+    except HttpError:
+        return None
+    named = [f["attributes"] for f in feats if (f["attributes"].get("TYPE") or "").upper() != "FEDERAL" and f["attributes"].get("NAME")]
+    # Overlapping territories: prefer the co-op / PUD (the local line owner) over the big investor-owned utility.
+    named.sort(key=lambda a: (a.get("TYPE") or "").upper() == "INVESTOR OWNED")
+    if not named:
+        return None
+    a = named[0]
+    return {"name": a["NAME"].title().replace(", Inc", " Inc").replace("&", "and"), "phone": a.get("TELEPHONE") or "",
+            "website": a.get("WEBSITE") or "", "source": "DOE electric service territories",
+            **({"also": [x["NAME"].title() for x in named[1:3]]} if len(named) > 1 else {})}
+
+
+def internet_ookla(lat, lon):
+    """Measured home internet (Ookla open data, Esri Living Atlas), ~1 mile box, 2024 onward."""
+    if lat is None:
+        return None
+    d_lat, d_lon = 0.0145, 0.0145 / max(0.2, math.cos(math.radians(lat)))
+    try:
+        feats = arcgis.query(LAYERS["ookla_fixed_tiles"],
+                             geometry={"xmin": lon - d_lon, "ymin": lat - d_lat, "xmax": lon + d_lon, "ymax": lat + d_lat,
+                                       "spatialReference": {"wkid": 4326}},
+                             where="CalYear >= 2024", out_fields="AvgDown,Tests")
+    except HttpError:
+        return None
+    tiles = [f["attributes"] for f in feats if (f["attributes"].get("AvgDown") or 0) > 0]
+    src = "Ookla open data (Esri Living Atlas)"
+    if not tiles:
+        return {"label": "No speed tests nearby", "class": "unknown", "down_mbps": None, "tests": 0, "source": src}
+    downs = sorted(t["AvgDown"] for t in tiles)
+    best, typical = downs[int(len(downs) * 0.9)] if len(downs) >= 10 else downs[-1], downs[len(downs) // 2]
+    cls = "fast" if best >= 100 else "ok" if best >= 25 else "slow"
+    return {"label": {"fast": "Fast internet nearby", "ok": "Moderate internet nearby", "slow": "Slow internet nearby"}[cls],
+            "class": cls, "down_mbps": round(best), "typical_mbps": round(typical),
+            "tests": sum(int(t.get("Tests") or 0) for t in tiles), "source": src}
+
+
+def cell_service(lat, lon):
+    """Measured mobile data speeds (Ookla open data) within about a mile, 2024 onward."""
+    if lat is None:
+        return None
+    d_lat, d_lon = 0.0145, 0.0145 / max(0.2, math.cos(math.radians(lat)))
+    try:
+        feats = arcgis.query(LAYERS["ookla_mobile_tiles"],
+                             geometry={"xmin": lon - d_lon, "ymin": lat - d_lat, "xmax": lon + d_lon, "ymax": lat + d_lat,
+                                       "spatialReference": {"wkid": 4326}},
+                             where="CalYear >= 2024", out_fields="AvgDown,Tests")
+    except HttpError:
+        return None
+    tiles = [f["attributes"] for f in feats if (f["attributes"].get("AvgDown") or 0) > 0]
+    src = "Ookla mobile speed tests (Esri Living Atlas)"
+    tests = sum(int(t.get("Tests") or 0) for t in tiles)
+    if not tiles:
+        return {"class": "none", "label": "No mobile speed tests within a mile", "tests": 0, "source": src,
+                "detail": "No phone has run a speed test nearby since 2024 — coverage may be weak; check each carrier's map."}
+    downs = sorted(t["AvgDown"] for t in tiles)
+    typical = downs[len(downs) // 2]
+    cls = "good" if typical >= 25 and len(tiles) >= 3 else "ok" if typical >= 5 else "poor"
+    return {"class": cls, "label": {"good": "Good cell data nearby", "ok": "Some cell data nearby", "poor": "Weak cell data nearby"}[cls],
+            "typical_mbps": round(typical), "tiles": len(tiles), "tests": tests, "source": src,
+            "detail": f"{tests} phone speed tests within ~1 mile since 2024, typical {round(typical)} Mbps download."}
