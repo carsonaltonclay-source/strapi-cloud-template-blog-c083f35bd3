@@ -265,6 +265,9 @@ class HistoryTests(unittest.TestCase):
         out = history.dedupe([a, b, c, d])
         self.assertEqual([x["id"] for x in out], ["b", "c", "d"])
         self.assertIn("21 S Harrison Rd Lot 1", out[0]["also_listed_as"])
+        # Identical copies: the same one wins whatever order they arrive in.
+        x, y = self.r("x1", 5000, parcel_id="P9"), self.r("x2", 5000, parcel_id="P9")
+        self.assertEqual(history.dedupe([dict(x), dict(y)])[0]["id"], history.dedupe([dict(y), dict(x)])[0]["id"])
 
     def test_refresh(self):
         first = [self.r("a", 100000, days_on_market=10), self.r("b", 50000)]

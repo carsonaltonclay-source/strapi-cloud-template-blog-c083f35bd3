@@ -46,7 +46,8 @@ def dedupe(results):
         k = next((g for g in idx if g[:3] == base and (not lot or not lots[g] or lots[g] == lot)), None)
         if k is not None:
             cur = keep[idx[k]]
-            win, lose = (r, cur) if _richness(r) > _richness(cur) else (cur, r)
+            # Ties go to the higher id, so the same copy wins on every run (marks are keyed by it).
+            win, lose = (r, cur) if (_richness(r), r["id"]) > (_richness(cur), cur["id"]) else (cur, r)
             win["also_listed_as"] = ((win.get("also_listed_as") or []) + [lose.get("address") or lose["id"]]
                                      + (lose.get("also_listed_as") or []))
             keep[idx[k]] = win
