@@ -39,12 +39,12 @@ def _cache_path(key):
 
 
 def get_text(url, params=None, headers=None, use_cache=True, timeout=45, retries=3, post=False):
+    path = _cache_path(_key(url, params, post))  # before the params are added to url (_forget uses the same key)
     body = None
     if params and post:
         body = urllib.parse.urlencode(params).encode()
     elif params:
         url = url + ("&" if "?" in url else "?") + urllib.parse.urlencode(params)
-    path = _cache_path(_key(url, params, post))
     if use_cache and os.path.exists(path) and time.time() - os.path.getmtime(path) < CACHE_TTL_S:
         with open(path, encoding="utf-8") as f:
             return f.read()

@@ -65,6 +65,11 @@ def apply(results, previous, today=None):
     first_run = not prev
     for r in results:
         p = prev.get(_key(r))
+        dom = r.get("days_on_market")
+        dom = dom if dom is not None and dom >= 0 else None
+        # Listing date (for "listed N days ago"); first_seen is when this tool first saw it.
+        r["listed"] = ((datetime.date.fromisoformat(today) - datetime.timedelta(days=dom)).isoformat() if dom is not None
+                       else (p or {}).get("listed"))
         if p:
             r["first_seen"] = p.get("first_seen") or today
             hist = list(p.get("price_history") or [])
@@ -77,10 +82,7 @@ def apply(results, previous, today=None):
             r["price_history"] = hist
             r["is_new"] = False
         else:
-            dom = r.get("days_on_market")
-            dom = dom if dom is not None and dom >= 0 else None
-            listed = (datetime.date.fromisoformat(today) - datetime.timedelta(days=dom)).isoformat() if dom is not None else today
-            r["first_seen"] = listed if first_run else today
+            r["first_seen"] = (r["listed"] or today) if first_run else today
             r["price_history"] = [{"date": r["first_seen"], "price": r["price"]}] if r.get("price") is not None else []
             r["is_new"] = not first_run
     current = {_key(r) for r in results}

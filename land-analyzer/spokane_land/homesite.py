@@ -41,7 +41,8 @@ def _hazard_polys(shape, state, in_spokane):
         try:
             feats = hazard_query(layer, shape, None, None)
         except HttpError:
-            missing.append(layer)
+            missing.append({"nwi_wetlands": "wetlands", "fema_flood": "flood zones", "wa_landslides": "landslides",
+                            "sc_stream_buffers": "stream buffers"}.get(layer, layer))
             continue
         polys += [f["geometry"]["rings"] for f in feats if (f.get("geometry") or {}).get("rings")]
     return polys, missing

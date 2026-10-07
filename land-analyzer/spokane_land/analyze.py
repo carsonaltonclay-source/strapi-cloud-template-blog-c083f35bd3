@@ -131,6 +131,7 @@ def gis_evidence(listing, facts):
             flags.append("A decommissioned water well is recorded on this parcel")
         stats = _well_stats(wells)
         districts = facts.get("water_district") or []
+        districts_unknown = "water_district" in facts and facts["water_district"] is None
         if districts and not wells["on_parcel"]:
             if wells.get("within_quarter_mile", 0) >= 3:
                 # Purveyor boundaries are broad; many private wells next door
@@ -145,7 +146,11 @@ def gis_evidence(listing, facts):
                     "public_area", MEDIUM,
                     f"Inside {', '.join(districts)} service area — confirm a main reaches the lot and get hookup costs",
                     "Public water service areas"))
-        if not wells["on_parcel"] and not districts:
+        if not wells["on_parcel"] and not districts and districts_unknown:
+            ev["water"].append(Evidence(
+                "needs_well", LOW, "No well log for this parcel; the public water map didn't answer, so a water "
+                "main can't be ruled out" + (". " + stats if stats else ""), src_w))
+        elif not wells["on_parcel"] and not districts:
             if wells["nearby_count"]:
                 ev["water"].append(Evidence(
                     "needs_well", MEDIUM,
@@ -268,6 +273,7 @@ def gis_evidence(listing, facts):
     # ---- misc flags ------------------------------------------------------------------
     if facts.get("flood"):
         flags.append(f"FEMA flood hazard zone {', '.join(facts['flood'])}")
+    flags += [n for n in facts.get("notes", []) if n.startswith("Map services didn't answer")]
     if not parcel and listing.lat is not None:
         flags.append("No parcel found at the map pin — listing location may be approximate")
     if parcel and parcel.match.startswith("nearest"):
@@ -388,15 +394,15 @@ def analyze(listing, facts):
         "internet": facts.get("internet"),
         "power_company": facts.get("power_company"),
         "zoning_check": zcheck,
-        "checks": derived_checks(findings, zcheck, facts, listing.lot_acres) + list(facts.get("checks") or []),
+        "checks": derived_checks(findings, zcheck, facts, listing.lot_acres, split) + list(facts.get("checks") or []),
         "site": facts.get("site"),
         "cell": facts.get("cell"),
         "school_district": facts.get("school_district"),
         "rules": facts.get("rules"),
         "permits": facts.get("permits"),
         "comps": facts.get("comps"),
-        # A lot pinned on a parcel 10x its size: the parcel's assessed value isn't this lot's.
-        "assessed": None if split and listing.lot_acres and split > 10 * listing.lot_acres else facts.get("assessed"),
+        # A lot split from a bigger parcel: the parent's assessed value isn't this lot's.
+        "assessed": None if split else facts.get("assessed"),
         "flags": flags,
         "errors": facts.get("errors", []),
         "notes": facts.get("notes", []),
@@ -407,7 +413,7 @@ def analyze(listing, facts):
     return result
 
 
-def derived_checks(findings, zcheck, facts, listed_acres=None):
+def derived_checks(findings, zcheck, facts, listed_acres=None, split=None):
     """Deal-breaker entries for things the main analysis already found."""
     out = []
     acc = findings["access"]
@@ -439,10 +445,12 @@ def derived_checks(findings, zcheck, facts, listed_acres=None):
                     "source": "parcel shape"})
     elif site and site.get("buildable_acres") is not None:
         ba = site["buildable_acres"]
-        parent = bool(listed_acres and site.get("parcel_acres") and site["parcel_acres"] > 1.6 * listed_acres)
+        parent = bool(split)  # same test as the "lot split from a bigger parcel" warning
         if parent:
-            # A lot carved from a bigger county parcel: the parent's numbers can't say where on it this lot sits.
+            # A lot carved from a bigger county parcel: the parent's numbers can't say where on it this lot sits,
+            # so its best house site (driveway length, slope) isn't this lot's either.
             site["parent_acres"] = site["parcel_acres"]
+            site["site"] = None
             site["listing_buildable_acres"] = round(listed_acres * site["buildable_pct"] / 100, 2)
             out.append({"key": "room", "level": "info",
                         "label": f"Building room not measured for this lot (part of a {site['parcel_acres']}-acre county parcel)",
@@ -463,6 +471,10 @@ def derived_checks(findings, zcheck, facts, listed_acres=None):
                         "detail": ("a house footprint plus yard" if utilities else
                                    "house, well (100 ft from the drainfield) and septic need roughly half an acre")
                                   + (f"; lost to {lost}" if lost else ""), "source": "parcel shape, elevation and hazard maps"})
+    if site and site.get("hazards_unchecked") and not partial:
+        out.append({"key": "room_hazards", "level": "info",
+                    "label": "Building room doesn't account for " + ", ".join(site["hazards_unchecked"]),
+                    "detail": "those hazard maps didn't answer when this was checked", "source": "hazard maps"})
     if findings["water"].status not in ("well", "public", "shared_well", "public_area"):
         out += (facts.get("rules") or {}).get("water_limits") or []
     return out
@@ -476,7 +488,7 @@ def buildable_verdict(r):
     bad = [c for c in r.get("checks") or [] if c["level"] == "bad"]
     warn = [c for c in r.get("checks") or [] if c["level"] == "warn"]
     hard_soil = (r.get("soil") or {}).get("outlook") == "hard" and r["septic"]["status"] not in ("installed", "sewer", "approved")
-    steep = (r.get("site") or {}).get("site", {}).get("slope_pct") or 0
+    steep = ((r.get("site") or {}).get("site") or {}).get("slope_pct") or 0
     work = []
     if r["water"]["status"] in ("needs_well", "none", "well_possible", "district_wells"):
         work.append("drill a well")
@@ -498,7 +510,7 @@ def buildable_verdict(r):
         level, label = "doubt", "Questionable"
     elif len(unknown) >= 2 or r.get("lat") is None:
         level, label = "doubt", "Not enough information"
-    elif not r.get("site"):
+    elif not r.get("site") or r["site"].get("parent_acres"):
         level, label = "work", "Buildable with work"
         work.append("confirm where a house fits")
     elif warn or work:

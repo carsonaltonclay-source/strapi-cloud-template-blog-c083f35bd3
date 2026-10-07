@@ -86,6 +86,8 @@ def load_requests(path):
         items = json.load(f)
     out = []
     for it in items:
+        if not str(it.get("text") or "").strip():
+            continue
         l = parse_entry(it["text"], parse_float(it.get("price")), entry_id=it["id"])
         l.remarks = it.get("note", "") or ""
         out.append(l)

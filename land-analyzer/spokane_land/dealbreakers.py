@@ -125,7 +125,7 @@ def flood(shape, lat, lon, soil):
             LAYERS["fema_flood"], geometry=_target(shape, lat, lon), distance_m=None if shape else 60, out_fields="FLD_ZONE")}
     except HttpError:
         zones = None
-    if zones is not None and not (zones - {"D", None}):
+    if zones is not None and not (zones - {"D", "AREA NOT INCLUDED", None}):
         return {"key": "flood", "level": "info",
                 "label": "Flood risk not studied (FEMA zone D)" if "D" in zones else "No FEMA flood map for this area",
                 "detail": "no official flood zones here — look for creeks, ponds and low ground, and ask the county"

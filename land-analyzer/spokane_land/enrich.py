@@ -212,11 +212,18 @@ class Enricher:
         if "sc_address_points" in failed:
             facts["neighbors"] = None
             skipped.append("nearby homes")
-        if failed & {"sc_streets", "sc_road_log", "tiger_local_roads", "tiger_secondary_roads"}:
+        # The road log only adds jurisdiction; TIGER is only asked when the county streets gave nothing.
+        if failed & {"sc_streets", "tiger_local_roads", "tiger_secondary_roads"}:
             facts["roads"] = None
             skipped.append("roads")
-        if failed & {"sc_flood", "sc_aquifer", "sc_water_districts", "id_water_areas"}:
-            skipped.append("flood / aquifer / water district")
+        if failed & {"sc_water_districts", "id_water_areas"}:
+            facts["water_district"] = None
+            skipped.append("public water areas")
+        if "sc_aquifer" in failed:
+            facts["aquifer"] = None
+            skipped.append("aquifer")
+        if "sc_flood" in failed:
+            facts["flood"] = None  # FEMA's own map is still checked under deal-breakers
         if skipped:
             facts["notes"].append("Map services didn't answer for: " + ", ".join(skipped) + " — those checks were skipped.")
         self._extra(facts, "terrain", analyze_terrain, parcel.geometry if parcel else None, listing.lat, listing.lon,
@@ -233,7 +240,7 @@ class Enricher:
             ("power_company", buildability.power_company, (lat, lon, state)),
             ("cell", buildability.cell_service, (lat, lon)),
             ("school_district", dealbreakers.school_district, (lat, lon)),
-            ("rules", county_rules.for_parcel, (county, state, lat, lon, bool(facts.get("aquifer")))),
+            ("rules", county_rules.for_parcel, (county, state, lat, lon, facts.get("aquifer"))),
         ]
         if in_spokane:
             steps += [("comps", comps.comparable_sales, (lat, lon, acres, parcel.parcel_id)),

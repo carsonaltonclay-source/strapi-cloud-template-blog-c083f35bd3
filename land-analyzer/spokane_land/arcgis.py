@@ -51,8 +51,8 @@ def query(layer_url, geometry=None, where="1=1", out_fields="*", distance_m=None
         except HttpError:
             break  # layer doesn't support paging: keep what we have
         more = data.get("features", [])
-        if not more:
-            break
+        if not more or (more[0] == feats[0]):
+            break  # empty, or a layer that ignores resultOffset and sends page one again
         feats += more
     return feats
 

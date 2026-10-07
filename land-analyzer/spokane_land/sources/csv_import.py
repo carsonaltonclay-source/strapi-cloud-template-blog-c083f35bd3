@@ -85,7 +85,7 @@ def load_csv(path, source_name=None):
             dialect = csv.excel
         reader = csv.DictReader(f, dialect=dialect)
         cols = map_columns(reader.fieldnames or [])
-        out = []
+        out, seen = [], {}
         for i, row in enumerate(reader, 1):
             get = lambda k: (row.get(cols[k]) or "").strip() if k in cols else ""
             if not any((v or "").strip() for v in row.values() if isinstance(v, str)):
@@ -96,9 +96,15 @@ def load_csv(path, source_name=None):
                 acres = sqft / 43560.0 if sqft else None
             # Without an id column, derive a stable id from the row's content (not its position),
             # so refreshes and multiple files don't mix listings up.
-            lid = get("id") or "h" + hashlib.sha1("|".join(
-                (get("address") or "", get("city") or "", get("lat") or "", get("lon") or "", get("parcel_id") or "")
-            ).lower().encode()).hexdigest()[:12]
+            if not (get("address") or get("parcel_id") or (get("lat") and get("lon"))):
+                continue  # nothing to locate the land by
+            # Acres (not price, which changes) tells "TBD Elk Rd" lots apart; a counter separates exact repeats.
+            base = "|".join((get("address"), get("city"), get("lat"), get("lon"), get("parcel_id"),
+                             f"{acres:.2f}" if acres else "")).lower()
+            seen[base] = seen.get(base, 0) + 1
+            if seen[base] > 1:
+                base += f"|{seen[base]}"
+            lid = get("id") or "h" + hashlib.sha1(base.encode()).hexdigest()[:12]
             out.append(Listing(
                 source=source_name,
                 id=f"{source_name}:{lid}",

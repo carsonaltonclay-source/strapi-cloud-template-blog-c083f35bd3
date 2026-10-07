@@ -404,3 +404,65 @@ class ExportAndInputTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ThirdAuditTests(unittest.TestCase):
+    def test_frontage_wording(self):
+        for t in ("Frontage on the lake. Road is gravel.", "frontage on the river and road"):
+            self.assertNotIn("public_road", statuses(t, "access"), t)
+        self.assertEqual(statuses("300 ft of frontage on Deer Lake with a private drive", "access"), ["private_road"])
+        for t in ("Frontage on Highway 395", "300 ft frontage on SR 291", "frontage on Elk-Chattaroy Rd"):
+            self.assertIn("public_road", statuses(t, "access"), t)
+
+    def test_perc_negation_is_per_clause(self):
+        for t in ("Perc tested 2023, no perc issues.", "Septic design approved; no soil logs needed.",
+                  "No perc test; septic design approved"):
+            self.assertIn("approved", statuses(t, "septic"), t)
+        for t in ("No perc test done yet", "has not been perc tested"):
+            self.assertNotIn("approved", statuses(t, "septic"), t)
+
+    def test_mls_values(self):
+        f = remarks.from_structured(Listing(source="t", id="m", water_source="Private Well, Not Shared",
+                                            electric="No Power at Site; Power at Road", sewer="Public Sewer Not Available"))
+        self.assertEqual([e.status for e in f["water"]], ["well"])
+        self.assertEqual([e.status for e in f["electric"]], ["at_road"])
+        self.assertEqual([e.status for e in f["septic"]], ["required"])
+        f = remarks.from_structured(Listing(source="t", id="m", water_source="Well - Individual; No HOA", electric="Power Not Available"))
+        self.assertEqual([e.status for e in f["water"]], ["well"])
+        self.assertEqual([e.status for e in f["electric"]], ["none"])
+
+    def test_lot_on_parent_parcel_is_not_simply_buildable(self):
+        l = Listing(source="t", id="p", price=100000, lot_acres=5, lat=LAT, lon=LON,
+                    water_source="Public", electric="On Property", sewer="Public Sewer")
+        f = facts(site={"buildable_acres": 0.01, "buildable_pct": 1, "parcel_acres": 40,
+                        "site": {"slope_pct": 3, "driveway_ft": 900}})
+        f["parcel"].geometry = None
+        f["parcel"].acres = 40
+        r = analyze(l, f)
+        self.assertEqual(r["buildable"]["level"], "work")
+        self.assertIsNone(r["site"]["site"])
+        self.assertIsNone(r["assessed"])
+        self.assertNotEqual(r["cost"]["inputs"]["driveway_ft"], 900)
+
+    def test_failed_water_map_is_not_needs_well_evidence(self):
+        f = facts(water_district=None)
+        f["failed"] = {"sc_water_districts"}
+        r = analyze(Listing(source="t", id="f", price=1, lot_acres=5, lat=LAT, lon=LON), f)
+        self.assertTrue(all(e["confidence"] != "medium" for e in r["water"]["evidence"] if e["status"] == "needs_well"))
+
+    def test_listing_date_separate_from_first_seen(self):
+        prev = [{"id": "a", "price": 1, "first_seen": "2026-09-01"}]
+        cur = [{"id": "a", "price": 1, "days_on_market": 3}, {"id": "b", "price": 1, "days_on_market": 400},
+               {"id": "c", "price": 1}]
+        history.apply(cur, prev, today="2026-10-08")
+        self.assertEqual(cur[1]["first_seen"], "2026-10-08")
+        self.assertEqual(cur[1]["listed"], "2025-09-03")
+        self.assertIsNone(cur[2]["listed"])
+
+    def test_csv_ids_distinct_for_same_address(self):
+        rows = "Address,City,Price,Acres\nTBD Elk Rd,Deer Park,50000,5\nTBD Elk Rd,Deer Park,60000,10\n,,,\nweird,\n"
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as fh:
+            fh.write(rows)
+        ls = load_csv(fh.name)
+        os.unlink(fh.name)
+        self.assertEqual(len({l.id for l in ls if l.address == "TBD Elk Rd"}), 2)

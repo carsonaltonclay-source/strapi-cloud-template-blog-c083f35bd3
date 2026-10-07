@@ -52,7 +52,7 @@ RULES = {
         ("approved", HIGH, r"\b(perc|percolation)\s+(test\s+)?(passed|approved|done|completed|on\s+file|in\s+hand)\b|\b(perc|percolation)\s+tested\b|\bhas\s+(a\s+)?perc\b|\bperc(ed|'d)\b"),
         ("approved", HIGH, r"\b(perc|percolation|soil)\s+(tests?|logs?)\b[^.]{0,40}?\b(has|have)\s+been\s+(successfully\s+)?(done|completed|approved|passed)\b"),
         ("approved", HIGH, r"\bsoil\s+(log|logs|test|tests|evaluation)s?\s+(done|completed|on\s+file|approved|passed|available)\b|\bsoil\s+logs?\s+(have\s+been\s+)?(done|completed)\b"),
-        ("needed", MEDIUM, r"\b(no|without)\s+(a\s+)?(perc|percolation|soil\s+logs?)(\s+tests?)?\b|\b(perc|soil\s+logs?|septic)\s+(test\s+)?(needed|required|not\s+(done|completed|yet))\b|\bbuyer\s+to\s+(do|obtain|complete|verify)\s+(perc|septic|soil)"),
+        ("needed", MEDIUM, r"\b(no|without)\s+(a\s+)?(perc|percolation|soil\s+logs?)(\s+tests?)?\b|\b(perc|soil\s+logs?|septic)\s+(test\s+)?(needed|required|not\s+(done|completed|yet))\b|\bbuyer\s+to\s+(do|obtain|complete|verify)\s+(perc|septic|soil)|\bnot\s+(yet\s+)?(been\s+)?perc(ed|'d|\s+tested)\b"),
         ("mentioned", LOW, r"\b(septic|drain\s*field|perc)\b"),
     ],
     "access": [
@@ -60,7 +60,7 @@ RULES = {
         ("easement", HIGH, r"\b(deeded|recorded|legal|access|ingress|egress|private)\s+(access\s+)?easement\b|\beasement\s+(access|road|in\s+place|recorded)\b|\baccess\s+(is\s+)?(via|by|through)\s+(an?\s+)?(recorded\s+|deeded\s+)?easement\b"),
         ("private_road", MEDIUM, r"\bprivate\s+(road|drive|lane)\b|\broad\s+maintenance\s+agreement\b|\bshared\s+(road|driveway)\b"),
         ("seasonal", MEDIUM, r"\bseasonal\s+(access|road)\b|\bnot\s+(plowed|maintained)\b|\b(4x4|4wd|atv)\s+(only\s+)?access\b"),
-        ("public_road", HIGH, r"\b(county|paved|state|public|city)\s+(maintained\s+)?(road|street|rd|hwy|highway)\b|\b(road|street)\s+frontage\b|\bfrontage\s+on\s+(a\s+|the\s+)?[\w.' ]{1,30}?\s(road|rd|street|st|hwy|highway|ave|avenue|ln|lane|drive|dr|way)\b|\bfronts\s+(on\s+)?(a\s+)?[\w.]+\s+(road|rd|street|st|hwy|highway|ave|avenue|ln|lane)\b"),
+        ("public_road", HIGH, r"\b(county|paved|state|public|city)\s+(maintained\s+)?(road|street|rd|hwy|highway)\b|\b(road|street)\s+frontage\b|\bfrontage\s+on\s+(a\s+|the\s+)?(?:(?!(?:and|or|with|a|the)\b)[\w'-]+\s+){0,3}(road|rd|street|st|hwy|highway|ave|avenue|ln|lane|drive|dr|way)\b|\bfrontage\s+on\s+(the\s+)?(hwy|highway|sr|us|state\s+route)[\s-]*\d+\b|\bfronts\s+(on\s+)?(a\s+)?[\w'-]+\s+(road|rd|street|st|hwy|highway|ave|avenue|ln|lane)\b"),
         ("public_road", LOW, r"\b(gravel|paved)\s+(road\s+)?access\b|\byear" + _W + r"round\s+access\b|\beasy\s+access\b"),
     ],
 }
@@ -77,21 +77,34 @@ def scan_text(text, source="listing remarks"):
     for cat, rules in _COMPILED.items():
         seen = set()
         for status, conf, rx in rules:
-            m = rx.search(text)
-            if not m or status in seen:
+            if status in seen:
+                continue
+            if cat == "septic" and status == "approved":
+                # "No perc test done yet" is not an approved perc; judge each match by its own clause.
+                m = next((m for m in rx.finditer(text) if not _NEGATED_PERC.search(_clause(text, m.start(), m.end()))), None)
+            else:
+                m = rx.search(text)
+            if not m:
                 continue
             seen.add(status)
             snippet = _snippet(text, m.start(), m.end())
             out[cat].append(Evidence(status, conf, f'"{snippet}"', source))
         # A generic match adds nothing once a more specific one hit.
-        # "No perc test done yet" must not also count as an approved perc.
-        if cat == "septic" and _NEGATED_PERC.search(text):
-            out[cat] = [e for e in out[cat] if e.status != "approved"]
         if cat == "septic" and len(out[cat]) > 1:
             out[cat] = [e for e in out[cat] if e.status != "mentioned"]
         if cat == "water" and "shared_well" in seen:
             out[cat] = [e for e in out[cat] if e.status != "well"]
     return out
+
+
+def _clause(text, start, end):
+    """The clause around a match: up to the nearest , ; . ! ? or "but" on either side."""
+    a = max((m.end() for m in _CLAUSE_END.finditer(text, 0, start)), default=0)
+    b = _CLAUSE_END.search(text, end)
+    return text[a:b.start() if b else len(text)]
+
+
+_CLAUSE_END = re.compile(r"[,;.!?]|but", re.I)
 
 
 def _snippet(text, start, end, pad=45):
@@ -146,11 +159,12 @@ def from_structured(listing):
     src = f"{listing.source} MLS field"
 
     w = listing.water_source.lower()
-    neg = re.compile(r"\b(no|none|needed|needs|required|not|to\s+be\s+drilled)\b")
+    no_well = re.compile(r"\b(no|not)\s+(a\s+)?(private\s+)?well\b|\bwell\s+(is\s+)?(needed|required|to\s+be\s+drilled"
+                         r"|not\s+(drilled|installed|in))\b|\bneeds?\s+(a\s+)?well\b")
     if w:
-        if "none" in w or "no water" in w or ("well" in w and neg.search(w)):
+        if re.search(r"\bnone\b|\bno\s+water\b", w) or no_well.search(w):
             out["water"].append(Evidence("none", HIGH, f"WaterSource = {listing.water_source}", src))
-        elif "shared" in w:
+        elif re.search(r"(?<!not )\bshared\b", w):
             out["water"].append(Evidence("shared_well", HIGH, f"WaterSource = {listing.water_source}", src))
         elif "well" in w or "private" in w:
             out["water"].append(Evidence("well", HIGH, f"WaterSource = {listing.water_source}", src))
@@ -161,10 +175,11 @@ def from_structured(listing):
 
     e = listing.electric.lower()
     if e:
-        if "none" in e or "not available" in e or "off grid" in e or re.search(r"\bno\s+(power|electric)", e):
-            out["electric"].append(Evidence("none", HIGH, f"Electric = {listing.electric}", src))
-        elif any(k in e for k in ("at road", "at street", "nearby", "available", "lot line", "adjacent")):
+        # "No power at site; power at road" says where power is: the at-road phrases win.
+        if any(k in e for k in ("at road", "at street", "nearby", "lot line", "adjacent")) or re.search(r"(?<!not )\bavailable\b", e):
             out["electric"].append(Evidence("at_road", HIGH, f"Electric = {listing.electric}", src))
+        elif "none" in e or "not available" in e or "off grid" in e or re.search(r"\bno\s+(power|electric)", e):
+            out["electric"].append(Evidence("none", HIGH, f"Electric = {listing.electric}", src))
         elif any(k in e for k in ("on site", "on property", "installed", "in place", "connected", "to property", "amp")):
             out["electric"].append(Evidence("on_site", HIGH, f"Electric = {listing.electric}", src))
         else:
@@ -172,8 +187,12 @@ def from_structured(listing):
 
     s = listing.sewer.lower()
     if s:
-        if "sewer" in s and neg.search(s) and "septic" not in s and "public" not in s:
+        no_sewer = re.search(r"\b(no|not)\s+(public\s+)?sewer\b|\bsewer\s+(is\s+)?(not\s+available|unavailable|none)\b"
+                             r"|\bnot\s+available\b|\bnone\b", s)
+        if "sewer" in s and no_sewer and "septic" not in s:
             out["septic"].append(Evidence("required", MEDIUM, f"Sewer = {listing.sewer}", src))
+        elif re.search(r"\bsewer\s+(needed|required)\b", s) and "septic" not in s:
+            pass  # "must connect to sewer" or "needs a sewer system": too ambiguous to use
         elif "public" in s or ("sewer" in s and "septic" not in s):
             out["septic"].append(Evidence("sewer", HIGH, f"Sewer = {listing.sewer}", src))
         elif "perc" in s or "approved" in s or "design" in s:

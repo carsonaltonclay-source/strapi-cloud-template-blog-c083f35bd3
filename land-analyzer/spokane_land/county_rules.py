@@ -99,8 +99,10 @@ def for_parcel(county, state, lat, lon, aquifer=False):
                     "detail": f"state streamflow law RCW 90.94: a new household well is limited to domestic use, "
                               f"3,000 gal/day on average, with a {fee} fee at building permit and a note on the title",
                     "source": "RCW 90.94.020"})
-            elif aquifer:  # WAC 173-557 covers the river and the area over the SVRP aquifer, not whole WRIAs
-                out["wria_note"] = (f"WRIA {nr} {name}: over the Spokane aquifer the state's Spokane River flow rule "
+            elif aquifer or (aquifer is None and nr in (54, 57)):
+                # WAC 173-557 covers the river and the area over the SVRP aquifer, not whole WRIAs.
+                where = "over the Spokane aquifer" if aquifer else "if the parcel is over the Spokane aquifer (not checked)"
+                out["wria_note"] = (f"WRIA {nr} {name}: {where} the state's Spokane River flow rule "
                                     "(WAC 173-557) can curtail new household wells unless mitigated; public water is preferred.")
     return out
 

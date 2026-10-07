@@ -18,7 +18,7 @@ CSV_FIELDS = [
     "buildable", "buildable_acres", "deal_breakers", "to_check", "price_vs_sales", "sales_estimate", "assessed_value",
     "driveway_ft", "site_slope_pct", "cell_service", "school_district",
     "all_in_total", "drive_min", "soil_septic", "wildfire", "internet_mbps", "power_company", "zoning_check",
-    "first_seen", "price_cut",
+    "first_seen", "listed", "price_cut",
     "flags", "water_detail", "electric_detail", "septic_detail", "access_detail",
 ]
 
@@ -45,7 +45,7 @@ def write_csv(results, path):
             row["driveway_ft"] = (site.get("site") or {}).get("driveway_ft", "")
             row["site_slope_pct"] = (site.get("site") or {}).get("slope_pct", "")
             row["deal_breakers"] = " | ".join(c["label"] for c in r.get("checks") or [] if c["level"] == "bad")
-            row["to_check"] = " | ".join(c["label"] for c in r.get("checks") or [] if c["level"] == "warn")
+            row["to_check"] = " | ".join(c["label"] for c in r.get("checks") or [] if c["level"] in ("warn", "info"))
             row["price_vs_sales"] = (r.get("price_check") or {}).get("label", "")
             row["sales_estimate"] = (r.get("comps") or {}).get("est_value") or ""
             row["assessed_value"] = (r.get("assessed") or {}).get("land_value") or ""
