@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg: #f6f5f1; --panel: #ffffff; --ink: #1d2320; --muted: #5f6b65; --line: #dcdcd4;
+  --accent: #2f6b4f; --good: #1f7a4a; --good-bg: #e2f2e8; --ok: #8a5a00; --ok-bg: #fbefd2;
+  --bad: #a3322a; --bad-bg: #f8e1de; --unk: #5f6b65; --unk-bg: #ecece6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141816; --panel: #1c211f; --ink: #e7ebe8; --muted: #9aa69f; --line: #2e3532;
+    --accent: #7cc3a0; --good: #8fd8ae; --good-bg: #1d3a2a; --ok: #f0c46a; --ok-bg: #3a3020;
+    --bad: #f09a90; --bad-bg: #3d2522; --unk: #a8b1ac; --unk-bg: #262c29;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header, main { max-width: 1400px; margin: 0 auto; padding: 0 16px; }
+header { padding-top: 20px; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+.sub { color: var(--muted); font-size: 13px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 16px 0; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.tile b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+.tile span { color: var(--muted); font-size: 12px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: end; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.filters label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 3px; }
+.filters input, .filters select { font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; min-width: 0; }
+.filters input[type=number] { width: 110px; }
+#map { height: 420px; border-radius: 10px; border: 1px solid var(--line); margin: 14px 0; }
+.tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; min-width: 980px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; white-space: nowrap; position: sticky; top: 0; background: var(--panel); }
+th.sorted::after { content: " ▾"; } th.sorted.asc::after { content: " ▴"; }
+td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+tr.row { cursor: pointer; } tr.row:hover td { background: var(--bg); }
+.badge { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 12px; line-height: 1.35; }
+.good { color: var(--good); background: var(--good-bg); } .ok { color: var(--ok); background: var(--ok-bg); }
+.bad { color: var(--bad); background: var(--bad-bg); } .unk { color: var(--unk); background: var(--unk-bg); }
+.conf { font-size: 11px; color: var(--muted); margin-left: 3px; }
+.score { font-weight: 700; }
+.detail td { background: var(--bg); }
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.card h4 { margin: 0 0 6px; font-size: 13px; }
+.card ul { margin: 0; padding-left: 18px; } .card li { margin: 3px 0; }
+.src { color: var(--muted); font-size: 12px; }
+.flags { margin: 10px 0 0; padding-left: 18px; color: var(--bad); }
+.remarks { margin-top: 10px; color: var(--muted); white-space: pre-wrap; max-height: 160px; overflow: auto; }
+a { color: var(--accent); }
+footer { max-width: 1400px; margin: 18px auto 40px; padding: 0 16px; color: var(--muted); font-size: 12px; }
+@media (max-width: 640px) { #map { height: 300px; } .filters input[type=number] { width: 90px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <div class="sub" id="sub"></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="filters">
+    <label>Search<input id="f-q" type="search" placeholder="address, city, parcel"></label>
+    <label>Max price<input id="f-price" type="number" step="1000" min="0"></label>
+    <label>Min acres<input id="f-acres" type="number" step="0.5" min="0"></label>
+    <label>Water<select id="f-water"><option value="">Any</option><option value="have">Has water (well/public)</option><option value="noland">Exclude "no water"</option></select></label>
+    <label>Power<select id="f-electric"><option value="">Any</option><option value="have">On site / at road</option><option value="near">At least likely close</option></select></label>
+    <label>Septic/sewer<select id="f-septic"><option value="">Any</option><option value="have">Sewer / approved / installed</option><option value="nofail">Exclude failed perc</option></select></label>
+    <label>Access<select id="f-access"><option value="">Any</option><option value="public">Public road frontage</option><option value="nolock">Exclude possibly landlocked</option></select></label>
+    <label>Min score<input id="f-score" type="number" min="0" max="100" step="5"></label>
+  </div>
+</header>
+<main>
+  <div id="map" role="img" aria-label="Map of listings"></div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th data-k="score">Score</th><th data-k="price">Price</th><th data-k="acres">Acres</th>
+        <th data-k="price_per_acre">$/acre</th><th data-k="water">Water</th><th data-k="electric">Power</th>
+        <th data-k="septic">Septic / sewer</th><th data-k="access">Access</th>
+        <th data-k="address">Location</th><th data-k="miles_from_spokane">Miles</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+<footer>
+  Status comes from (1) structured MLS fields, (2) the listing description, and (3) public GIS: county parcels,
+  WA Ecology / Idaho IDWR well logs, water-district and city/UGA boundaries, road centerlines and address points.
+  "Confidence" says how direct the evidence is. Always confirm with the seller, title report, Spokane Regional Health
+  District (septic) and the utility before buying.
+</footer>
+<script>
+const DATA = /*__DATA__*/null;
+const CATS = ["water", "electric", "septic", "access"];
+const fmt$ = v => v == null ? "—" : "$" + Math.round(v).toLocaleString();
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const tone = f => f.status === "unknown" ? "unk" : f.points >= 19 ? "good" : f.points >= 12 ? "ok" : "bad";
+const rows = DATA.results;
+let sortKey = "score", asc = false, open = new Set();
+
+document.getElementById("title").textContent = DATA.meta.title;
+document.getElementById("sub").textContent =
+  `Generated ${DATA.meta.generated} · Sources: ${DATA.meta.sources.join(", ")}`;
+
+const map = L.map("map").setView(DATA.meta.center, 10);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  { maxZoom: 18, attribution: "&copy; OpenStreetMap contributors" }).addTo(map);
+L.circle(DATA.meta.center, { radius: DATA.meta.radius_miles * 1609.344, color: "#2f6b4f", weight: 1, fill: false }).addTo(map);
+const layer = L.layerGroup().addTo(map);
+const ratingColor = { "Build-ready": "#1f7a4a", "Needs work": "#c08a1a", "High risk": "#a3322a" };
+
+const has = (f, set) => set.includes(f.status);
+function pass(r) {
+  const q = document.getElementById("f-q").value.trim().toLowerCase();
+  const maxP = parseFloat(document.getElementById("f-price").value);
+  const minA = parseFloat(document.getElementById("f-acres").value);
+  const minS = parseFloat(document.getElementById("f-score").value);
+  if (q && ![r.address, r.city, r.parcel_id, r.zip, r.county].join(" ").toLowerCase().includes(q)) return false;
+  if (!isNaN(maxP) && r.price != null && r.price > maxP) return false;
+  if (!isNaN(minA) && r.acres != null && r.acres < minA) return false;
+  if (!isNaN(minS) && r.score < minS) return false;
+  const w = document.getElementById("f-water").value;
+  if (w === "have" && !has(r.water, ["well", "public", "shared_well"])) return false;
+  if (w === "noland" && has(r.water, ["none"])) return false;
+  const e = document.getElementById("f-electric").value;
+  if (e === "have" && !has(r.electric, ["on_site", "at_road"])) return false;
+  if (e === "near" && !has(r.electric, ["on_site", "at_road", "likely_near"])) return false;
+  const s = document.getElementById("f-septic").value;
+  if (s === "have" && !has(r.septic, ["sewer", "approved", "installed"])) return false;
+  if (s === "nofail" && has(r.septic, ["failed"])) return false;
+  const a = document.getElementById("f-access").value;
+  if (a === "public" && !has(r.access, ["public_road"])) return false;
+  if (a === "nolock" && has(r.access, ["landlocked"])) return false;
+  return true;
+}
+
+function val(r, k) {
+  if (CATS.includes(k)) return r[k].points;
+  if (k === "address") return [r.address, r.city, r.parcel_id].filter(Boolean).join(" ").toLowerCase();
+  return r[k] ?? -Infinity;
+}
+
+function badge(f) {
+  return `<span class="badge ${tone(f)}">${esc(f.label)}</span><span class="conf">${f.status === "unknown" ? "" : esc(f.confidence)}</span>`;
+}
+
+function detail(r) {
+  const cards = CATS.map(c => {
+    const name = { water: "Water", electric: "Power", septic: "Septic / sewer", access: "Road access" }[c];
+    const ev = r[c].evidence.length
+      ? r[c].evidence.map(e => `<li>${esc(e.detail)} <span class="src">— ${esc(e.source)} (${esc(e.confidence)})</span></li>`).join("")
+      : "<li>No evidence found — ask the seller.</li>";
+    return `<div class="card"><h4>${name}: ${badge(r[c])}</h4><ul>${ev}</ul></div>`;
+  }).join("");
+  const scout = r.county === "Spokane" && r.parcel_id
+    ? ` · <a target="_blank" rel="noopener" href="https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=${encodeURIComponent(r.parcel_id)}">County record</a>` : "";
+  const info = [
+    r.parcel_id && `Parcel ${esc(r.parcel_id)} (${esc(r.county)} Co.${r.parcel_match ? ", matched by " + esc(r.parcel_match) : ""})`,
+    r.zoning && `Zoning: ${esc(r.zoning)}`, r.land_use && `Land use: ${esc(r.land_use)}`,
+    r.days_on_market != null && `${r.days_on_market} days on market`, r.mls && `MLS ${esc(r.mls)}`,
+  ].filter(Boolean).join(" · ");
+  const flags = r.flags.length ? `<ul class="flags">${r.flags.map(f => `<li>${esc(f)}</li>`).join("")}</ul>` : "";
+  const errs = r.errors.length ? `<div class="src">Lookups that failed: ${esc(r.errors.join("; "))}</div>` : "";
+  return `<tr class="detail"><td colspan="10">
+    <div class="src">${info}${r.url ? ` · <a target="_blank" rel="noopener" href="${esc(r.url)}">Listing</a>` : ""}${scout}</div>
+    <div class="grid4" style="margin-top:8px">${cards}</div>${flags}
+    ${r.remarks ? `<div class="remarks">${esc(r.remarks)}</div>` : ""}${errs}</td></tr>`;
+}
+
+function render() {
+  const list = rows.filter(pass).sort((a, b) => {
+    const x = val(a, sortKey), y = val(b, sortKey);
+    const c = x === y ? 0 : typeof x === "string" ? x.localeCompare(y) : (x < y ? -1 : 1);
+    return asc ? c : -c;
+  });
+  document.querySelectorAll("th").forEach(th => {
+    th.classList.toggle("sorted", th.dataset.k === sortKey); th.classList.toggle("asc", asc);
+  });
+  document.getElementById("rows").innerHTML = list.map(r => {
+    const loc = [r.address, r.city].filter(Boolean).join(", ") || r.parcel_id || "—";
+    return `<tr class="row" data-id="${esc(r.id)}">
+      <td class="num score">${r.score}<div class="src">${esc(r.rating)}</div></td>
+      <td class="num">${fmt$(r.price)}</td><td class="num">${r.acres ?? "—"}</td>
+      <td class="num">${fmt$(r.price_per_acre)}</td>
+      ${CATS.map(c => `<td>${badge(r[c])}</td>`).join("")}
+      <td>${esc(loc)}${r.flags.length ? `<div class="src">⚑ ${r.flags.length} flag${r.flags.length > 1 ? "s" : ""}</div>` : ""}</td>
+      <td class="num">${r.miles_from_spokane ?? "—"}</td></tr>` + (open.has(r.id) ? detail(r) : "");
+  }).join("") || `<tr><td colspan="10">No listings match these filters.</td></tr>`;
+
+  layer.clearLayers();
+  list.filter(r => r.lat != null).forEach(r => {
+    L.circleMarker([r.lat, r.lon], { radius: 7, color: "#fff", weight: 1.5,
+      fillColor: ratingColor[r.rating], fillOpacity: 0.9 })
+      .bindPopup(`<b>${fmt$(r.price)}</b> · ${r.acres ?? "?"} ac · score ${r.score}<br>${esc(r.address || r.parcel_id)}<br>
+        ${CATS.map(c => esc(r[c].label)).join("<br>")}`)
+      .on("click", () => { open.add(r.id); render();
+        document.querySelector(`tr[data-id="${CSS.escape(r.id)}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" }); })
+      .addTo(layer);
+  });
+  tiles(list);
+}
+
+function tiles(list) {
+  const ppa = list.map(r => r.price_per_acre).filter(v => v != null).sort((a, b) => a - b);
+  const med = ppa.length ? ppa[Math.floor(ppa.length / 2)] : null;
+  const count = (c, s) => list.filter(r => s.includes(r[c].status)).length;
+  const t = [
+    [list.length, `listings shown (of ${rows.length})`],
+    [fmt$(med), "median price / acre"],
+    [count("water", ["well", "public", "shared_well"]), "with water"],
+    [count("electric", ["on_site", "at_road"]), "power on site / at road"],
+    [count("septic", ["sewer", "approved", "installed"]), "sewer or perc approved"],
+    [count("access", ["landlocked"]), "possibly landlocked"],
+  ];
+  document.getElementById("tiles").innerHTML = t.map(([b, s]) => `<div class="tile"><b>${b}</b><span>${s}</span></div>`).join("");
+}
+
+document.querySelectorAll("th").forEach(th => th.addEventListener("click", () => {
+  if (sortKey === th.dataset.k) asc = !asc; else { sortKey = th.dataset.k; asc = th.dataset.k === "address"; }
+  render();
+}));
+document.getElementById("rows").addEventListener("click", e => {
+  if (e.target.closest("a")) return;
+  const tr = e.target.closest("tr.row"); if (!tr) return;
+  const id = tr.dataset.id; open.has(id) ? open.delete(id) : open.add(id); render();
+});
+document.querySelectorAll(".filters input, .filters select").forEach(el => el.addEventListener("input", render));
+render();
+if (rows.some(r => r.lat != null)) {
+  const b = L.latLngBounds(rows.filter(r => r.lat != null).map(r => [r.lat, r.lon]));
+  if (b.isValid()) map.fitBounds(b.pad(0.1), { maxZoom: 13 });
+}
+</script>
+</body>
+</html>
