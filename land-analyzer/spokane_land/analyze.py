@@ -471,6 +471,14 @@ def derived_checks(findings, zcheck, facts, listed_acres=None, split=None):
         need_min, need_ok = (0.03, 0.06) if utilities else (0.1, 0.35)
         if parent:
             pass
+        elif ba < need_min and (site.get("parcel_acres") or 1) < 0.5 and (site.get("lost_to") or {}).get("setback", 0) >= \
+                sum(v for k, v in (site.get("lost_to") or {}).items() if k != "setback"):
+            # On a small lot the setbacks are the guess (town lots often allow less) and sewer may be available.
+            out.append({"key": "room", "level": "warn", "label": f"Tight lot: about {ba} acre left after typical setbacks",
+                        "detail": "small lots often have smaller town setbacks and public sewer; confirm the setbacks and "
+                                  "sewer or septic room with the county or city before buying",
+                        "source": "parcel shape and setbacks",
+                        "ask": "What are the setbacks for this lot, and is it on sewer or does it need room for a septic system?"})
         elif ba < need_min:
             out.append({"key": "room", "level": "bad", "label": "No room for a house after setbacks, slopes and hazards",
                         "detail": f"lost to {lost}" if lost else "", "source": "parcel shape, elevation and hazard maps"})
