@@ -79,7 +79,7 @@ def building_site(shape, roads, setbacks, state=None, in_spokane=False):
     xs = [p[0] for r in rings for p in r]
     ys = [p[1] for r in rings for p in r]
     w_m, h_m = (max(xs) - min(xs)) * kx, (max(ys) - min(ys)) * ky
-    step_m = max(6.0, max(w_m, h_m) / GRID_N)
+    step_m = max(3.0 if max(w_m, h_m) < 60 else 6.0, max(w_m, h_m) / GRID_N)  # finer on town lots
     nx, ny = max(2, int(w_m / step_m) + 1), max(2, int(h_m / step_m) + 1)
     grid = [(min(xs) + (i + 0.5) * step_m / kx, min(ys) + (j + 0.5) * step_m / ky) for j in range(ny) for i in range(nx)]
     elev = _elevations(grid)

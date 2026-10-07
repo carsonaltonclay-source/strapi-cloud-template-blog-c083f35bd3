@@ -68,7 +68,12 @@ COUNTY_NOTES = {
 RESTRICTED_WRIAS = {55: "Little Spokane", 59: "Colville"}
 
 
-def setbacks(county, state, zone):
+TOWN_SETBACKS = {"front_ft": 15, "side_ft": 5, "source": "typical town-lot setbacks (city residential zone)"}
+
+
+def setbacks(county, state, zone, town=False):
+    if town:  # a lot in a city's residential zone, not the county's rural setbacks
+        return TOWN_SETBACKS
     for (c, key), sb in SETBACKS.items():
         if c == county and key and key.lower() in (zone or "").lower():
             return sb

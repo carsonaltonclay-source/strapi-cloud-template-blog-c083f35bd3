@@ -159,6 +159,9 @@ class Enricher:
             a = f["attributes"].get("acreage") or geo.polygon_area_acres(rings) or 0
             if abs(a - listed) <= 0.08 * listed:
                 cands.append((_dist_point_polygon(pt, f["geometry"]), f))
+        # A strip three or more roads touch is a road, alley or common-area parcel, not a lot for sale.
+        cands = [(d, f) for d, f in cands
+                 if len({r["name"] for r in self._road_candidates(f["geometry"], 1, parcel.state, facts)}) < 3]
         if parcel.county == "Spokane" and cands:
             try:
                 info = assemble._spokane_info({f["attributes"]["PID_NUM"] for _, f in cands})
@@ -356,7 +359,8 @@ class Enricher:
                     facts.get("soil"))
         zone = ", ".join(facts.get("zoning") or []) or ((facts.get("zoning_other") or {}).get("zone") or "")
         self._extra(facts, "site", homesite.building_site, shape, (facts.get("roads") or {}).get("roads"),
-                    county_rules.setbacks(county, state, zone), state, in_spokane)
+                    county_rules.setbacks(county, state, zone, town=(facts.get("zoning_other") or {}).get("status") == "urban"),
+                    state, in_spokane)
         return facts
 
     def _zones(self, facts, target, shape):

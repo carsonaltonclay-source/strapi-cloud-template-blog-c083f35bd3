@@ -465,8 +465,9 @@ def derived_checks(findings, zcheck, facts, listed_acres=None, split=None):
                                   "setbacks and slope on the plat", "source": "parcel shape"})
         lost = ", ".join(f"{k} {v} ac" for k, v in (site.get("lost_to") or {}).items())
         # On sewer + public water only the house needs room; otherwise also a well and a drainfield.
-        utilities = (findings["septic"].status in ("sewer", "sewer_area")
-                     and findings["water"].status in ("public", "public_area"))
+        utilities = ((findings["septic"].status in ("sewer", "sewer_area")
+                      and findings["water"].status in ("public", "public_area"))
+                     or bool(zcheck and zcheck.get("status") == "urban"))  # town zones mean city water and sewer
         need_min, need_ok = (0.03, 0.06) if utilities else (0.1, 0.35)
         if parent:
             pass
