@@ -2,6 +2,7 @@
 
 import csv
 import datetime
+import glob
 import html
 import json
 import os
@@ -121,21 +122,46 @@ def _slim(r):
     return doc
 
 
-def export_db(results, out_dir, meta, chunk_size=32):
+DOC_LIMIT = 240_000  # the app database refuses documents over 256 KiB
+
+
+def pack(items, limit=DOC_LIMIT, max_items=None):
+    """Split items into groups whose compact JSON stays under ``limit`` bytes."""
+    groups, cur, size = [], [], 20
+    for it in items:
+        n = len(json.dumps(it, default=str, separators=(",", ":")).encode()) + 1
+        if cur and (size + n > limit or (max_items and len(cur) >= max_items)):
+            groups.append(cur)
+            cur, size = [], 20
+        cur.append(it)
+        size += n
+    if cur:
+        groups.append(cur)
+    return groups
+
+
+def clear_dir(path, pattern="*.json"):
+    os.makedirs(path, exist_ok=True)
+    for f in glob.glob(os.path.join(path, pattern)):
+        os.remove(f)
+
+
+def export_db(results, out_dir, meta):
     """Database export for the hosted app.
 
-    Bulk market listings go into collection "chunks" (one document per
-    ``chunk_size`` listings, so a full refresh is one batch upload);
-    properties added by hand go into "listings", one document each, keyed by
-    their request id so they can be updated on their own. Also meta.json.
+    Bulk market listings go into collection "chunks" (as many listings per
+    document as fit under the 256 KB document limit, so a refresh is a few
+    batch uploads); properties added by hand go into "listings", one document
+    each, keyed by their request id so they can be updated on their own.
+    Also meta.json. Files from earlier exports are removed first.
     """
     for sub in ("chunks", "listings"):
-        os.makedirs(os.path.join(out_dir, sub), exist_ok=True)
+        clear_dir(os.path.join(out_dir, sub))
     docs = [_slim(r) for r in results]
     bulk = [d for d in docs if d["source"] != "added"]
-    for i in range(0, len(bulk), chunk_size):
-        with open(os.path.join(out_dir, "chunks", f"chunk-{i // chunk_size:03d}.json"), "w", encoding="utf-8") as fh:
-            json.dump({"items": bulk[i:i + chunk_size]}, fh, default=str, separators=(",", ":"))
+    for i, group in enumerate(pack(bulk)):
+        with open(os.path.join(out_dir, "chunks", f"chunk-{i:03d}.json"), "w", encoding="utf-8") as fh:
+            json.dump({"items": group}, fh, default=str, separators=(",", ":"))
     for d in docs:
         if d["source"] == "added":
             with open(os.path.join(out_dir, "listings", doc_id(d["id"]) + ".json"), "w", encoding="utf-8") as fh:

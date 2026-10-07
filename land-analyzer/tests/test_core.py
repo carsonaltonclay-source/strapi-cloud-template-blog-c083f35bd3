@@ -334,5 +334,62 @@ class VerdictTests(unittest.TestCase):
                          ["unbuildable", "hoa", "ccrs", "no_mobile"])
 
 
+class AuditRegressionTests(unittest.TestCase):
+    def test_text_false_positives(self):
+        self.assertEqual(statuses("Good well-drained soils. Views as well in a quiet area.", "water"), [])
+        self.assertEqual(statuses("New well-maintained county road", "water"), [])
+        self.assertEqual(statuses("Power in the area.", "electric"), ["at_road"])
+        self.assertEqual(statuses("No perc test done yet, buyer to verify.", "septic"), ["needed"])
+        self.assertEqual(statuses("Perc test failed in 2019", "septic"), ["failed"])
+
+    def test_structured_negations(self):
+        f = remarks.from_structured(Listing(source="t", id="n", water_source="No Well", sewer="No Sewer", electric="No Power"))
+        self.assertEqual([e.status for e in f["water"]], ["none"])
+        self.assertEqual([e.status for e in f["septic"]], ["required"])
+        self.assertEqual([e.status for e in f["electric"]], ["none"])
+
+    def test_water_rights_is_not_a_status(self):
+        r = analyze(Listing(source="t", id="w", price=1, lot_acres=5, remarks="Comes with water rights."), {"errors": [], "notes": []})
+        self.assertEqual(r["water"]["status"], "unknown")
+
+    def test_unknown_parcel_is_not_buildable(self):
+        r = analyze(Listing(source="t", id="u", price=1000, lot_acres=5), {"errors": [], "notes": []})
+        self.assertEqual(r["buildable"]["level"], "doubt")
+        self.assertEqual(r["buildable"]["label"], "Not enough information")
+
+
+class ExportAndInputTests(unittest.TestCase):
+    def test_pack_respects_document_limit(self):
+        from spokane_land.report import pack
+        items = [{"x": "a" * 1000} for _ in range(50)]
+        groups = pack(items, limit=5000)
+        self.assertEqual(sum(len(g) for g in groups), 50)
+        import json as _j
+        self.assertTrue(all(len(_j.dumps({"items": g}, separators=(",", ":"))) <= 5000 for g in groups))
+
+    def test_csv_ids_stable_without_id_column(self):
+        rows = "Address,City,Price,Latitude,Longitude\n1 A Rd,Elk,100,47.9,-117.3\n2 B Rd,Elk,200,47.8,-117.2\n"
+        rev = "Address,City,Price,Latitude,Longitude\n2 B Rd,Elk,200,47.8,-117.2\n1 A Rd,Elk,100,47.9,-117.3\n"
+        ids = []
+        for text in (rows, rev):
+            with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as f:
+                f.write(text)
+            ids.append({l.address: l.id for l in load_csv(f.name)})
+            os.unlink(f.name)
+        self.assertEqual(ids[0], ids[1])
+
+    def test_parcel_file_lot_numbers_and_zip(self):
+        from spokane_land.sources.parcels import load_parcel_ids, parse_entry
+        with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as f:
+            f.write("# my list\n12345 N Example Rd Lot #4, Deer Park, WA | 89000\n39352.9067  # the creek one\n")
+        got = load_parcel_ids(f.name)
+        os.unlink(f.name)
+        self.assertEqual(got[0].address, "12345 N Example Rd Lot #4, Deer Park, WA")
+        self.assertEqual(got[0].price, 89000)
+        self.assertEqual(got[1].parcel_id, "39352.9067")
+        l = parse_entry("https://www.zillow.com/homedetails/12345-N-Example-Rd-Deer-Park-WA/123_zpid/")
+        self.assertEqual(l.zip, "")
+
+
 if __name__ == "__main__":
     unittest.main()

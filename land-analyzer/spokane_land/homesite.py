@@ -21,7 +21,7 @@ FT = 0.3048
 HALF_ROW_M = 30 * FT          # road centerline to right-of-way line, typical rural county road
 MAX_SLOPE_PCT = 30
 GOOD_SLOPE_PCT = 15
-MAX_POINTS = 324              # 18 x 18 grid over the parcel's bounding box
+GRID_N = 18                   # 18 x 18 grid over the parcel's bounding box
 
 
 def _local(lat0):
@@ -30,18 +30,21 @@ def _local(lat0):
     return kx, ky
 
 
-def _hazard_polys(shape):
-    """Polygons (lon/lat rings) where a house can't go. Same queries as the deal-breaker
-    checks, so they come from the HTTP cache."""
-    polys = []
-    for layer, where in (("nwi_wetlands", "1=1"), ("fema_flood", "SFHA_TF = 'T'"),
-                         ("wa_landslides", "1=1"), ("sc_stream_buffers", "1=1")):
+def _hazard_polys(shape, state, in_spokane):
+    """Polygons (lon/lat rings) where a house can't go, and the layers that didn't answer.
+    Uses the deal-breaker checks' exact queries, so these come from the HTTP cache."""
+    from .dealbreakers import hazard_query
+    layers = ["nwi_wetlands", "fema_flood"] + (["wa_landslides"] if state == "WA" else []) + \
+             (["sc_stream_buffers"] if in_spokane else [])
+    polys, missing = [], []
+    for layer in layers:
         try:
-            feats = arcgis.query(LAYERS[layer], geometry=shape, where=where, out_fields="OBJECTID", return_geometry=True)
-        except (HttpError, KeyError):
+            feats = hazard_query(layer, shape, None, None)
+        except HttpError:
+            missing.append(layer)
             continue
         polys += [f["geometry"]["rings"] for f in feats if (f.get("geometry") or {}).get("rings")]
-    return polys
+    return polys, missing
 
 
 def _elevations(points):
@@ -65,7 +68,7 @@ def _elevations(points):
     return out
 
 
-def building_site(shape, roads, setbacks, state=None):
+def building_site(shape, roads, setbacks, state=None, in_spokane=False):
     """setbacks: {"front_ft", "side_ft"}; roads: [{"paths", "dist_m", ...}] from Enricher.roads."""
     if not shape or not shape.get("rings"):
         return None
@@ -75,8 +78,7 @@ def building_site(shape, roads, setbacks, state=None):
     xs = [p[0] for r in rings for p in r]
     ys = [p[1] for r in rings for p in r]
     w_m, h_m = (max(xs) - min(xs)) * kx, (max(ys) - min(ys)) * ky
-    n = max(4, min(18, int(math.sqrt(MAX_POINTS))))
-    step_m = max(6.0, max(w_m, h_m) / n)
+    step_m = max(6.0, max(w_m, h_m) / GRID_N)
     nx, ny = max(2, int(w_m / step_m) + 1), max(2, int(h_m / step_m) + 1)
     grid = [(min(xs) + (i + 0.5) * step_m / kx, min(ys) + (j + 0.5) * step_m / ky) for j in range(ny) for i in range(nx)]
     elev = _elevations(grid)
@@ -103,7 +105,7 @@ def building_site(shape, roads, setbacks, state=None):
     road_paths = [r["paths"] for r in (roads or []) if r.get("paths")][:6]
     front_m = (setbacks.get("front_ft") or 50) * FT + HALF_ROW_M
     side_m = (setbacks.get("side_ft") or 20) * FT
-    hazards = _hazard_polys(shape)
+    hazards, missing = _hazard_polys(shape, state, in_spokane)
     cell_ac = step_m * step_m / 4046.86
 
     pts, counts = [], {"inside": 0, "setback": 0, "hazard": 0, "steep": 0}
@@ -134,6 +136,7 @@ def building_site(shape, roads, setbacks, state=None):
         "buildable_pct": round(len(pts) / counts["inside"] * 100),
         "parcel_acres": round(counts["inside"] * cell_ac, 2),
         "lost_to": {k: round(v * cell_ac, 2) for k, v in counts.items() if k != "inside" and v},
+        **({"hazards_unchecked": missing} if missing else {}),
         "setbacks_ft": {"front": setbacks.get("front_ft") or 50, "side": setbacks.get("side_ft") or 20,
                         "source": setbacks.get("source") or "typical rural setbacks"},
     }

@@ -81,6 +81,15 @@ def main(argv=None):
     if args.max_price is not None:
         listings = [l for l in listings if l.price is None or l.price <= args.max_price]
 
+    # Cheap pre-filter on what the listing already says (the exact check runs again after analysis).
+    before = len(listings)
+    listings = [l for l in listings if l.source == "added" or l.lat is None or l.lon is None
+                or geo.miles_between(SPOKANE_LAT, SPOKANE_LON, l.lat, l.lon) <= args.radius + 0.5]
+    if args.min_acres is not None:
+        listings = [l for l in listings if l.source == "added" or l.lot_acres is None or l.lot_acres >= args.min_acres]
+    if len(listings) < before:
+        print(f"Skipped {before - len(listings)} listings outside the radius or under the minimum size", file=sys.stderr)
+
     enricher = Enricher(use_cache=not args.no_cache)
     results, shapes = [], {}
 

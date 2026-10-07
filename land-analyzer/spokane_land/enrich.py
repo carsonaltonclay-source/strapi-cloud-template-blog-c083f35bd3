@@ -44,6 +44,7 @@ class Enricher:
             return arcgis.query(LAYERS[name], **kw)
         except HttpError as e:
             facts["errors"].append(f"{name}: {e}")
+            facts.setdefault("failed", set()).add(name)
             return []
 
     # ---- location & parcel -----------------------------------------------------
@@ -150,11 +151,15 @@ class Enricher:
     # ---- main entry ------------------------------------------------------------
 
     def enrich(self, listing):
-        facts = {"errors": [], "notes": [], "parcel": None}
+        facts = {"errors": [], "notes": [], "parcel": None, "failed": set()}
         if (listing.lat is None or listing.lon is None) and not listing.parcel_id:
             self.geocode(listing, facts)
 
         parcel = self.find_parcel(listing, facts)
+        if not parcel and listing.parcel_id and (listing.lat is None or listing.lon is None):
+            # The parcel number didn't match anything: fall back to the address.
+            self.geocode(listing, facts)
+            parcel = self.find_parcel(listing, facts)
         if parcel and parcel.county == "Spokane":
             self.spokane_property(parcel, facts)
         if parcel and parcel.geometry and parcel.geometry.get("rings"):
@@ -195,8 +200,28 @@ class Enricher:
                 facts, "id_water_areas", geometry=target, out_fields="Name,Owner"), "Name")
 
         facts["roads"] = self.roads(listing, parcel, state, facts)
-        facts["terrain"] = analyze_terrain(parcel.geometry if parcel else None, listing.lat, listing.lon,
-                                           parcel.acres if parcel and parcel.acres else listing.lot_acres)
+        # A service that didn't answer is "unknown", never "nothing there".
+        failed = facts["failed"]
+        skipped = []
+        if failed & {"wa_wells", "id_wells"}:
+            facts["wells"] = None
+            skipped.append("well logs")
+        if failed & {"sc_municipal", "sc_uga"}:
+            facts.pop("city", None)
+            facts.pop("uga", None)
+            skipped.append("city / sewer boundaries")
+        if "sc_address_points" in failed:
+            facts["neighbors"] = None
+            skipped.append("nearby homes")
+        if failed & {"sc_streets", "sc_road_log", "tiger_local_roads", "tiger_secondary_roads"}:
+            facts["roads"] = None
+            skipped.append("roads")
+        if failed & {"sc_flood", "sc_aquifer", "sc_water_districts", "id_water_areas"}:
+            skipped.append("flood / aquifer / water district")
+        if skipped:
+            facts["notes"].append("Map services didn't answer for: " + ", ".join(skipped) + " — those checks were skipped.")
+        self._extra(facts, "terrain", analyze_terrain, parcel.geometry if parcel else None, listing.lat, listing.lon,
+                    parcel.acres if parcel and parcel.acres else listing.lot_acres)
         if facts["terrain"] is None:
             facts["errors"].append("terrain: elevation service gave no answer")
         lat, lon = listing.lat, listing.lon
@@ -228,7 +253,7 @@ class Enricher:
                     facts.get("soil"))
         zone = ", ".join(facts.get("zoning") or []) or ((facts.get("zoning_other") or {}).get("zone") or "")
         self._extra(facts, "site", homesite.building_site, shape, (facts.get("roads") or {}).get("roads"),
-                    county_rules.setbacks(county, state, zone))
+                    county_rules.setbacks(county, state, zone), state, in_spokane)
         return facts
 
     @staticmethod
@@ -403,8 +428,13 @@ class Enricher:
         """The county road log says whether a road is County, City or Private."""
         log = self._q(facts, "sc_road_log", geometry=shape,
                       distance_m=ROAD_FRONTAGE_TOLERANCE_M + 15, out_fields="RoadName,JurDesc")
-        jur = {_road_key(f["attributes"].get("RoadName")): f["attributes"].get("JurDesc") or ""
-               for f in log}
+        # Segments of one road can differ (county road with a private extension). All of these
+        # touch the parcel, so a public segment means public frontage.
+        jur = {}
+        for f in log:
+            k, j = _road_key(f["attributes"].get("RoadName")), f["attributes"].get("JurDesc") or ""
+            if j and (k not in jur or j in ("County", "City/municipal")):
+                jur[k] = j
         for r in roads:
             j = jur.get(_road_key(r["name"]))
             if not j:

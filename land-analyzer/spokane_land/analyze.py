@@ -64,8 +64,10 @@ def _pick(category, evidence):
     if not evidence:
         return Finding(evidence=[])
     order = list(CATEGORIES[category])
-    best = max(evidence, key=lambda e: (conf_rank(e.confidence),
-                                        -order.index(e.status) if e.status in order else -99))
+    ranked = [e for e in evidence if e.status in order]   # notes like "water rights" aren't a status
+    if not ranked:
+        return Finding(evidence=sorted(evidence, key=lambda e: -conf_rank(e.confidence)))
+    best = max(ranked, key=lambda e: (conf_rank(e.confidence), -order.index(e.status)))
     label = CATEGORIES[category].get(best.status, (best.status, UNKNOWN_POINTS))[0]
     # Strongest evidence first in the explanation.
     ev = sorted(evidence, key=lambda e: -conf_rank(e.confidence))
@@ -459,10 +461,21 @@ def buildable_verdict(r):
         work.append("engineered septic")
     if steep > 15:
         work.append("grading on a slope")
+    names = {"water": "water", "electric": "power", "septic": "septic", "access": "road access"}
+    unknown = [names[c] for c in names if r[c]["status"] == "unknown"]
+    if unknown:
+        work.append("confirm " + ", ".join(unknown))
+    if r.get("lat") is None:
+        unknown.append("location")
     if any(c["key"] in NO_BUILD_KEYS for c in bad):
         level, label = "no", "Likely not buildable"
     elif bad:
         level, label = "doubt", "Questionable"
+    elif len(unknown) >= 2 or r.get("lat") is None:
+        level, label = "doubt", "Not enough information"
+    elif not r.get("site"):
+        level, label = "work", "Buildable with work"
+        work.append("confirm where a house fits")
     elif warn or work:
         level, label = "work", "Buildable with work"
     else:

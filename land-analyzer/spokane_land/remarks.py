@@ -10,6 +10,8 @@ import re
 from .models import HIGH, MEDIUM, LOW, Evidence
 
 _W = r"[\s\-]*"
+# "well" the noun, not the adverb: skip "well-drained", "well-kept" and "as well (in)".
+WELL = r"(?<!\bas\s)well(?!-)"
 
 RULES = {
     "water": [
@@ -17,9 +19,9 @@ RULES = {
         ("none", MEDIUM, r"\b(well|water)\s+(will\s+be\s+|is\s+)?(needed|required)\b"),
         ("none", MEDIUM, r"\b(buyer|purchaser)s?\s+(to|will|would)\s+(need\s+to\s+)?(drill|install|put\s+in)\s+(a\s+)?well\b"),
         ("none", MEDIUM, r"\bneeds?\s+(a\s+)?well\b"),
-        ("shared_well", HIGH, r"\bshared" + _W + r"well\b|\bwell\s+share\b|\bgroup\s+(a|b)\s+water\b"),
-        ("well", HIGH, r"\b(existing|drilled|private|installed|producing|new|good|deep)\s+well\b"),
-        ("well", HIGH, r"\bwell\s+(is\s+)?(in|drilled|installed|on\s+(the\s+)?(property|site|lot)|producing|log|report)\b"),
+        ("shared_well", HIGH, r"\bshared" + _W + WELL + r"\b|\b" + WELL + r"\s+share\b|\bgroup\s+(a|b)\s+water\b"),
+        ("well", HIGH, r"\b(existing|drilled|private|installed|producing|new|good|deep)\s+" + WELL + r"\b"),
+        ("well", HIGH, r"\b" + WELL + r"\s+(is\s+)?(in\b(?!\s+(the\s+)?(area|neighborhood|vicinity))|drilled|installed|on\s+(the\s+)?(property|site|lot)|producing|log|report)\b"),
         ("well", MEDIUM, r"\b\d{1,3}(\.\d+)?\s*(gpm|gal(lons)?\s*(per|/)\s*min)\b"),
         ("public", HIGH, r"\b(public|city|municipal|community|district)\s+water\b"),
         ("public", HIGH, r"\bwater\s+(district|purveyor|hook" + _W + r"up|meter|tap|connection|line|main|service)\b"),
@@ -32,23 +34,24 @@ RULES = {
         ("none", MEDIUM, r"\bno\s+(power|electric(ity)?|utilities)\b"),
         ("none", MEDIUM, r"\b(power|electric(ity)?)\s+(is\s+)?not\s+(available|in|on|to)\b"),
         ("on_site", HIGH, r"\b(power|electric(ity)?)\s+(is\s+)?(on|to)\s+(the\s+)?(property|site|lot|parcel|land|building\s+site)\b"),
-        ("on_site", HIGH, r"\b(power|electric(ity)?)\s+(is\s+)?(already\s+)?(in|installed|run)\b"),
+        ("on_site", HIGH, r"\b(power|electric(ity)?)\s+(is\s+)?(already\s+)?(in\b(?!\s+(the\s+)?(area|street|road|neighborhood|vicinity|subdivision|development))|installed|run\b(?!\s+(along|down|on|to)\s+(the\s+)?(road|street)))"),
         ("on_site", HIGH, r"\b(power|meter)\s+(pole|base|box|panel)\b|\b(transformer|meter)\s+on\s+(the\s+)?(property|site|lot)\b"),
         ("on_site", MEDIUM, r"\b(utilities|all\s+utilities)\s+(are\s+)?(in|installed|on\s+site|to\s+(the\s+)?property)\b"),
         ("at_road", HIGH, r"\b(power|electric(ity)?|utilities)\s+(is\s+|are\s+)?(at|along|on|in|to)\s+(the\s+)?(road|street|lot\s+line|property\s+line|edge|easement|corner)\b"),
         ("at_road", MEDIUM, r"\b(power|electric(ity)?|utilities)\s+(is\s+|are\s+)?(nearby|close|available|adjacent|close\s+by)\b"),
         ("at_road", MEDIUM, r"\b(power|electric(ity)?)\s+within\s+\d+"),
+        ("at_road", MEDIUM, r"\b(power|electric(ity)?|utilities)\s+(is\s+|are\s+)?in\s+(the\s+)?(area|street|road|subdivision)\b"),
         ("at_road", MEDIUM, r"\b(avista|inland\s+power|modern\s+electric|vera\s+(water\s+(and|&)\s+)?power|kootenai\s+electric)\b"),
         ("solar", LOW, r"\bsolar\b"),
     ],
     "septic": [
-        ("failed", HIGH, r"\b(failed|did\s+not\s+pass|no)\s+(perc|percolation|soil\s+log)s?\b|\bwill\s+not\s+perc\b|\bdoes\s+not\s+perc\b"),
+        ("failed", HIGH, r"\b(failed|did\s+not\s+pass)\s+(a\s+|the\s+)?(perc|percolation|soil\s+log)s?\b|\b(perc|percolation)\s+(test\s+)?failed\b|\b(will|does|did)\s+not\s+perc\b"),
         ("sewer", HIGH, r"\b(public|city|municipal|county)\s+sewer\b|\bsewer\s+(hook" + _W + r"up|connection|available|at|in|line|main|stub|district)\b"),
         ("installed", HIGH, r"\bseptic\s+(system\s+)?(is\s+)?(installed|in\s+place|existing|already\s+in)\b|\bexisting\s+septic\b"),
         ("approved", HIGH, r"\bseptic\s+(design(ed)?|permit(ted)?|approv(al|ed)|site\s+(evaluation|approved))\b|\bapproved\s+(septic|drainfield|drain\s+field)\b"),
-        ("approved", HIGH, r"\b(perc(ed|'d)?|percolation)\s+(test(ed)?|passed|approved|done|completed|on\s+file|in\s+hand)\b|\bhas\s+(a\s+)?perc\b|\bperc(ed|'d)\b"),
+        ("approved", HIGH, r"\b(perc|percolation)\s+(test\s+)?(passed|approved|done|completed|on\s+file|in\s+hand)\b|\b(perc|percolation)\s+tested\b|\bhas\s+(a\s+)?perc\b|\bperc(ed|'d)\b"),
         ("approved", HIGH, r"\bsoil\s+(log|logs|test|tests|evaluation)s?\s+(done|completed|on\s+file|approved|passed|available)\b|\bsoil\s+logs?\s+(have\s+been\s+)?(done|completed)\b"),
-        ("needed", MEDIUM, r"\b(perc|soil\s+logs?|septic)\s+(test\s+)?(needed|required|not\s+(done|completed))\b|\bbuyer\s+to\s+(do|obtain|complete|verify)\s+(perc|septic|soil)"),
+        ("needed", MEDIUM, r"\b(no|without)\s+(a\s+)?(perc|percolation|soil\s+logs?)(\s+tests?)?\b|\b(perc|soil\s+logs?|septic)\s+(test\s+)?(needed|required|not\s+(done|completed|yet))\b|\bbuyer\s+to\s+(do|obtain|complete|verify)\s+(perc|septic|soil)"),
         ("mentioned", LOW, r"\b(septic|drain\s*field|perc)\b"),
     ],
     "access": [
@@ -61,6 +64,7 @@ RULES = {
     ],
 }
 
+_NEGATED_PERC = re.compile(r"\b(no|without|not\s+(yet\s+)?(been\s+)?)\s*(a\s+)?(perc|percolation|soil\s+logs?|septic\s+(design|permit|approval))", re.I)
 _COMPILED = {cat: [(s, c, re.compile(rx, re.I)) for s, c, rx in rules] for cat, rules in RULES.items()}
 
 
@@ -79,6 +83,9 @@ def scan_text(text, source="listing remarks"):
             snippet = _snippet(text, m.start(), m.end())
             out[cat].append(Evidence(status, conf, f'"{snippet}"', source))
         # A generic match adds nothing once a more specific one hit.
+        # "No perc test done yet" must not also count as an approved perc.
+        if cat == "septic" and _NEGATED_PERC.search(text):
+            out[cat] = [e for e in out[cat] if e.status != "approved"]
         if cat == "septic" and len(out[cat]) > 1:
             out[cat] = [e for e in out[cat] if e.status != "mentioned"]
         if cat == "water" and "shared_well" in seen:
@@ -138,8 +145,9 @@ def from_structured(listing):
     src = f"{listing.source} MLS field"
 
     w = listing.water_source.lower()
+    neg = re.compile(r"\b(no|none|needed|needs|required|not|to\s+be\s+drilled)\b")
     if w:
-        if "none" in w or "no water" in w:
+        if "none" in w or "no water" in w or ("well" in w and neg.search(w)):
             out["water"].append(Evidence("none", HIGH, f"WaterSource = {listing.water_source}", src))
         elif "shared" in w:
             out["water"].append(Evidence("shared_well", HIGH, f"WaterSource = {listing.water_source}", src))
@@ -152,7 +160,7 @@ def from_structured(listing):
 
     e = listing.electric.lower()
     if e:
-        if "none" in e or "not available" in e or "off grid" in e:
+        if "none" in e or "not available" in e or "off grid" in e or re.search(r"\bno\s+(power|electric)", e):
             out["electric"].append(Evidence("none", HIGH, f"Electric = {listing.electric}", src))
         elif any(k in e for k in ("at road", "at street", "nearby", "available", "lot line", "adjacent")):
             out["electric"].append(Evidence("at_road", HIGH, f"Electric = {listing.electric}", src))
@@ -163,7 +171,9 @@ def from_structured(listing):
 
     s = listing.sewer.lower()
     if s:
-        if "public" in s or ("sewer" in s and "septic" not in s):
+        if "sewer" in s and neg.search(s) and "septic" not in s and "public" not in s:
+            out["septic"].append(Evidence("required", MEDIUM, f"Sewer = {listing.sewer}", src))
+        elif "public" in s or ("sewer" in s and "septic" not in s):
             out["septic"].append(Evidence("sewer", HIGH, f"Sewer = {listing.sewer}", src))
         elif "perc" in s or "approved" in s or "design" in s:
             out["septic"].append(Evidence("approved", HIGH, f"Sewer = {listing.sewer}", src))

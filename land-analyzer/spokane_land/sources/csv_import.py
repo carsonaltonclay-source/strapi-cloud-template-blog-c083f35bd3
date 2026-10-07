@@ -4,6 +4,7 @@ ALIASES. Only a price plus either coordinates, an address or a parcel number
 is needed."""
 
 import csv
+import hashlib
 import re
 
 from ..models import Listing
@@ -87,7 +88,11 @@ def load_csv(path, source_name=None):
             if acres is None:
                 sqft = parse_float(get("lot_sqft"))
                 acres = sqft / 43560.0 if sqft else None
-            lid = get("id") or f"row{i}"
+            # Without an id column, derive a stable id from the row's content (not its position),
+            # so refreshes and multiple files don't mix listings up.
+            lid = get("id") or "h" + hashlib.sha1("|".join(
+                (get("address") or "", get("city") or "", get("lat") or "", get("lon") or "", get("parcel_id") or "")
+            ).lower().encode()).hexdigest()[:12]
             out.append(Listing(
                 source=source_name,
                 id=f"{source_name}:{lid}",

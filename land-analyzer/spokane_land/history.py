@@ -103,6 +103,10 @@ def load_previous(path):
         for fp in files:
             with open(fp, encoding="utf-8") as f:
                 out.extend(json.load(f).get("items", []))
+        for fp in sorted(glob.glob(os.path.join(path, "listings", "*.json"))):  # hand-added properties
+            with open(fp, encoding="utf-8") as f:
+                doc = json.load(f)
+            out.append(doc.get("data", doc))
         return out
     with open(path, encoding="utf-8") as f:
         return json.load(f).get("results", [])

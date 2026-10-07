@@ -1,7 +1,7 @@
 """Aerial photo of each parcel for the app (USDA NAIP via USGS The National Map,
 public domain), with the parcel outline and best house site as overlay paths.
 
-Photos are small WebP images stored in the app database, ~14 per document
+Photos are small WebP images stored in the app database, as many per document as fit under the 256 KB limit
 ("photos" collection), so a whole refresh is a handful of uploads. Each listing
 gets r["photo"] = {"doc": "p-012", "path": "M..Z", "site": [x, y], "credit": ...}
 with coordinates in 0-100 image units.
@@ -18,7 +18,6 @@ from .config import USER_AGENT
 
 EXPORT = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/export"
 SIZE = 320
-PER_DOC = 14  # keeps each document under the app database's 256 KB limit
 CREDIT = "USDA NAIP / USGS"
 
 
@@ -78,10 +77,11 @@ def _overlay(rings, bbox, site):
 def build(results, shapes, out_dir, cache_dir, select=None):
     """results: analysed listings; shapes: {listing id: parcel rings}. Writes out_dir/photos/p-NNN.json
     and sets r["photo"]. Returns the number of photos."""
-    os.makedirs(os.path.join(out_dir, "photos"), exist_ok=True)
+    from .report import clear_dir, pack
+    clear_dir(os.path.join(out_dir, "photos"))
     os.makedirs(cache_dir, exist_ok=True)
     picked = [r for r in results if r["id"] in shapes and (select is None or select(r))]
-    docs, n = {}, 0
+    shots, n = [], 0
     for i, r in enumerate(picked):
         rings = shapes[r["id"]]
         bbox = _frame(rings)
@@ -97,15 +97,22 @@ def build(results, shapes, out_dir, cache_dir, select=None):
                     f.write(jpg)
         if not jpg:
             continue
-        doc = f"p-{n // PER_DOC:03d}"
-        docs.setdefault(doc, {})[r["_doc"] if "_doc" in r else _doc_id(r["id"])] = _webp_data_uri(jpg)
+        shots.append((r, r["_doc"] if "_doc" in r else _doc_id(r["id"]), _webp_data_uri(jpg)))
         path, site = _overlay(rings, bbox, (r.get("site") or {}).get("site"))
-        r["photo"] = {"doc": doc, "path": path, "site": site, "credit": CREDIT}
+        r["photo"] = {"path": path, "site": site, "credit": CREDIT}
         n += 1
         if i % 50 == 0:
             print(f"\r  photos {i + 1}/{len(picked)}", end="", flush=True)
     print()
-    for doc, imgs in docs.items():
+    # Pack by size: each document must stay under the app database's 256 KB limit.
+    for i, group in enumerate(pack([{k: uri} for _, k, uri in shots])):
+        doc = f"p-{i:03d}"
+        imgs = {}
+        for item in group:
+            imgs.update(item)
+        for r, k, _ in shots:
+            if k in imgs:
+                r["photo"]["doc"] = doc
         with open(os.path.join(out_dir, "photos", doc + ".json"), "w", encoding="utf-8") as f:
             json.dump({"imgs": imgs}, f, separators=(",", ":"))
     return n

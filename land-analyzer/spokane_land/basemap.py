@@ -17,11 +17,8 @@ BBOX = {"xmin": -118.62, "ymin": 46.88, "xmax": -116.22, "ymax": 48.44,
 GEN = 0.0015  # degrees of server-side generalisation (~120 m)
 
 
-def _q(url, where="1=1", fields="*", offset=GEN):
-    params_geom = dict(BBOX)
-    feats = arcgis.query(url, geometry=params_geom, where=where, out_fields=fields,
-                         return_geometry=True)
-    return feats
+def _q(url, where="1=1", fields="*"):
+    return arcgis.query(url, geometry=BBOX, where=where, out_fields=fields, return_geometry=True)
 
 
 def _round(parts):

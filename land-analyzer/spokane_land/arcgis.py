@@ -2,7 +2,9 @@
 
 import json
 
-from .http import get_json
+from .http import HttpError, get_json
+
+MAX_PAGES = 10
 
 
 def _geom_params(geometry, distance_m=None):
@@ -39,7 +41,20 @@ def query(layer_url, geometry=None, where="1=1", out_fields="*", distance_m=None
         params["resultRecordCount"] = max_records
     # POST: parcel polygons easily exceed the server's URL length limit.
     data = get_json(layer_url + "/query", params, post=True)
-    return data.get("features", [])
+    feats = data.get("features", [])
+    # Past the server's record limit: page through the rest (unless the caller capped it).
+    pages = 0
+    while data.get("exceededTransferLimit") and not max_records and pages < MAX_PAGES:
+        pages += 1
+        try:
+            data = get_json(layer_url + "/query", dict(params, resultOffset=len(feats)), post=True)
+        except HttpError:
+            break  # layer doesn't support paging: keep what we have
+        more = data.get("features", [])
+        if not more:
+            break
+        feats += more
+    return feats
 
 
 def simplify_polygon(geom, max_points=400):

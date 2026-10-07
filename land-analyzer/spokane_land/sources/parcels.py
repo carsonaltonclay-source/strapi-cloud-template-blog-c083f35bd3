@@ -46,8 +46,8 @@ def parse_entry(text, price=None, entry_id=None, source="added"):
     if text.lower().startswith("http"):
         l.url = text
         l.address = address_from_url(text)
-        nums = re.findall(r"(\d{5})(?!.*\d{5})", l.address)
-        l.zip = nums[0] if nums else ""
+        m = re.search(r"\b(?:WA|ID)\s+(\d{5})\b", l.address)
+        l.zip = m.group(1) if m else ""
     elif LATLON_RX.match(text):
         lat, lon = LATLON_RX.match(text).groups()
         l.lat, l.lon = float(lat), float(lon)
@@ -62,7 +62,8 @@ def load_parcel_ids(path):
     out = []
     with open(path, encoding="utf-8") as f:
         for line in f:
-            line = line.split("#", 1)[0].strip() if not line.lstrip().lower().startswith("http") else line.strip()
+            # "# note" and "  # note" are comments; "Lot #4" is part of an address.
+            line = line.strip() if line.lstrip().lower().startswith("http") else re.sub(r"(^|\s)#(\s.*)?$", "", line).strip()
             if not line:
                 continue
             if "|" in line:

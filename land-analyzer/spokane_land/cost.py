@@ -82,7 +82,8 @@ def _access(r, site, d):
     st = r["access"]["status"]
     ft = ((site or {}).get("site") or {}).get("driveway_ft") or d["default_driveway_ft"]
     drive = d["driveway_base"] + ft * d["driveway_per_ft"]
-    what = f"{ft:,.0f} ft driveway to the best house site" if (site or {}).get("site") else f"Driveway (~{ft:,.0f} ft assumed)"
+    measured = ((site or {}).get("site") or {}).get("driveway_ft") is not None
+    what = f"{ft:,.0f} ft driveway to the best house site" if measured else f"Driveway (~{ft:,.0f} ft assumed)"
     if st == "landlocked":
         return round(d["landlocked_access"] + drive), "Buy an access easement + build a road (very uncertain)"
     if st == "easement":

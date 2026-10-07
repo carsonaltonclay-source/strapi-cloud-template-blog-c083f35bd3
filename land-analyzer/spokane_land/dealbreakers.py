@@ -53,10 +53,24 @@ def _target(shape, lat, lon):
     return shape if shape else (lon, lat)
 
 
+# Hazard layers shared with homesite.py: identical queries, so the second caller gets the HTTP cache.
+HAZARD_QUERIES = {
+    "nwi_wetlands": ("1=1", "ATTRIBUTE,WETLAND_TYPE,ACRES"),
+    "fema_flood": ("SFHA_TF = 'T'", "FLD_ZONE,ZONE_SUBTY"),
+    "wa_landslides": ("1=1", "LANDSLIDE_TYPE,LANDSLIDE_CERTAINTY"),
+    "sc_stream_buffers": ("1=1", "DESCRIPTIO,BUFF_DIST"),
+}
+
+
+def hazard_query(layer, shape, lat, lon):
+    where, fields = HAZARD_QUERIES[layer]
+    return arcgis.query(LAYERS[layer], geometry=_target(shape, lat, lon), distance_m=None if shape else 60,
+                        where=where, out_fields=fields, return_geometry=bool(shape))
+
+
 def wetlands(shape, lat, lon):
     try:
-        feats = arcgis.query(LAYERS["nwi_wetlands"], geometry=_target(shape, lat, lon), distance_m=None if shape else 60,
-                             out_fields="ATTRIBUTE,WETLAND_TYPE,ACRES", return_geometry=bool(shape))
+        feats = hazard_query("nwi_wetlands", shape, lat, lon)
     except HttpError:
         return None
     src = "USFWS National Wetlands Inventory"
@@ -83,8 +97,7 @@ def flood(shape, lat, lon, soil):
     """FEMA flood zones (both states) plus poorly drained / hydric soils (drainage problems)."""
     src = "FEMA flood maps"
     try:
-        feats = arcgis.query(LAYERS["fema_flood"], geometry=_target(shape, lat, lon), distance_m=None if shape else 60,
-                             where="SFHA_TF = 'T'", out_fields="FLD_ZONE,ZONE_SUBTY", return_geometry=bool(shape))
+        feats = hazard_query("fema_flood", shape, lat, lon)
     except HttpError:
         feats = None
     poor = soil and (soil.get("drainage") in ("Poorly drained", "Very poorly drained") or (soil.get("hydric_pct") or 0) >= 50)
@@ -114,8 +127,7 @@ def landslides(shape, lat, lon, state):
     if state != "WA":
         return None
     try:
-        feats = arcgis.query(LAYERS["wa_landslides"], geometry=_target(shape, lat, lon), distance_m=None if shape else 60,
-                             out_fields="LANDSLIDE_TYPE,LANDSLIDE_CERTAINTY", return_geometry=bool(shape))
+        feats = hazard_query("wa_landslides", shape, lat, lon)
     except HttpError:
         return None
     src = "WA DNR landslide inventory"
@@ -135,8 +147,7 @@ def streams(shape, lat, lon, in_spokane):
     if not in_spokane:
         return None
     try:
-        feats = arcgis.query(LAYERS["sc_stream_buffers"], geometry=_target(shape, lat, lon), distance_m=None if shape else 60,
-                             out_fields="DESCRIPTIO,BUFF_DIST", return_geometry=bool(shape))
+        feats = hazard_query("sc_stream_buffers", shape, lat, lon)
     except HttpError:
         return None
     src = "Spokane County critical areas"

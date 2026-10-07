@@ -44,7 +44,7 @@ def get_text(url, params=None, headers=None, use_cache=True, timeout=45, retries
         body = urllib.parse.urlencode(params).encode()
     elif params:
         url = url + ("&" if "?" in url else "?") + urllib.parse.urlencode(params)
-    path = _cache_path(url + "\n" + (body or b"").decode())
+    path = _cache_path(_key(url, params, post))
     if use_cache and os.path.exists(path) and time.time() - os.path.getmtime(path) < CACHE_TTL_S:
         with open(path, encoding="utf-8") as f:
             return f.read()
@@ -62,8 +62,10 @@ def get_text(url, params=None, headers=None, use_cache=True, timeout=45, retries
                 text = resp.read().decode("utf-8", errors="replace")
             if use_cache:
                 os.makedirs(CACHE_DIR, exist_ok=True)
-                with open(path, "w", encoding="utf-8") as f:
+                tmp = f"{path}.{os.getpid()}.{threading.get_ident()}.tmp"
+                with open(tmp, "w", encoding="utf-8") as f:
                     f.write(text)
+                os.replace(tmp, path)  # other threads never see a half-written file
             return text
         except urllib.error.HTTPError as e:
             last_err = e
@@ -71,29 +73,40 @@ def get_text(url, params=None, headers=None, use_cache=True, timeout=45, retries
                 break
         except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
             last_err = e
-        time.sleep(2 ** attempt)
+        if attempt < retries:
+            time.sleep(2 ** attempt)
     raise HttpError(f"{'POST' if body else 'GET'} {url[:160]} failed: {last_err}")
 
 
-def get_json(url, params=None, headers=None, use_cache=True, post=False):
-    text = get_text(url, params, headers, use_cache, post=post)
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        data = None
-    if data is None or (isinstance(data, dict) and "error" in data):
+def _key(url, params, post):
+    """Cache key: the full URL plus the POST body (one definition for read, write and forget)."""
+    if params and post:
+        return url + "\n" + urllib.parse.urlencode(params)
+    if params:
+        url = url + ("&" if "?" in url else "?") + urllib.parse.urlencode(params)
+    return url + "\n"
+
+
+def get_json(url, params=None, headers=None, use_cache=True, post=False, retries=2):
+    for attempt in range(retries + 1):
+        text = get_text(url, params, headers, use_cache, post=post)
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            data = None
+        if not (data is None or (isinstance(data, dict) and "error" in data)):
+            return data
         _forget(url, params, post)  # don't cache failures
         detail = data["error"] if data else text[:200]
-        raise HttpError(f"Service error from {url[:120]}: {detail}")
-    return data
+        # ArcGIS reports overloads as JSON errors with HTTP 200; a malformed query (400) won't improve.
+        code = detail.get("code") if isinstance(detail, dict) else None
+        if code in (400, 498, 499) or attempt == retries:
+            raise HttpError(f"Service error from {url[:120]}: {detail}")
+        time.sleep(2 + 3 * attempt)
 
 
 def _forget(url, params, post):
-    if params and post:
-        key = url + "\n" + urllib.parse.urlencode(params)
-    else:
-        key = (url + ("&" if "?" in url else "?") + urllib.parse.urlencode(params) if params else url) + "\n"
     try:
-        os.remove(_cache_path(key))
+        os.remove(_cache_path(_key(url, params, post)))
     except OSError:
         pass
