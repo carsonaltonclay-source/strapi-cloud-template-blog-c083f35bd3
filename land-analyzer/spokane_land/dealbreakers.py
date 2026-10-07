@@ -82,14 +82,14 @@ def wetlands(shape, lat, lon):
     what = ", ".join(types[:3]).lower()
     if share is not None and share >= 0.5 and not only_streams:
         return {"key": "wetlands", "level": "bad", "label": f"About {round(share * 100)}% of the parcel is mapped wetland",
-                "detail": f"{what}; wetlands and their buffers can't be built on or filled", "source": src,
+                "detail": f"{what}; building in wetlands and their buffers (25–250 ft by wetland category) is heavily restricted", "source": src,
                 "ask": "Has a wetland delineation been done? Where is the buildable area outside the wetland buffer?"}
     pct = f"about {round(share * 100)}% of the parcel" if share else "touches the parcel"
     if share is not None and share < 0.03:
         return {"key": "wetlands", "level": "ok", "label": "Only a sliver of mapped wetland/stream at the edge",
                 "detail": f"{what}, {pct}", "source": src, "streams_only": only_streams}
     return {"key": "wetlands", "level": "warn", "streams_only": only_streams, "label": "Mapped wetland or stream on the parcel" if not only_streams else "Stream on the parcel",
-            "detail": f"{what} — {pct}; expect buffers (often 100–250 ft) where you can't build", "source": src,
+            "detail": f"{what} — {pct}; expect buffers (25–250 ft depending on the wetland's category) where building is restricted", "source": src,
             "ask": "Where would the house, well and septic go given the wetland or stream buffer?"}
 
 

@@ -6,7 +6,8 @@ Sources (checked 2026-10):
   property (right-of-way) line, 5 ft side/rear in rural and resource zones. LDR (Table 606-3,
   2018 printing, not re-verified): 15 ft front, 5 ft side.
 * Pend Oreille County Building Regulations 2023 xx.84.020: 25 ft front, 5 ft side/rear.
-* Lincoln County Title 17 (Ord. 24-02): AG and RES 30 ft from state/county road right-of-way, 10 ft sides.
+* Lincoln County Code ch. 38 (Ord. 24-02; secs. 38-125, 38-202): AG and RES 30 ft from state/county road
+  right-of-way (10 ft inside a legal subdivision), 10 ft sides.
 * Kootenai County Title 8 (8.2.108, 8.2.207, 8.2.308): 25 ft front, 10 ft side.
 * Bonner County BCRC 12-411 Table 4-1: R-5 / R-10 25 ft street and 25 ft property-line setbacks
   (staff reports HO0004-25, VA0001-26); A/F and Forest assumed the same; Suburban 25 / 5.
@@ -31,7 +32,7 @@ SETBACKS = {
     ("Spokane", "Residential"): {"front_ft": 15, "side_ft": 5, "source": "Spokane County Code Table 606-3 (2018)"},
     ("Spokane", None): {"front_ft": 25, "side_ft": 5, "source": "Spokane County Code 14.618.300"},
     ("Pend Oreille", None): {"front_ft": 25, "side_ft": 5, "source": "Pend Oreille County Building Regulations 2023"},
-    ("Lincoln", None): {"front_ft": 30, "side_ft": 10, "source": "Lincoln County Code Title 17 (2024)"},
+    ("Lincoln", None): {"front_ft": 30, "side_ft": 10, "source": "Lincoln County Code ch. 38 (2024)"},
     ("Kootenai", None): {"front_ft": 25, "side_ft": 10, "source": "Kootenai County Code 8.2.207"},
     ("Bonner", "Suburban"): {"front_ft": 25, "side_ft": 5, "source": "Bonner County Code 12-411"},
     ("Bonner", None): {"front_ft": 25, "side_ft": 25, "source": "Bonner County Code 12-411"},
@@ -54,7 +55,7 @@ OFFICES = {
     "Bonner": {"building": ("Bonner County Planning (building location permit)", "https://www.bonnercountyid.gov/departments/Planning", "208-265-1458"),
                "septic": ("Panhandle Health District, Sandpoint", "https://panhandlehealthdistrict.org/licensing-and-permitting/septic-permits-and-records/", "208-265-6384")},
     "Benewah": {"building": ("Benewah County Planning & Zoning", "https://www.benewahcountyid.gov/departments/planning-zoning", "208-967-4232"),
-                "septic": ("Panhandle Health District, St. Maries", "https://panhandlehealthdistrict.org/licensing-and-permitting/septic-permits-and-records/", "208-245-4556")},
+                "septic": ("Panhandle Health District, St. Maries", "https://panhandlehealthdistrict.org/licensing-and-permitting/septic-permits-and-records/", "")},
 }
 
 COUNTY_NOTES = {
@@ -82,7 +83,7 @@ def _wria(lat, lon):
     return (feats[0]["attributes"]["WRIA_NR"], feats[0]["attributes"]["WRIA_NM"]) if feats else None
 
 
-def for_parcel(county, state, lat, lon):
+def for_parcel(county, state, lat, lon, aquifer=False):
     out = {"county": county, "state": state, "notes": list(COUNTY_NOTES.get(county, [])), "water_limits": []}
     if county in OFFICES:
         out["offices"] = {k: list(v) for k, v in OFFICES[county].items()}
@@ -92,13 +93,13 @@ def for_parcel(county, state, lat, lon):
             nr, name = w
             out["wria"] = f"{nr} {name}"
             if nr in RESTRICTED_WRIAS:
-                fee = "$700 in Pend Oreille County" if county == "Pend Oreille" else "$500"
+                fee = "$700 in Pend Oreille County" if county == "Pend Oreille" and nr == 55 else "$500"
                 out["water_limits"].append({
                     "key": "water_rule", "level": "warn", "label": f"New wells limited here (WRIA {nr} {name})",
                     "detail": f"state streamflow law RCW 90.94: a new household well is limited to domestic use, "
                               f"3,000 gal/day on average, with a {fee} fee at building permit and a note on the title",
                     "source": "RCW 90.94.020"})
-            elif nr in (54, 57):
+            elif aquifer:  # WAC 173-557 covers the river and the area over the SVRP aquifer, not whole WRIAs
                 out["wria_note"] = (f"WRIA {nr} {name}: over the Spokane aquifer the state's Spokane River flow rule "
                                     "(WAC 173-557) can curtail new household wells unless mitigated; public water is preferred.")
     return out

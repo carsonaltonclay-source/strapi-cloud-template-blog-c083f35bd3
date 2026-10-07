@@ -31,7 +31,9 @@ ZONE_MIN_ACRES = {
     "Rural Activity Center": 10000 / 43560,
     "Large Tract Agricultural": 40, "Small Tract Agricultural": 10, "Forest Land": 20,
 }
-NO_HOMES_ZONES = ("Industrial", "Mineral Lands", "Commercial")
+# Spokane County Code 14.612.220 / Table 612-1: single-family homes are permitted in the commercial
+# zones; industrial and mineral lands allow only a caretaker's residence.
+NO_HOMES_ZONES = ("Industrial", "Mineral Lands")
 
 
 def _wkt(rings, max_pts=80):
@@ -239,7 +241,7 @@ def _lot_verdict(z, need, acres, county):
 # ---- zoning outside Spokane County ------------------------------------------------
 
 # WA Dept. of Commerce Washington Zoning Atlas: general category -> verdict when there is no lot minimum.
-WAZA_NO_HOMES = {"COM": "commercial", "IND": "industrial", "PUB": "public facilities"}
+WAZA_NO_HOMES = {"IND": "industrial", "PUB": "public facilities"}
 WAZA_URBAN = {"LIR", "MR", "MXU"}
 
 # Bonner County Revised Code 12-411, Table 4-1 (minimum lot size, acres).
@@ -263,6 +265,10 @@ def zoning_elsewhere(lat, lon, county, state, acres):
             gen, sqft = a.get("WAZAZoneGeneral"), a.get("DenMinLotSizeSqFt")
             if gen in WAZA_NO_HOMES:
                 return _no_homes(z, where)
+            if gen == "COM":
+                return {"status": "unknown", "zone": z, "min_acres": None, "label": f"{z}: commercial zone",
+                        "detail": f"Zoned {z} in {where}; some commercial zones allow a house, some don't — ask the planning office.",
+                        "county": where}
             if gen == "TRB":
                 return {"status": "unknown", "zone": z, "min_acres": None, "label": "Tribal lands",
                         "detail": "Tribal lands: county zoning doesn't apply; ask the tribe's planning office.", "county": where}

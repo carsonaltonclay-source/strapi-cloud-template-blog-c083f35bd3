@@ -15,8 +15,8 @@ Each answer carries a **confidence** (high = stated by the seller/MLS or a
 recorded well log on the parcel; medium = strong map evidence; low = proxy) and
 the evidence behind it. Listings get a 0–100 **buildability score** (25 points
 per category) and **flags** for things like FEMA flood zones, the Spokane
-aquifer (stricter septic rules), lots under 1 acre (too small for a well +
-septic under WAC 246-272A), conflicting information, or a map pin that
+aquifer (stricter septic rules), lots under 1 acre on a private well +
+septic (below the state minimum for new lots, WAC 246-272A-0320), conflicting information, or a map pin that
 didn't land on a parcel.
 
 It also answers "can I actually build here, and what will it cost?":
@@ -25,10 +25,10 @@ It also answers "can I actually build here, and what will it cost?":
 | --- | --- |
 | **All-in estimate**: price + well, power line, septic, driveway, site prep | `cost.py` defaults (editable in the app) using nearby well depths, distance to the nearest home, soil rating and slope |
 | **Septic soils**: Not / Somewhat / Very limited for drain fields, with the reasons | USDA NRCS Soil Data Access |
-| **Zoning**: minimum lot size per home, room to split, zones that bar houses | Spokane County zoning code tables 616-3 and 618-3 |
+| **Zoning**: minimum lot size per home, room to split, zones where houses generally aren't allowed (industrial, mineral lands) | Spokane County zoning code tables 616-3 and 618-3 |
 | **Wildfire hazard** (very low … very high) | USFS Wildfire Hazard Potential 2023 |
-| **Internet**: fastest measured home connection within a mile (WA) | Ookla speed tests via the WA State Broadband Office |
-| **Power company** with phone number (WA) | WA electric retail service territories |
+| **Internet**: fastest measured home connection within a mile | Ookla speed tests (WA State Broadband Office in WA, Ookla open data in ID) |
+| **Power company** with phone number | WA electric service territories; DOE territories in Idaho |
 | **Drive time** to downtown Spokane | OSRM routing (public server) |
 
 Every parcel also gets an **"Is it actually buildable?"** report and verdict
@@ -185,7 +185,7 @@ skip; `LAND_ANALYZER_CACHE` to move it).
   decide the septic design.
 * Zoning minimums apply to new lots. An older, smaller lot of record is often
   still buildable — ask the county.
-* Internet and power-company data cover Washington only.
+* Internet speeds are measured tests near the parcel, not a provider's promise for that address.
 * Septic feasibility needs soil logs from the health district (Spokane
   Regional Health District, Northeast Tri County, Panhandle, ...).
 

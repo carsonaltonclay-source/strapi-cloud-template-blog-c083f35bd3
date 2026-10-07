@@ -15,7 +15,9 @@ DEFAULTS = {
     "water_hookup": 15000,      # public water connection / meter fees
     "shared_well": 5000,
     "power_service": 4000,      # transformer + service, net of the utility's allowance (Avista WA Sched. 51)
-    "power_per_ft": 15,         # primary line extension beyond the first 150 ft (Avista: $12–14/ft + trenching)
+    "power_per_ft": 15,         # line extension per ft past ~150 ft of service drop (Avista WA Sch. 51, 2026:
+                                # primary $12.04/ft overhead, $14.31/ft underground incl. trench, plus a fixed
+                                # charge; a residential allowance up to $7,210 offsets service/transformer first)
     "offgrid_solar": 45000,
     "septic_conventional": 18000,
     "septic_standard": 22000,   # gravity system, design + permit, soils not documented

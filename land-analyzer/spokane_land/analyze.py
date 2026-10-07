@@ -53,7 +53,7 @@ HEALTH_DISTRICTS = {
     "Spokane": "Spokane Regional Health District",
     "Stevens": "Northeast Tri County Health District",
     "Pend Oreille": "Northeast Tri County Health District",
-    "Lincoln": "Lincoln County Health Department",
+    "Lincoln": "Lincoln County Public Health",
     "Whitman": "Whitman County Public Health",
     "Kootenai": "Panhandle Health District",
     "Bonner": "Panhandle Health District",
@@ -272,9 +272,6 @@ def gis_evidence(listing, facts):
         flags.append("No parcel found at the map pin — listing location may be approximate")
     if parcel and parcel.match.startswith("nearest"):
         flags.append("Parcel matched from the map pin by proximity — confirm the parcel number")
-    if acres is not None and acres < 1:
-        flags.append(f"{acres:.2f} acres: under 1 acre may be too small for a private well + septic "
-                     "(WAC 246-272A minimum land area)")
     return ev, flags
 
 
@@ -340,13 +337,19 @@ def analyze(listing, facts):
                      "engineered system; get a perc test before buying")
     fire = facts.get("wildfire")
     if fire and fire.get("class") in (4, 5):
-        flags.append(f"{fire['label']} wildfire hazard (USFS): defensible space and fire-safe building rules apply")
+        flags.append(f"{fire['label']} wildfire hazard (USFS): plan defensible space, ask the county whether "
+                     "wildland-urban-interface building rules apply, and expect higher insurance")
 
     parcel = facts.get("parcel")
     split = _split_lot(listing, parcel)
     acres = listing.lot_acres or (parcel.acres if parcel else None)
     dist = (geo.miles_between(SPOKANE_LAT, SPOKANE_LON, listing.lat, listing.lon)
             if listing.lat is not None and listing.lon is not None else None)
+    if acres is not None and acres < 1 and findings["water"].status not in ("public", "public_area") \
+            and findings["septic"].status not in ("sewer", "sewer_area"):
+        flags.append(f"{acres:.2f} acres: below the state minimum for a new lot on a private well + septic "
+                     "(1 acre, or 2 acres in fine soils — WAC 246-272A-0320). Existing lots of record may still "
+                     "qualify; ask the health district")
     zcheck = buildability.zoning_check(", ".join(facts.get("zoning") or []), acres) or facts.get("zoning_other")
     if zcheck and zcheck["status"] == "not_residential":
         flags.append(zcheck["label"])

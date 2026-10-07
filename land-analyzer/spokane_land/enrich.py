@@ -233,7 +233,7 @@ class Enricher:
             ("power_company", buildability.power_company, (lat, lon, state)),
             ("cell", buildability.cell_service, (lat, lon)),
             ("school_district", dealbreakers.school_district, (lat, lon)),
-            ("rules", county_rules.for_parcel, (county, state, lat, lon)),
+            ("rules", county_rules.for_parcel, (county, state, lat, lon, bool(facts.get("aquifer")))),
         ]
         if in_spokane:
             steps += [("comps", comps.comparable_sales, (lat, lon, acres, parcel.parcel_id)),

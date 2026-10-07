@@ -150,7 +150,11 @@ class AnalyzeTests(unittest.TestCase):
         l = Listing(source="t", id="t2", price=50000, lot_acres=0.5, lat=LAT, lon=LON)
         flags = " ".join(analyze(l, f)["flags"])
         self.assertIn("Aquifer", flags)
-        self.assertIn("under 1 acre", flags)
+        self.assertIn("below the state minimum", flags)
+        # On public water and sewer a small lot isn't a well/septic problem.
+        l2 = Listing(source="t", id="t3", price=50000, lot_acres=0.5, lat=LAT, lon=LON,
+                     water_source="Public", sewer="Public Sewer")
+        self.assertNotIn("state minimum", " ".join(analyze(l2, facts())["flags"]))
         self.assertIn("flood", flags)
 
     def test_split_lot_well_on_parent_parcel(self):
@@ -197,6 +201,7 @@ class BuildabilityTests(unittest.TestCase):
         self.assertIn("4 lots", z("Rural-5", 20)["label"])
         self.assertEqual(z("Rural Traditional", 5)["status"], "undersized")
         self.assertEqual(z("Light Industrial", 5)["status"], "not_residential")
+        self.assertNotEqual(z("Neighborhood Commercial", 5)["status"], "not_residential")  # SCC Table 612-1
         self.assertEqual(z("Low Density Residential", 0.2)["status"], "urban")
         self.assertIsNone(z("", 5))
         # Split-zoned parcel: the stricter zone governs.

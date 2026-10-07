@@ -976,7 +976,7 @@ const COST_DEFAULTS = {
 const COST_FIELDS = [
   ["water", "Water", [["well_per_ft", "Well drilling", "$/ft"], ["well_system", "Pump, tank & trench", "$"], ["default_well_ft", "Well depth if no nearby logs", "ft"],
     ["water_hookup", "Public water hookup", "$"], ["shared_well", "Shared-well hookup", "$"]]],
-  ["electric", "Power", [["power_service", "Service from the road", "$"], ["power_per_ft", "Line extension past 150 ft", "$/ft"], ["offgrid_solar", "Off-grid solar", "$"]]],
+  ["electric", "Power", [["power_service", "Service from the road", "$"], ["power_per_ft", "Line extension per ft (past the service drop)", "$/ft"], ["offgrid_solar", "Off-grid solar", "$"]]],
   ["septic", "Septic", [["septic_standard", "Standard septic", "$"], ["septic_conventional", "Septic with approved design", "$"],
     ["septic_pressure", "Pressure septic (gravelly / rocky soils)", "$"], ["septic_engineered", "Mound / engineered septic", "$"], ["sewer_hookup", "Sewer hookup", "$"]]],
   ["access", "Access & driveway", [["driveway_base", "Driveway approach + culvert", "$"], ["driveway_per_ft", "Gravel driveway", "$/ft"],
@@ -1829,7 +1829,7 @@ function buildPanel(r) {
   if (off.building || off.septic || pm || (rules.notes || []).length)
     row("_doc", "Permits & county rules", [off.building ? `Building permit: ${offLink(off.building)}.` : "", off.septic ? `Septic permit: ${offLink(off.septic)}.` : "",
       ...(rules.notes || []).map(esc), rules.wria ? `Watershed: WRIA ${esc(rules.wria)}.` : "", pm ? esc(pm.summary) : ""].filter(Boolean).join(" "));
-  if (r.wildfire) row("_fire", "Wildfire", `<span class="pill ${FIRE_TONE(r.wildfire.class)}">${esc(r.wildfire.label)}</span>${r.wildfire.class >= 4 && r.wildfire.class <= 5 ? "Defensible-space rules and higher insurance." : ""}`);
+  if (r.wildfire) row("_fire", "Wildfire", `<span class="pill ${FIRE_TONE(r.wildfire.class)}">${esc(r.wildfire.label)}</span>${r.wildfire.class >= 4 && r.wildfire.class <= 5 ? "Plan defensible space; ask the county whether wildland-urban-interface building rules apply; insurance may cost more." : ""}`);
   const extra = [r.drive_min != null ? `about ${r.drive_min} min drive to downtown Spokane (routing estimate — often runs 10–25% long on rural highways)` : "", r.school_district ? esc(r.school_district) : ""].filter(Boolean).join(" · ");
   if (extra) row("_car", "Location", extra);
   if (r.first_seen || r.price_history?.length > 1) row("_bell", "History", `On the market since about ${esc(r.first_seen || "?")}${r.price_history?.length > 1 ? ". Price " + r.price_history.map(h => `${kmoney(h.price)} (${esc(h.date)})`).join(" → ") : ""}.`);
