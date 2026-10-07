@@ -9,6 +9,7 @@
 
 import json
 import math
+import re
 
 from . import arcgis, geo
 from .config import LAYERS, SDA_URL, WILDFIRE_IMAGE_SERVER
@@ -249,6 +250,63 @@ BONNER_MIN_ACRES = {"F": 40, "A/f-20": 20, "A/f-10": 10, "R-10": 10, "R-5": 5}
 BONNER_NO_HOMES = ("Commercial", "Industrial")
 
 
+# Kootenai County Code Title 8 (Ord. 493 as amended), chapter 2: minimum lot size, acres.
+KOOTENAI_MIN_ACRES = {"AGRICULTURE": 5, "RURAL": 5, "AG-SUBURBAN": 2, "RESTRICTED RESIDENTIAL": 8250 / 43560}
+KOOTENAI_NO_HOMES = ("INDUSTRIAL", "MINING")
+KOOTENAI_RESERVATION = (" Inside the Coeur d'Alene Reservation, Ord. 596 (2024) makes new Rural parcels 10 acres; "
+                        "check which side of the boundary this is.")
+# City zones in Coeur d'Alene and Post Falls (town lots on city water and sewer).
+CITY_NO_HOMES = {"LM", "M", "I", "HI"}
+CITY_HOMES = re.compile(r"^(R-|MH-|RM|RMHP)")
+
+
+def _kootenai(lat, lon, acres):
+    for layer, city in (("cda_zoning", "Coeur d'Alene"), ("postfalls_zoning", "Post Falls")):
+        try:
+            feats = arcgis.query(LAYERS[layer], geometry=(lon, lat), out_fields="ZONING")
+        except HttpError:
+            continue
+        z = (feats[0]["attributes"].get("ZONING") or "").strip() if feats else ""
+        if not z:
+            continue
+        if z in CITY_NO_HOMES:
+            return _no_homes(z, f"City of {city}")
+        if CITY_HOMES.match(z):
+            return {"status": "urban", "zone": z, "min_acres": None, "label": f"{city} {z}: town lot sizes",
+                    "detail": f"Zoned {z} in the City of {city}: residential town lots on city water and sewer.",
+                    "county": f"City of {city}"}
+        return {"status": "unknown", "zone": z, "min_acres": None, "label": f"{city} {z} zone",
+                "detail": f"Zoned {z} in the City of {city}; ask the city planning office whether a house is allowed.",
+                "county": f"City of {city}"}
+    feats = arcgis.query(LAYERS["kootenai_zoning"], geometry=(lon, lat), out_fields="LABEL")
+    if not feats:
+        return None  # inside a city without published zoning (Hayden, Rathdrum, ...)
+    label = (feats[0]["attributes"].get("LABEL") or "").strip().upper()
+    agreement = "DEVELOP" in label or label.endswith("CZDA")
+    base = re.sub(r"\s+(DEVELOPMENT AGREEMENT|DEVLOP AGREE|CZDA)$", "", label)
+    z = base.title().replace("Ag-Suburban", "Agricultural Suburban")
+    note = " A development agreement is recorded for this zone: read it, it can limit what you build." if agreement else ""
+    if any(k in base for k in KOOTENAI_NO_HOMES):
+        v = _no_homes(z, "Kootenai County")
+    elif base == "COMMERCIAL":
+        v = {"status": "unknown", "zone": z, "min_acres": None, "label": "Commercial zone",
+             "detail": "Zoned Commercial in Kootenai County; a new house generally isn't a permitted use — ask Community Development.",
+             "county": "Kootenai County"}
+    elif base == "HIGH DENSITY RESIDENTIAL":
+        v = {"status": "urban", "zone": z, "min_acres": None, "label": "High Density Residential: town lot sizes",
+             "detail": "Kootenai County High Density Residential: up to 1 home per 3,000 sq ft, 65% open space.",
+             "county": "Kootenai County"}
+    elif base in KOOTENAI_MIN_ACRES:
+        v = _lot_verdict(z, KOOTENAI_MIN_ACRES[base], acres, "Kootenai County")
+        if base in ("AGRICULTURE", "RURAL"):
+            v["detail"] += KOOTENAI_RESERVATION
+    else:
+        v = {"status": "unknown", "zone": z, "min_acres": None, "label": f"{z} zone",
+             "detail": f"Zoned {z}; ask Kootenai County Community Development about lot size.", "county": "Kootenai County"}
+    v["detail"] += note
+    return v
+
+
 def zoning_elsewhere(lat, lon, county, state, acres):
     """Zoning verdict for WA counties other than Spokane (WA Zoning Atlas) and Bonner County ID."""
     if lat is None:
@@ -281,6 +339,8 @@ def zoning_elsewhere(lat, lon, county, state, acres):
                 return v
             return {"status": "unknown", "zone": z, "min_acres": None, "label": f"{z} zone",
                     "detail": f"Zoned {z} in {where}; no minimum lot size on file — ask the county.", "county": where}
+        if county == "Kootenai":
+            return _kootenai(lat, lon, acres)
         if county == "Bonner":
             feats = arcgis.query(LAYERS["bonner_zoning"], geometry=(lon, lat), out_fields="zonedesc")
             if not feats:

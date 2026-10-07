@@ -71,6 +71,7 @@ class Parcel:
     site_address: str = ""
     geometry: Optional[dict] = None   # Esri polygon in WGS84
     match: str = ""                   # how the listing was matched to the parcel
+    also: list = field(default_factory=list)  # more parcel numbers when the listing covers several
 
 
 def conf_rank(c):

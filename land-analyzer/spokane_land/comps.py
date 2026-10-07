@@ -78,7 +78,7 @@ def _pct(vals, q):
     return vals[lo] + (vals[hi] - vals[lo]) * (k - lo)
 
 
-def comparable_sales(lat, lon, acres, parcel_id=None, today=None):
+def comparable_sales(lat, lon, acres, parcel_ids=(), today=None):
     if lat is None or not acres:
         return None
     today = today or datetime.date.today()
@@ -90,7 +90,9 @@ def comparable_sales(lat, lon, acres, parcel_id=None, today=None):
             deals = _sales(lat, lon, radius_mi * 1609.34, since)
         except HttpError:
             return None
-        comps = [d for d in deals if lo <= d["acres"] <= hi and parcel_id not in d["pids"]]
+        if isinstance(parcel_ids, str):
+            parcel_ids = [parcel_ids]
+        comps = [d for d in deals if lo <= d["acres"] <= hi and not set(parcel_ids or ()) & set(d["pids"])]
         if len(comps) >= MIN_COMPS:
             break
     if len(comps) < MIN_COMPS:
@@ -143,17 +145,38 @@ def _examples(comps, lat, lon, k=5):
              "pid": d["pids"][0]} for d in near]
 
 
-def assessed_value(parcel_id):
-    """Spokane County assessed land value (current assessment year)."""
+def assessed_value(parcel_ids):
+    """Spokane County assessed land value (current assessment year), summed over the listing's parcels."""
+    ids = [parcel_ids] if isinstance(parcel_ids, str) else list(parcel_ids)
     try:
-        feats = arcgis.query(LAYERS["sc_assessed"], where=f"PID_NUM = '{parcel_id}'",
-                             out_fields="land_value,asmt_year", max_records=1)
+        feats = arcgis.query(LAYERS["sc_assessed"], where="PID_NUM IN (" + ",".join(f"'{p}'" for p in ids) + ")",
+                             out_fields="PID_NUM,land_value,asmt_year")
     except HttpError:
         return None
-    if feats and feats[0]["attributes"].get("land_value"):
-        a = feats[0]["attributes"]
-        return {"land_value": a["land_value"], "year": a.get("asmt_year"), "source": "Spokane County Assessor"}
-    return None
+    best = {}
+    for f in feats:  # one row per parcel and year: keep each parcel's latest year
+        a = f["attributes"]
+        if a.get("land_value") and (a["PID_NUM"] not in best or (a.get("asmt_year") or 0) > (best[a["PID_NUM"]].get("asmt_year") or 0)):
+            best[a["PID_NUM"]] = a
+    if len(best) < len(set(ids)):
+        return None  # a parcel without a value would make the total misleading
+    return {"land_value": sum(a["land_value"] for a in best.values()),
+            "year": max((a.get("asmt_year") or 0) for a in best.values()) or None, "source": "Spokane County Assessor"}
+
+
+def kootenai_assessed(parcel_ids):
+    """Kootenai County assessed market value (Idaho assesses at market value; includes any buildings)."""
+    ids = [parcel_ids] if isinstance(parcel_ids, str) else list(parcel_ids)
+    try:
+        feats = arcgis.query(LAYERS["kootenai_parcels"], where="PIN IN (" + ",".join(f"'{p}'" for p in ids) + ")",
+                             out_fields="PIN,Gross_Val")
+    except HttpError:
+        return None
+    vals = {f["attributes"]["PIN"]: f["attributes"].get("Gross_Val") for f in feats}
+    if len(vals) < len(set(ids)) or not all(vals.values()):
+        return None
+    return {"land_value": sum(vals.values()), "year": None, "source": "Kootenai County Assessor (market value)",
+            "market": True}
 
 
 def price_verdict(price, comps, assessed, days_on_market, price_cut):

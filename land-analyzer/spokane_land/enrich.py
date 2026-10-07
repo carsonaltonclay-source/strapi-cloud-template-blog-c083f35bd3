@@ -4,16 +4,21 @@ Everything here is best-effort: a failed service call is recorded in
 ``facts["errors"]`` and analysis continues with whatever was found.
 """
 
+import collections
+import concurrent.futures
+import copy
 import datetime
 import re
 import statistics
 
-from . import arcgis, buildability, comps, county_rules, dealbreakers, geo, homesite
+from . import arcgis, assemble, buildability, comps, county_rules, dealbreakers, geo, homesite, sold_comps
 from .config import (
     CENSUS_GEOCODER, LAYERS, NEIGHBOR_SEARCH_RADIUS_M, POINT_PARCEL_SNAP_M,
     FRONTAGE_HIGHWAY_M, ROAD_FRONTAGE_TOLERANCE_M, ROAD_SEARCH_RADIUS_M, WELL_SEARCH_RADIUS_M,
 )
 from .http import HttpError, get_json
+
+REPIN_M = 150  # how far from the map pin to look for the parcel that matches the listed acres
 from .models import Parcel
 from .terrain import analyze_terrain
 
@@ -34,8 +39,10 @@ def norm_pid(s):
 
 
 class Enricher:
-    def __init__(self, use_cache=True):
+    def __init__(self, use_cache=True, sales=None):
         self.use_cache = use_cache
+        self.sales = sales or []  # land sales outside Spokane County (sold_comps.load)
+        self.repins = {}  # listing id -> Parcel, from plan_repins()
 
     # ---- helpers --------------------------------------------------------------
 
@@ -105,6 +112,68 @@ class Enricher:
         p.match = match
         return p
 
+    def plan_repins(self, listings, workers=8):
+        """Decide re-pins for a whole run (see repin): a parcel two listings would move onto, or the
+        parcel another listing's pin already fits, goes to none of them (lots in one subdivision often
+        share a map pin)."""
+        def one(l):
+            facts = {"errors": [], "notes": [], "failed": set()}
+            try:
+                p = self.find_parcel(l, facts) if l.lat is not None else None
+                if p and p.county == "Spokane":
+                    self.spokane_property(p, facts)
+                elif p and p.county == "Kootenai":
+                    self.kootenai_property(p, facts)
+                return l, p, (self.repin(l, p, facts) if p and p.match != "parcel number" else None)
+            except Exception:  # planning is best effort
+                return l, None, None
+        with concurrent.futures.ThreadPoolExecutor(max(1, workers)) as pool:
+            plans = list(pool.map(one, listings))
+        claims = collections.Counter()
+        for l, p, new in plans:
+            if new:
+                claims[new.parcel_id] += 1
+            elif p and l.lot_acres and 0.6 * l.lot_acres <= (p.acres or _area(p)) <= 1.6 * l.lot_acres:
+                claims[p.parcel_id] += 1  # this listing already sits on its own parcel
+        self.repins = {l.id: new for l, p, new in plans if new and claims[new.parcel_id] == 1}
+        return len(self.repins)
+
+    def repin(self, listing, parcel, facts):
+        """Listing pins are often dropped on a neighbour's lot or the road. When the pinned parcel's size is
+        far from the listed acres, use a parcel within REPIN_M of the pin whose size matches (within 8%)
+        and that has no house on it. Returns the better Parcel or None."""
+        listed = listing.lot_acres
+        if not (listed and parcel.geometry and parcel.geometry.get("rings")) or listing.lat is None:
+            return None
+        area = parcel.acres or geo.polygon_area_acres(parcel.geometry["rings"]) or 0
+        if 0.6 * listed <= area <= 1.6 * listed:
+            return None
+        layer, build = (("sc_parcels", self._sc_parcel) if parcel.county == "Spokane" else
+                        ("id_parcels", self._id_parcel) if parcel.state == "ID" else ("wa_parcels", self._wa_parcel))
+        pt = (listing.lon, listing.lat)
+        cands = []
+        for f in self._q(facts, layer, geometry=pt, distance_m=REPIN_M, return_geometry=True, max_records=100):
+            rings = (f.get("geometry") or {}).get("rings")
+            if not rings:
+                continue
+            a = f["attributes"].get("acreage") or geo.polygon_area_acres(rings) or 0
+            if abs(a - listed) <= 0.08 * listed:
+                cands.append((_dist_point_polygon(pt, f["geometry"]), f))
+        if parcel.county == "Spokane" and cands:
+            try:
+                info = assemble._spokane_info({f["attributes"]["PID_NUM"] for _, f in cands})
+            except HttpError:
+                info = {}
+            cands = [(d, f) for d, f in cands if not assemble._improved(info.get(f["attributes"]["PID_NUM"], ("", ""))[1])]
+        if not cands:
+            return None
+        cands.sort(key=lambda c: c[0])
+        if len(cands) > 1 and cands[1][0] - cands[0][0] < 15:
+            return None  # two lots of that size side by side: can't tell which is for sale
+        p = build(cands[0][1])
+        p.match = f"parcel {cands[0][0]:.0f} m from the map pin whose size matches the listing — verify"
+        return p
+
     def _parcel_by_id(self, pid, facts):
         raw = pid.strip().replace("'", "")
         tries = [
@@ -148,6 +217,14 @@ class Enricher:
             parcel.acres = parcel.acres or a.get("acreage")
             parcel.site_address = parcel.site_address or a.get("site_address") or ""
 
+    def kootenai_property(self, parcel, facts):
+        """Owner and acres from the Kootenai County assessor (Idaho's statewide layer has no owners)."""
+        feats = self._q(facts, "kootenai_parcels", where=f"PIN = '{parcel.parcel_id}'", out_fields="Name,Acres", max_records=1)
+        if feats:
+            a = feats[0]["attributes"]
+            parcel.owner = (a.get("Name") or "").strip()
+            parcel.acres = parcel.acres or a.get("Acres")
+
     # ---- main entry ------------------------------------------------------------
 
     def enrich(self, listing):
@@ -162,6 +239,20 @@ class Enricher:
             parcel = self.find_parcel(listing, facts)
         if parcel and parcel.county == "Spokane":
             self.spokane_property(parcel, facts)
+        elif parcel and parcel.county == "Kootenai":
+            self.kootenai_property(parcel, facts)
+        better = self.repins.get(listing.id) if parcel and parcel.match != "parcel number" else None
+        if better:
+            parcel = copy.deepcopy(better)
+            if parcel.county == "Spokane":
+                self.spokane_property(parcel, facts)
+            elif parcel.county == "Kootenai":
+                self.kootenai_property(parcel, facts)
+        big = assemble.assemble(listing, parcel) if parcel else None
+        if big:
+            parcel.also = big["ids"][1:]
+            parcel.acres = big["acres"]
+            parcel.geometry = {"rings": big["rings"], "spatialReference": {"wkid": 4326}}
         if parcel and parcel.geometry and parcel.geometry.get("rings"):
             parcel.geometry = arcgis.simplify_polygon(
                 {"rings": parcel.geometry["rings"], "spatialReference": {"wkid": 4326}})
@@ -243,11 +334,15 @@ class Enricher:
             ("rules", county_rules.for_parcel, (county, state, lat, lon, facts.get("aquifer"))),
         ]
         if in_spokane:
-            steps += [("comps", comps.comparable_sales, (lat, lon, acres, parcel.parcel_id)),
-                      ("assessed", comps.assessed_value, (parcel.parcel_id,)),
+            steps += [("comps", comps.comparable_sales, (lat, lon, acres, [parcel.parcel_id] + parcel.also)),
+                      ("assessed", comps.assessed_value, ([parcel.parcel_id] + parcel.also,)),
                       ("permits", county_rules.permits_nearby, (lat, lon))]
         else:
             steps.append(("zoning_other", buildability.zoning_elsewhere, (lat, lon, county, state, acres)))
+            if state == "WA" and self.sales:
+                steps.append(("comps", sold_comps.comparable, (lat, lon, acres, self.sales, listing.mls)))
+            if county == "Kootenai" and parcel:
+                steps.append(("assessed", comps.kootenai_assessed, ([parcel.parcel_id] + parcel.also,)))
         for key, fn, args in steps:
             self._extra(facts, key, fn, *args)
         # Fill gaps the Washington-only layers leave (Idaho, territory holes).
@@ -492,6 +587,11 @@ def _num(v):
 def _median(vals):
     nums = [float(v) for v in vals if isinstance(v, (int, float)) and v > 0]
     return round(statistics.median(nums), 1) if nums else None
+
+
+def _area(parcel):
+    rings = (parcel.geometry or {}).get("rings")
+    return (geo.polygon_area_acres(rings) or 0) if rings else 0
 
 
 def _dist_point_polygon(pt, geom):

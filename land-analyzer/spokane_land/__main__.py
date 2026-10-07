@@ -39,6 +39,9 @@ def build_parser():
                    help='label for --csv listings shown in the app, e.g. "Zillow land search, Oct 6 2026"')
     p.add_argument("--previous", metavar="FILE",
                    help="last run's land_report.json: marks new listings, price cuts and removed listings")
+    p.add_argument("--sold-csv", metavar="FILE",
+                   help="recent land sales (price, sold_date, acres, lat, lon, url, zpid) for price checks in the "
+                        "Washington counties that don't publish sales")
     p.add_argument("--listing-photos", metavar="DIR",
                    help="write each listing's main photo (from its listing site) as bundles in DIR/lp/, "
                         "to publish next to the app page (needs Pillow)")
@@ -95,7 +98,15 @@ def main(argv=None):
     if len(listings) < before:
         print(f"Skipped {before - len(listings)} listings outside the radius or under the minimum size", file=sys.stderr)
 
-    enricher = Enricher(use_cache=not args.no_cache)
+    sales = []
+    if args.sold_csv:
+        from . import sold_comps
+        sales = sold_comps.load(args.sold_csv)
+        print(f"{len(sales)} land sales for price checks outside Spokane County", file=sys.stderr)
+    enricher = Enricher(use_cache=not args.no_cache, sales=sales)
+    n = enricher.plan_repins(listings, args.workers)
+    if n:
+        print(f"Moved {n} map pins onto the nearby parcel that matches the listed acres", file=sys.stderr)
     results, shapes = [], {}
 
     def work(listing):

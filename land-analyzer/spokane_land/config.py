@@ -49,6 +49,12 @@ LAYERS = {
     # Outside Spokane County: zoning, power company, internet.
     "wa_zoning_atlas": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/arcgis/rest/services/WAZA_Prototype_Layers/FeatureServer/0",
     "bonner_zoning": "https://cloudgis.bonnercountyid.gov/server/rest/services/Map_Services/ZoningLanduse_Public/MapServer/2",
+    # Kootenai County (unincorporated) zoning: read LABEL, not the stale ZONE_NAME codes.
+    # Kootenai County assessor parcels: owner (Name), Acres, Gross_Val (assessed market value).
+    "kootenai_parcels": "https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/8",
+    "kootenai_zoning": "https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/21",
+    "cda_zoning": "https://gis.cdaid.org/server/rest/services/Share/Planning/MapServer/8",
+    "postfalls_zoning": "https://gis.postfalls.gov/server/rest/services/GIS2/LandUse/MapServer/5",
     "us_electric_territories": "https://services3.arcgis.com/OYP7N6mAJJCyH6hd/arcgis/rest/services/Electric_Retail_Service_Territories_HIFLD/FeatureServer/0",
     "ookla_fixed_tiles": "https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/Speedtest_by_Ookla_Global_Fixed_and_Mobile_Network_Performance_Map_Tiles/FeatureServer/0",
     "ookla_mobile_tiles": "https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/Speedtest_by_Ookla_Global_Fixed_and_Mobile_Network_Performance_Map_Tiles/FeatureServer/1",

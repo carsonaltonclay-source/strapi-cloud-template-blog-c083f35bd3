@@ -493,3 +493,22 @@ class ListingPhotoTests(unittest.TestCase):
         os.unlink(fh.name)
         self.assertEqual(ls["1 A Rd"].remarks, 'He said "perc approved" twice')
         self.assertEqual(ls["1 A Rd"].photo_url, "https://p.example.com/1.jpg")
+
+
+class DataGapTests(unittest.TestCase):
+    def test_sold_comps(self):
+        from spokane_land import sold_comps
+        sales = [{"price": 50000 + i * 1000, "acres": 5 + i * 0.2, "lat": LAT + i * 0.001, "lon": LON, "date": "2026-05-01",
+                  "url": f"https://example.com/{i}", "zpid": str(i)} for i in range(6)]
+        sales.append({"price": 900000, "acres": 5, "lat": LAT, "lon": LON, "date": "2019-01-01", "url": "", "zpid": "old"})
+        c = sold_comps.comparable(LAT, LON, 5, sales, listing_mls="zillow-0", today=__import__("datetime").date(2026, 10, 7))
+        self.assertEqual(c["n"], 5)  # its own earlier sale and the 2019 sale are left out
+        self.assertEqual(c["radius_mi"], 3)
+        self.assertTrue(40000 < c["est_value"] < 60000)
+        self.assertTrue(all(e["url"] for e in c["examples"]))
+
+    def test_owner_names_compare_loosely(self):
+        from spokane_land.assemble import _improved, _norm_owner
+        self.assertEqual(_norm_owner("Koppe, J.D. & C.R."), _norm_owner("KOPPE J D & C R"))
+        self.assertTrue(_improved("Single Unit"))
+        self.assertFalse(_improved("Vacant Land"))

@@ -91,6 +91,9 @@ def gis_evidence(listing, facts):
 
     # A listing much smaller than its county parcel is usually a new lot being
     # split off; county data then describes the whole parent parcel.
+    if parcel and parcel.also:
+        flags.append(f"Listing covers {len(parcel.also) + 1} county parcels with the same owner ({parcel.acres:g} ac in all: "
+                     f"{', '.join([parcel.parcel_id] + parcel.also[:5])}{'…' if len(parcel.also) > 5 else ''}) — all were checked together")
     split = _split_lot(listing, parcel)
     if split:
         flags.append(f"Listing is {listing.lot_acres:.2f} ac but sits on a {split:.1f}-ac county parcel — "
@@ -381,6 +384,7 @@ def analyze(listing, facts):
         "status": listing.status,
         "days_on_market": listing.days_on_market,
         "parcel_id": parcel.parcel_id if parcel else listing.parcel_id,
+        "parcel_ids_more": list(parcel.also) if parcel and parcel.also else [],
         "county": parcel.county if parcel else "",
         "parcel_match": parcel.match if parcel else "",
         "owner": parcel.owner if parcel else "",
