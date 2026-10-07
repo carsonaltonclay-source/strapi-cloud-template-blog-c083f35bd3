@@ -41,7 +41,7 @@ Every parcel also gets an **"Is it actually buildable?"** report and verdict
 | **Flood & drainage** | FEMA National Flood Hazard Layer (both states) + USDA soil drainage class / hydric soils |
 | **Deal-breakers** | wetlands (USFWS NWI), landslides (WA DNR), stream buffers (Spokane Co.), active mines (WA DNR; USGS topo pits in ID), well nitrate (WA DNR, Spokane Co., Idaho DEQ), and listing text: HOA, covenants, no manufactured homes, "not buildable", line easements (`dealbreakers.py`, `remarks.red_flags`) |
 | **Is the price fair?** | Spokane County vacant-land sales within 3–6 miles, similar size, last 3 years, plus the assessed land value (`comps.py`); Idaho doesn't publish sale prices |
-| **Monthly cost** | land-loan payment + property tax, with your own down payment / rate / term in the app |
+| **Financing** | your credit score (default 801) sets the rate: land loan priced by lot type (improved / partly improved / raw, from 2026 lender surveys) and a 30-yr construction-to-permanent mortgage for land + house (Freddie Mac average + premium); shows monthly payment with tax, down payment and total interest. Update `RATES` in `app/app_template.html` when rates move |
 | **Cell service** | Ookla mobile speed tests (Esri Living Atlas) |
 | **Zoning outside Spokane County** | WA Zoning Atlas (Stevens, Lincoln, Pend Oreille, towns) and Bonner County; Kootenai County's server was down |
 | **County rules** | setbacks, permit offices, well-water limits (`county_rules.py`) |

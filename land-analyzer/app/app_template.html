@@ -597,6 +597,10 @@ a { color: var(--accent); }
 .pc-ex td { padding: 4px 6px 4px 0; border-top: 1px dashed var(--line); }
 .neg { margin-top: 8px; font-size: 12.5px; padding: 8px 10px; border-radius: 9px; background: var(--good-bg); color: var(--good); }
 /* H2 monthly */
+.fin { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.fin-h { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; font-size: 13px; }
+.fin-h span { font-size: 11.5px; color: var(--muted); }
+.fin .mo-grid + .mo-grid { margin-top: 8px; }
 .mo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 .mo-grid div { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--panel); min-width: 0; }
 .mo-grid span { display: block; font: 600 10px/1.3 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
@@ -964,7 +968,9 @@ const COST_DEFAULTS = {
   septic_conventional: 18000, septic_standard: 22000, septic_pressure: 28000, septic_engineered: 40000, sewer_hookup: 12000,
   driveway_base: 2500, driveway_per_ft: 25, default_driveway_ft: 150, easement_extra: 4000, landlocked_access: 25000,
   prep_flat: 3000, prep_rolling: 7000, prep_steep: 20000, prep_very_steep: 35000,
-  down_pct: 30, rate_pct: 8.5, term_yrs: 15, tax_wa_pct: 1.0, tax_id_pct: 0.7,
+  credit_score: 801, land_rate: 0, land_down_pct: 0, land_term_yrs: 0,
+  house_sqft: 2000, build_per_sqft: 174, mortgage_down_pct: 10, mortgage_rate: 0,
+  tax_wa_pct: 1.0, tax_id_pct: 0.7,
 };
 const COST_FIELDS = [
   ["water", "Water", [["well_per_ft", "Well drilling", "$/ft"], ["well_system", "Pump, tank & trench", "$"], ["default_well_ft", "Well depth if no nearby logs", "ft"],
@@ -975,19 +981,57 @@ const COST_FIELDS = [
   ["access", "Access & driveway", [["driveway_base", "Driveway approach + culvert", "$"], ["driveway_per_ft", "Gravel driveway", "$/ft"],
     ["default_driveway_ft", "Driveway length if unknown", "ft"], ["easement_extra", "Easement paperwork", "$"], ["landlocked_access", "Buy access + build road", "$"]]],
   ["_terrain", "Site prep", [["prep_flat", "Flat lot", "$"], ["prep_rolling", "Rolling lot", "$"], ["prep_steep", "Steep lot", "$"], ["prep_very_steep", "Very steep lot", "$"]]],
-  ["_cal", "Land loan & taxes", [["down_pct", "Down payment", "%"], ["rate_pct", "Interest rate", "%"], ["term_yrs", "Loan length", "yrs"],
-    ["tax_wa_pct", "Property tax, Washington", "%"], ["tax_id_pct", "Property tax, Idaho", "%"]]],
+  ["_cal", "Your loan (0 = set automatically from your credit and the lot)", [["credit_score", "Credit score", "score"],
+    ["land_rate", "Land loan rate", "%"], ["land_down_pct", "Land loan down payment", "%"], ["land_term_yrs", "Land loan length", "yrs"],
+    ["house_sqft", "House size", "sq ft"], ["build_per_sqft", "Build cost", "$/sq ft"], ["mortgage_down_pct", "Mortgage down payment", "%"],
+    ["mortgage_rate", "Mortgage rate", "%"], ["tax_wa_pct", "Property tax, Washington", "%"], ["tax_id_pct", "Property tax, Idaho", "%"]]],
 ];
 // H2 monthly: land-loan payment on the asking price + property tax on assessed value (or price)
-function monthly(r) {
-  if (!r.price) return null;
-  const d = S.costs, loan = r.price * (1 - d.down_pct / 100), i = d.rate_pct / 1200, n = Math.max(1, d.term_yrs * 12);
-  const pay = loan <= 0 ? 0 : i ? loan * i / (1 - Math.pow(1 + i, -n)) : loan / n;
-  const base = r.assessed?.land_value || r.price, rate = (r.state === "ID" ? d.tax_id_pct : d.tax_wa_pct) / 100;
-  const tax = base * rate / 12;
-  return { pay: Math.round(pay), tax: Math.round(tax), total: Math.round(pay + tax), down: Math.round(r.price - loan),
-           cash: Math.round(r.price - loan + allIn(r).improvements), taxBase: r.assessed?.land_value ? "assessed value" : "asking price" };
+/* ---------- H2 financing: rates by credit score and lot type ----------
+   Freddie Mac PMMS Oct 1, 2026: 30-yr fixed 7.28%, 15-yr 6.60% (borrowers with strong credit).
+   Credit-tier spreads vs. 760+: Experian/Curinos and Freddie Mac (Sep 2026), middle tiers modeled.
+   Land loans 2026 (lender surveys): improved lot 7.50–8.75%, 15–25% down, 10–20 yrs; unimproved 8.25–9.75%,
+   25–35% down, 5–15 yrs; raw land 9.00–11.50%, 35–50% down, 3–10 yrs. Update RATES on each refresh. */
+const RATES = { asof: "Oct 1, 2026", m30: 7.28, m15: 6.60, ctp_premium: 0.375 };
+const CREDIT_SPREAD = [[760, 0], [740, 0.09], [700, 0.19], [680, 0.36], [660, 0.57], [640, 0.85], [620, 1.24], [0, 1.75]];
+const LAND_LOANS = {
+  improved:   { label: "improved lot", low: 7.50, high: 8.75, down: 20, term: 15 },
+  unimproved: { label: "partly improved land", low: 8.25, high: 9.75, down: 25, term: 15 },
+  raw:        { label: "raw land", low: 9.00, high: 11.50, down: 35, term: 10 },
+};
+const creditSpread = score => CREDIT_SPREAD.find(([min]) => score >= min)[1];
+function landType(r) {
+  const water = has(r.water, ["well", "public", "shared_well"]), power = has(r.electric, ["on_site", "at_road"]),
+        road = has(r.access, ["public_road", "road_frontage"]);
+  if (water && power && road) return "improved";
+  if (!water && !has(r.water, ["public_area"]) && !power && !has(r.electric, ["likely_near"])) return "raw";
+  return "unimproved";
 }
+const payment = (loan, ratePct, years) => { const i = ratePct / 1200, n = Math.max(1, years * 12); return loan <= 0 ? 0 : i ? loan * i / (1 - Math.pow(1 + i, -n)) : loan / n; };
+function financing(r) {
+  if (!r.price) return null;
+  const d = S.costs, score = d.credit_score || 801, kind = landType(r), L = LAND_LOANS[kind];
+  // Best credit gets the low end of the land-loan range; each lower tier moves toward the high end.
+  const pos = Math.min(1, creditSpread(score) / 1.24);
+  const landRate = d.land_rate || Math.round((L.low + (L.high - L.low) * pos) * 100) / 100;
+  const landDown = d.land_down_pct || L.down, landTerm = d.land_term_yrs || L.term;
+  const taxPct = (r.state === "ID" ? d.tax_id_pct : d.tax_wa_pct) / 100;
+  const landLoan = r.price * (1 - landDown / 100), landPay = payment(landLoan, landRate, landTerm);
+  const landTax = (r.assessed?.land_value || r.price) * taxPct / 12;
+  const land = { kind, label: L.label, rate: landRate, down_pct: landDown, term: landTerm, loan: Math.round(landLoan),
+    pay: Math.round(landPay), tax: Math.round(landTax), total: Math.round(landPay + landTax), down: Math.round(r.price - landLoan),
+    interest: Math.round(landPay * landTerm * 12 - landLoan), cash: Math.round(r.price - landLoan + allIn(r).improvements),
+    taxBase: r.assessed?.land_value ? "assessed value" : "asking price" };
+  // Build scenario: land + site work + house on a 30-yr one-time-close construction-to-permanent loan.
+  const house = d.house_sqft * d.build_per_sqft, project = allIn(r).total + house;
+  const mRate = d.mortgage_rate || Math.round((RATES.m30 + RATES.ctp_premium + creditSpread(score)) * 100) / 100;
+  const mLoan = project * (1 - d.mortgage_down_pct / 100), mPay = payment(mLoan, mRate, 30);
+  const mTax = ((r.assessed?.land_value || r.price) + house) * taxPct / 12;
+  const build = { rate: mRate, house: Math.round(house), project: Math.round(project), down: Math.round(project - mLoan), loan: Math.round(mLoan),
+    pay: Math.round(mPay), tax: Math.round(mTax), total: Math.round(mPay + mTax), interest: Math.round(mPay * 360 - mLoan) };
+  return { score, land, build };
+}
+function monthly(r) { const f = financing(r); return f && f.land; }
 const POWER_DISTANCE_GUESS = { likely_near: 600, possible: 1500, far: 3000 };
 S.costs = { ...COST_DEFAULTS };
 try { Object.assign(S.costs, JSON.parse(localStorage.getItem("landfinder.costs") || "{}")); } catch (e) {}
@@ -1713,6 +1757,21 @@ function checksPanel(r) {
   return `<section class="evc wide"><header>${icon("_shield")}<b>Deal-breaker check</b><span class="pill ${bad ? "bad" : warn ? "ok" : "good"}">${bad ? `${bad} deal-breaker${bad > 1 ? "s" : ""}` : warn ? `${warn} to check` : "Nothing found"}</span></header><ul>${rows}</ul></section>`;
 }
 
+function financePanel(r) {
+  const f = financing(r); if (!f) return "";
+  const L = f.land, B = f.build, tax = r.state === "ID" ? S.costs.tax_id_pct : S.costs.tax_wa_pct;
+  return `<div class="fin">
+    <div class="fin-h"><b>Financing with ${/^(8|11|18)/.test(String(f.score)) ? "an" : "a"} ${f.score} credit score</b><span>Rates: Freddie Mac average ${RATES.asof} (30-yr ${RATES.m30.toFixed(2)}%, 15-yr ${RATES.m15.toFixed(2)}%); ${f.score >= 760 ? "your score gets the best tier" : `+${creditSpread(f.score).toFixed(2)}% for your score tier`}</span></div>
+    <div class="mo-grid"><div><span>Land loan</span><b>${money(L.total)}/mo</b><small>${L.rate.toFixed(2)}% · ${L.term} yrs · ${L.down_pct}% down (${esc(L.label)})</small></div>
+      <div><span>Down payment</span><b>${kmoney(L.down)}</b><small>cash to build-ready ${kmoney(L.cash)}</small></div>
+      <div><span>Interest cost</span><b>${kmoney(L.interest)}</b><small>over ${L.term} years on ${kmoney(L.loan)}</small></div></div>
+    <div class="mo-grid"><div><span>Land + house</span><b>${money(B.total)}/mo</b><small>${B.rate.toFixed(2)}% · 30 yrs · ${S.costs.mortgage_down_pct}% down</small></div>
+      <div><span>Project</span><b>${kmoney(B.project)}</b><small>all-in ${kmoney(B.project - B.house)} + ${S.costs.house_sqft.toLocaleString()} sq ft house ${kmoney(B.house)}</small></div>
+      <div><span>Interest cost</span><b>${kmoney(B.interest)}</b><small>over 30 years on ${kmoney(B.loan)}</small></div></div>
+    <div class="cost-note" style="margin-top:6px"><span>Payments include property tax (${tax}% of the land's ${L.taxBase}, plus the house for the second row). Land-loan rate set by lot type and credit; the house loan is a one-time-close construction-to-permanent mortgage (30-yr average + ${RATES.ctp_premium}%, estimate). Get real quotes — a local credit union or farm-credit lender often beats these.</span></div>
+  </div>`;
+}
+
 function costPanel(r) {
   const c = allIn(r);
   const names = Object.fromEntries([...CATS, ["_terrain", "Site prep"]]);
@@ -1721,10 +1780,7 @@ function costPanel(r) {
   return `<section class="evc wide"><header>${icon("_cost")}<b>All-in estimate</b><span class="pill ${c.improvements > 90000 ? "bad" : c.improvements > 45000 ? "ok" : "good"}">${c.total != null ? "≈ " + money(c.total) : "+" + money(c.improvements)}</span></header>
     <table class="cost-t"><tbody>${r.price ? `<tr><td><span class="k">Land</span>Asking price</td><td>${money(r.price)}</td></tr>` : ""}${rows}
     ${c.total != null ? `<tr class="tot"><td>Ready to build a house</td><td>${money(c.total)}</td></tr>` : `<tr class="tot"><td>Cost to get it build-ready</td><td>${money(c.improvements)}</td></tr>`}</tbody></table>
-    ${(() => { const m = monthly(r); return m ? `<div class="mo-grid"><div><span>Per month</span><b>${money(m.total)}</b><small>loan ${money(m.pay)} + tax ${money(m.tax)}</small></div>
-      <div><span>Down payment</span><b>${kmoney(m.down)}</b><small>${S.costs.down_pct}% of price</small></div>
-      <div><span>Cash to build-ready</span><b>${kmoney(m.cash)}</b><small>down + build costs</small></div></div>
-      <div class="cost-note" style="margin-top:6px"><span>${S.costs.term_yrs}-yr land loan at ${S.costs.rate_pct}%; tax ${r.state === "ID" ? S.costs.tax_id_pct : S.costs.tax_wa_pct}% of the ${m.taxBase}.</span></div>` : ""; })()}
+    ${financePanel(r)}
     <div class="cost-note"><span>Rough planning numbers${changed ? ", using your own assumptions" : " for the Spokane area"}. Get quotes before you buy.</span><button class="linkbtn" data-costs="1">Cost assumptions…</button></div></section>`;
 }
 function buildPanel(r) {
@@ -2195,7 +2251,11 @@ async function downloadReport(r) {
 ${r.buildable ? `<h2>Is it buildable? ${esc(r.buildable.label)}</h2><ul>${(r.buildable.reasons || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
 ${r.site ? `<p>${r.site.buildable_acres} of ${r.site.parcel_acres ?? r.acres} acres buildable after setbacks (${r.site.setbacks_ft.front} ft front / ${r.site.setbacks_ft.side} ft sides, ${esc(r.site.setbacks_ft.source)}), slopes over 30% and mapped hazards.${r.site.site ? ` Best house site: ${r.site.site.slope_pct ?? "?"}% slope, ${r.site.site.driveway_ft ?? "?"} ft from the road (${r.site.site.lat}, ${r.site.site.lon}).` : ""}</p>` : ""}
 <h2>Money</h2><table>${row("Asking price", money(r.price))}${c.items.map(([k, v, lab]) => row(lab, money(v))).join("")}${row("All-in estimate", "<b>" + money(c.total) + "</b>")}
-${m ? row("Monthly (loan + tax)", `${money(m.total)} (${S.costs.term_yrs} yrs at ${S.costs.rate_pct}%, ${S.costs.down_pct}% down)`) + row("Cash to build-ready", money(m.cash)) : ""}
+${(() => { const f = financing(r); if (!f) return ""; const L = f.land, B = f.build;
+  return row(`Land loan (credit ${f.score})`, `${money(L.total)}/mo incl. tax — ${L.rate}%, ${L.term} yrs, ${L.down_pct}% down (${money(L.down)}); interest over the loan ${money(L.interest)}`)
+    + row("Cash to build-ready", money(L.cash))
+    + row(`Land + ${S.costs.house_sqft.toLocaleString()} sq ft house`, `${money(B.total)}/mo incl. tax — ${B.rate}% 30-yr construction-to-permanent, ${S.costs.mortgage_down_pct}% down (${money(B.down)}) on ${money(B.project)}; interest over 30 years ${money(B.interest)}`)
+    + row("Rates as of", `Freddie Mac average ${RATES.asof}; land-loan ranges from 2026 lender surveys`); })()}
 ${r.comps?.est_value ? row("Recent nearby sales, similar size", `${kmoney(r.comps.low)}–${kmoney(r.comps.high)}, typical ${kmoney(r.comps.est_value)} (${r.comps.n} sales)`) : ""}${r.assessed ? row("County assessed land value", money(r.assessed.land_value)) : ""}
 ${r.price_check?.negotiate ? row("Room to negotiate", esc(r.price_check.negotiate.join("; "))) : ""}</table>
 <h2>Deal-breaker check</h2><ul>${(r.checks || []).map(x => `<li class="${x.level}"><b>${esc(x.label)}</b>${x.detail ? " — " + esc(x.detail) : ""}</li>`).join("") || "<li>Not checked.</li>"}</ul>
@@ -2218,7 +2278,7 @@ ${r.remarks ? `<h2>Listing description</h2><p>${esc(r.remarks)}</p>` : ""}
 /* ---------- G1 cost assumptions editor (saved per viewer in this browser) ---------- */
 function openCosts() {
   $("costForm").innerHTML = COST_FIELDS.map(([ic, name, fields]) => `<fieldset><legend>${icon(ic)}${name}</legend>${fields.map(([k, lab, unit]) =>
-    `<label for="cf-${k}">${lab}<span class="inp">${unit.startsWith("$") ? "<span>$</span>" : ""}<input id="cf-${k}" data-ck="${k}" inputmode="numeric" value="${S.costs[k]}"${S.costs[k] !== COST_DEFAULTS[k] ? ' class="chg"' : ""}>${unit === "$/ft" ? "<span>/ft</span>" : unit === "ft" || unit === "%" || unit === "yrs" ? `<span>${unit}</span>` : ""}</span></label>`).join("")}</fieldset>`).join("")
+    `<label for="cf-${k}">${lab}<span class="inp">${unit.startsWith("$") ? "<span>$</span>" : ""}<input id="cf-${k}" data-ck="${k}" inputmode="numeric" value="${S.costs[k]}"${S.costs[k] !== COST_DEFAULTS[k] ? ' class="chg"' : ""}>${unit === "$/ft" ? "<span>/ft</span>" : unit === "$/sq ft" ? "<span>/sq ft</span>" : ["ft", "%", "yrs", "sq ft"].includes(unit) ? `<span>${unit}</span>` : ""}</span></label>`).join("")}</fieldset>`).join("")
     + `<div class="bar"><span class="src">Saved in this browser only.</span><button class="btn" type="button" id="costReset">Reset to defaults</button><button class="btn primary" type="submit">Apply</button></div>`;
   $("costModal").hidden = false; $("costForm").querySelector("input").focus();
 }
