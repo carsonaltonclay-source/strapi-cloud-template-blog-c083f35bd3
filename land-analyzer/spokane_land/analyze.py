@@ -402,7 +402,7 @@ def analyze(listing, facts):
         "permits": facts.get("permits"),
         "comps": facts.get("comps"),
         # A lot split from a bigger parcel: the parent's assessed value isn't this lot's.
-        "assessed": None if split else facts.get("assessed"),
+        "assessed": None if split or (facts.get("site") or {}).get("parent_acres") else facts.get("assessed"),
         "flags": flags,
         "errors": facts.get("errors", []),
         "notes": facts.get("notes", []),
@@ -445,7 +445,8 @@ def derived_checks(findings, zcheck, facts, listed_acres=None, split=None):
                     "source": "parcel shape"})
     elif site and site.get("buildable_acres") is not None:
         ba = site["buildable_acres"]
-        parent = bool(split)  # same test as the "lot split from a bigger parcel" warning
+        # A split lot, or a pin on a parcel well over the listed size (acreages differ a little often, 1.6x rarely).
+        parent = bool(split) or bool(listed_acres and site.get("parcel_acres") and site["parcel_acres"] > 1.6 * listed_acres)
         if parent:
             # A lot carved from a bigger county parcel: the parent's numbers can't say where on it this lot sits,
             # so its best house site (driveway length, slope) isn't this lot's either.
