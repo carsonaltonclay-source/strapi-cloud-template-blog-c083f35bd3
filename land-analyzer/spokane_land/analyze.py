@@ -439,16 +439,23 @@ def derived_checks(findings, zcheck, facts, listed_acres=None):
                     "source": "parcel shape"})
     elif site and site.get("buildable_acres") is not None:
         ba = site["buildable_acres"]
-        if listed_acres and site.get("parcel_acres") and site["parcel_acres"] > 1.6 * listed_acres:
-            # A lot being split from a bigger county parcel: scale the share that's buildable to this lot.
+        parent = bool(listed_acres and site.get("parcel_acres") and site["parcel_acres"] > 1.6 * listed_acres)
+        if parent:
+            # A lot carved from a bigger county parcel: the parent's numbers can't say where on it this lot sits.
             site["parent_acres"] = site["parcel_acres"]
-            ba = site["listing_buildable_acres"] = round(listed_acres * site["buildable_pct"] / 100, 2)
+            site["listing_buildable_acres"] = round(listed_acres * site["buildable_pct"] / 100, 2)
+            out.append({"key": "room", "level": "info",
+                        "label": f"Building room not measured for this lot (part of a {site['parcel_acres']}-acre county parcel)",
+                        "detail": f"about {site['buildable_pct']}% of the parent parcel is buildable; check this lot's own "
+                                  "setbacks and slope on the plat", "source": "parcel shape"})
         lost = ", ".join(f"{k} {v} ac" for k, v in (site.get("lost_to") or {}).items())
         # On sewer + public water only the house needs room; otherwise also a well and a drainfield.
         utilities = (findings["septic"].status in ("sewer", "sewer_area")
                      and findings["water"].status in ("public", "public_area"))
         need_min, need_ok = (0.03, 0.06) if utilities else (0.1, 0.35)
-        if ba < need_min:
+        if parent:
+            pass
+        elif ba < need_min:
             out.append({"key": "room", "level": "bad", "label": "No room for a house after setbacks, slopes and hazards",
                         "detail": f"lost to {lost}" if lost else "", "source": "parcel shape, elevation and hazard maps"})
         elif ba < need_ok:
