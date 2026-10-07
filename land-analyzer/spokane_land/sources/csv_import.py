@@ -81,10 +81,13 @@ def load_csv(path, source_name=None):
     with open(path, newline="", encoding="utf-8-sig") as f:
         sample = f.read(4096)
         f.seek(0)
+        # Only trust the sniffer for the delimiter: its quoting guesses (e.g. doublequote=False) break
+        # rows whose text contains "" escaped quotes.
+        dialect = csv.excel
         try:
-            dialect = csv.Sniffer().sniff(sample, delimiters=",\t;|")
+            dialect = type("Sniffed", (csv.excel,), {"delimiter": csv.Sniffer().sniff(sample, delimiters=",\t;|").delimiter})
         except csv.Error:
-            dialect = csv.excel
+            pass
         reader = csv.DictReader(f, dialect=dialect)
         cols = map_columns(reader.fieldnames or [])
         out, seen = [], {}

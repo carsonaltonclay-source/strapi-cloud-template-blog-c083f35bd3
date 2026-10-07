@@ -484,3 +484,12 @@ class ListingPhotoTests(unittest.TestCase):
         self.assertEqual(_source_url("https://photos.zillowstatic.com/fp/abc-p_e.jpg"),
                          "https://photos.zillowstatic.com/fp/abc-cc_ft_384.jpg")
         self.assertEqual(_source_url("https://example.com/x.jpg"), "https://example.com/x.jpg")
+
+    def test_csv_escaped_quotes(self):
+        rows = 'Address,Price,Remarks,Photo URL\n1 A Rd,100,"He said ""perc approved"" twice",https://p.example.com/1.jpg\n2 B Rd,200,plain,https://p.example.com/2.jpg\n'
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as fh:
+            fh.write(rows)
+        ls = {l.address: l for l in load_csv(fh.name)}
+        os.unlink(fh.name)
+        self.assertEqual(ls["1 A Rd"].remarks, 'He said "perc approved" twice')
+        self.assertEqual(ls["1 A Rd"].photo_url, "https://p.example.com/1.jpg")
