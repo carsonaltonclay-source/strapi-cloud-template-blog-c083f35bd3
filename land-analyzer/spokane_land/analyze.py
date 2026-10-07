@@ -375,6 +375,8 @@ def analyze(listing, facts):
         "lat": listing.lat,
         "lon": listing.lon,
         "url": listing.url,
+        "photo_url": listing.photo_url,
+        "photo_count": listing.photo_count,
         "mls": listing.mls,
         "status": listing.status,
         "days_on_market": listing.days_on_market,

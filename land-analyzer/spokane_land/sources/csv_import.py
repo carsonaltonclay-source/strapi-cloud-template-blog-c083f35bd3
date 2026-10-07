@@ -29,6 +29,8 @@ ALIASES = {
     "electric": ["electric", "electricity", "power", "utilities"],
     "sewer": ["sewer", "septic", "waste", "sewer/septic"],
     "road_access": ["roadfrontagetype", "road frontage", "road access", "access", "road", "roadsurfacetype"],
+    "photo_url": ["photo url", "photourl", "image url", "imageurl", "imgsrc", "primary photo", "photo link", "image"],
+    "photo_count": ["photo count", "photocount", "photos count", "number of photos", "photos"],
 }
 
 
@@ -126,5 +128,7 @@ def load_csv(path, source_name=None):
                 electric=get("electric"),
                 sewer=get("sewer"),
                 road_access=get("road_access"),
+                photo_url=get("photo_url") if re.match(r"https?://", get("photo_url"), re.I) else "",
+                photo_count=int(parse_float(get("photo_count")) or 0) or None,
             ))
     return out

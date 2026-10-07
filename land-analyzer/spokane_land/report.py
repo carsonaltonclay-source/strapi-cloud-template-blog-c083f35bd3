@@ -14,7 +14,7 @@ CSV_FIELDS = [
     "water", "water_confidence", "electric", "electric_confidence",
     "septic", "septic_confidence", "access", "access_confidence",
     "address", "city", "state", "zip", "county", "parcel_id", "parcel_match", "zoning",
-    "land_use", "days_on_market", "status", "mls", "source", "url", "lat", "lon",
+    "land_use", "days_on_market", "status", "mls", "source", "url", "photo_url", "photo_count", "lat", "lon",
     "buildable", "buildable_acres", "deal_breakers", "to_check", "price_vs_sales", "sales_estimate", "assessed_value",
     "driveway_ft", "site_slope_pct", "cell_service", "school_district",
     "all_in_total", "drive_min", "soil_septic", "wildfire", "internet_mbps", "power_company", "zoning_check",
@@ -104,7 +104,7 @@ def doc_id(listing_id):
 def _slim(r):
     """Drop what the app doesn't need (it rebuilds the cost breakdown and knows the sources)."""
     doc = dict(r, remarks=(r.get("remarks") or "")[:1500])
-    for k in ("errors", "notes"):
+    for k in ("errors", "notes", "photo_url", "photo_count"):  # listing photos ship as files beside the app
         doc.pop(k, None)
     if doc.get("cost"):
         doc["cost"] = {k: doc["cost"][k] for k in ("total", "improvements", "inputs")}

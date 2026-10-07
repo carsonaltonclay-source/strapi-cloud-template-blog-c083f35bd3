@@ -236,6 +236,15 @@ svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
 }
 @keyframes rise { from { opacity: 0.001; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .c-head { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+/* Listing photo: a banner across the top of the card; the link opens the full photo set on the listing site. */
+.lphoto { position: relative; margin: -14px -14px 0 -13px; height: 168px; overflow: hidden; background: var(--soft); border-bottom: 1px solid var(--line); }
+.lphoto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lphoto .bone { position: absolute; inset: 0; }
+.lphoto a { position: absolute; left: 10px; bottom: 10px; display: inline-flex; gap: 6px; align-items: center; font-size: 12px; font-weight: 600; color: #fff; background: rgb(0 0 0 / .58); padding: 4px 9px; border-radius: 999px; text-decoration: none; }
+.lphoto a:hover, .lphoto a:focus-visible { background: rgb(0 0 0 / .78); }
+.lphoto a .i { width: 14px; height: 14px; stroke: #fff; }
+.lphoto .gone { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 12px; }
+@media (max-width: 640px) { .lphoto { height: 140px; } }
 /* 6. Plat sketch */
 .plat { width: 72px; height: 72px; border-radius: 10px; background: var(--soft); display: block; }
 .plat .lot { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
@@ -1650,6 +1659,7 @@ function card(r, i) {
       <div><span>Miles</span><b>${r.miles_from_spokane ?? "—"}</b></div></div>`;
   const open = S.open.has(r.id), rt = ratingTone(r.rating);
   let html = `<article class="card r-${rt}${r.id === S.sel ? " sel" : ""}${i < 12 && !reduceMotion ? " rise" : ""}" style="--i:${i}" id="c-${esc(r._doc)}" data-id="${esc(r.id)}">
+    ${listingPhoto(r)}
     <div class="c-head">
       ${plat(r)}
       <div style="min-width:0">${eyebrow(r)}<div class="price">${money(r.price)}</div>${allinLine(r)}<div class="addr">${esc(loc)}</div><div class="facts">${esc(facts)}</div>${verdictPill(r)}${badges(r)}</div>
@@ -1727,6 +1737,38 @@ function photoPanel(r) {
   return `<section class="evc wide"><header>${icon("_photo")}<b>From above</b><span class="src">${esc(r.photo.date ? "Aerial photo " + r.photo.date : "Aerial photo")}</span></header>
     <div class="photo-row"><figure class="photo">${grp === undefined || grp === null ? `<div class="bone" style="position:absolute;inset:0"></div>` : ph ? `<img alt="Aerial photo of the parcel" src="${ph}">${outline(r)}` : `<div class="src" style="padding:12px">Photo not available.</div>`}<figcaption>${esc(r.photo.credit || "USGS")}</figcaption></figure>
     <p class="src" style="margin:0">Yellow line: the parcel boundary (approximate). ${r.photo.site ? "Red dot: the best house site found (gentlest buildable ground closest to the road). " : ""}Look for trees to clear, an existing driveway or buildings, and neighbors' homes.</p></div></section>`;
+}
+// Listing photos: published next to the page as lp/index.json plus bundles of ~25 thumbnails.
+S.lp = { items: null, bundles: {} };
+fetch("lp/index.json").then(res => res.ok ? res.json() : null).then(d => {
+  const items = {};
+  for (const [doc, v] of Object.entries(d?.items || {}))
+    if (Array.isArray(v) && /^b-\d{3}$/.test(v[0])) items[doc] = [v[0], Number.isFinite(v[1]) ? v[1] : 1, typeof v[2] === "string" && /^https?:\/\//i.test(v[2]) ? v[2] : ""];
+  S.lp.items = items; liveRender();
+}).catch(() => { S.lp.items = {}; });
+async function loadBundle(name) {
+  S.lp.bundles[name] = null;
+  try {
+    const d = await (await fetch(`lp/${name}.json`)).json();
+    S.lp.bundles[name] = Object.fromEntries(Object.entries(d || {}).filter(([, v]) => typeof v === "string" && /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(v)));
+  } catch (e) { S.lp.bundles[name] = {}; }
+  liveRender();
+}
+function siteName(url) {
+  try { const h = new URL(url).hostname.replace(/^www\./, ""); return { "zillow.com": "Zillow", "redfin.com": "Redfin", "realtor.com": "Realtor.com", "landwatch.com": "LandWatch" }[h] || h; }
+  catch (e) { return "the listing site"; }
+}
+function listingPhoto(r) {
+  const it = S.lp.items?.[r._doc];
+  if (!it) return "";
+  const [name, n, url] = it, b = S.lp.bundles[name];
+  if (b === undefined) loadBundle(name);
+  const img = b ? b[r._doc] : null;
+  const ext = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4 10 14M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  const link = url || r.url;
+  return `<figure class="lphoto">${img ? `<img alt="Listing photo of ${esc(r.address || "this land")}" src="${img}" loading="lazy">`
+      : b ? `<div class="gone">Photo not available</div>` : `<div class="bone"></div>`}
+    ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">${icon("_photo")}${n > 1 ? `See all ${n} photos` : "See the listing"} on ${esc(siteName(link))}${ext}</a>` : ""}</figure>`;
 }
 function outline(r) {
   const ph = r.photo; if (!ph.path) return "";

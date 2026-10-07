@@ -466,3 +466,21 @@ class ThirdAuditTests(unittest.TestCase):
         ls = load_csv(fh.name)
         os.unlink(fh.name)
         self.assertEqual(len({l.id for l in ls if l.address == "TBD Elk Rd"}), 2)
+
+
+class ListingPhotoTests(unittest.TestCase):
+    def test_photo_columns(self):
+        rows = ("Address,City,Price,Acres,Photo URL,Photo Count\n"
+                "1 A Rd,Elk,100,5,https://photos.example.com/a-p_e.jpg,12\n2 B Rd,Elk,200,5,javascript:alert(1),\n")
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as fh:
+            fh.write(rows)
+        ls = {l.address: l for l in load_csv(fh.name)}
+        os.unlink(fh.name)
+        self.assertEqual((ls["1 A Rd"].photo_url, ls["1 A Rd"].photo_count), ("https://photos.example.com/a-p_e.jpg", 12))
+        self.assertEqual((ls["2 B Rd"].photo_url, ls["2 B Rd"].photo_count), ("", None))
+
+    def test_zillow_thumbnail_size(self):
+        from spokane_land.listing_photos import _source_url
+        self.assertEqual(_source_url("https://photos.zillowstatic.com/fp/abc-p_e.jpg"),
+                         "https://photos.zillowstatic.com/fp/abc-cc_ft_384.jpg")
+        self.assertEqual(_source_url("https://example.com/x.jpg"), "https://example.com/x.jpg")

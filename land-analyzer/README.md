@@ -46,6 +46,7 @@ Every parcel also gets an **"Is it actually buildable?"** report and verdict
 | **Zoning outside Spokane County** | WA Zoning Atlas (Stevens, Lincoln, Pend Oreille, towns) and Bonner County; Kootenai County's server was down |
 | **County rules** | setbacks, permit offices, well-water limits (`county_rules.py`) |
 | **Aerial photo** | USDA NAIP via USGS, with the parcel line and house site (`--photos MILES`, needs Pillow) |
+| **Listing photo** | The listing's main photo from its listing site, with a link to the full set (`--listing-photos DIR`, needs Pillow; CSV columns `Photo URL`, `Photo Count`). Photos belong to the listing broker. |
 
 Output: `output/land_report.html` (interactive map + filterable table),
 `land_report.csv` (open in Excel/Sheets) and `land_report.json`.
@@ -84,6 +85,9 @@ How a refresh works (for Claude or anyone maintaining it):
    to `listings` and `dbx/meta.json` to `meta/info` (ArtifactData `batch`),
    delete chunk documents beyond the new count, and mark processed requests
    `status: "done"`.
+   With `--listing-photos app_files`, republish `app/land_finder.html` with every file in
+   `app_files/lp/` passed as `files` (published as `lp/index.json`, `lp/b-000.json`, ...):
+   the page can't load images from other sites, so the thumbnails ship beside it.
 4. Alerts: read the `searches` collection to `searches.json` and run
    `python -m spokane_land.alerts searches.json output/land_report.json --out alert`;
    if anything matched, email `alert.html` to the owner.

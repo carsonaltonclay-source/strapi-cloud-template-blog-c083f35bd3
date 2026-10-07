@@ -39,6 +39,9 @@ def build_parser():
                    help='label for --csv listings shown in the app, e.g. "Zillow land search, Oct 6 2026"')
     p.add_argument("--previous", metavar="FILE",
                    help="last run's land_report.json: marks new listings, price cuts and removed listings")
+    p.add_argument("--listing-photos", metavar="DIR",
+                   help="write each listing's main photo (from its listing site) as bundles in DIR/lp/, "
+                        "to publish next to the app page (needs Pillow)")
     p.add_argument("--photos", type=float, metavar="MILES",
                    help="with --db-export: aerial photos for parcels within MILES of Spokane (needs Pillow)")
     p.add_argument("--no-drive", action="store_true", help="skip drive times (public OSRM routing server)")
@@ -155,6 +158,10 @@ def main(argv=None):
         n = photos.build(kept, shapes, args.db_export, cache,
                          select=lambda r: (r["miles_from_spokane"] or 0) <= args.photos or r["source"] == "added")
         print(f"Aerial photos: {n}", file=sys.stderr)
+    if args.listing_photos:
+        from . import listing_photos
+        n = listing_photos.build(kept, args.listing_photos)
+        print(f"Listing photos: {n} of {len(kept)} listings", file=sys.stderr)
     paths = write_all(kept, args.out, meta)
     if args.db_export:
         n = export_db(kept, args.db_export, meta)

@@ -30,6 +30,9 @@ class Listing:
     electric: str = ""
     sewer: str = ""
     road_access: str = ""
+    # The listing's main photo on the listing site, and how many photos it has there.
+    photo_url: str = ""
+    photo_count: Optional[int] = None
 
 
 @dataclass
