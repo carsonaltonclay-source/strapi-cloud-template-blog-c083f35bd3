@@ -40,10 +40,11 @@ Every parcel also gets an **"Is it actually buildable?"** report and verdict
 | **Driveway & grading** | driveway length from the nearest road to that site × $/ft; grading cost from the slope at the site |
 | **Flood & drainage** | FEMA National Flood Hazard Layer (both states) + USDA soil drainage class / hydric soils |
 | **Deal-breakers** | wetlands (USFWS NWI), landslides (WA DNR), stream buffers (Spokane Co.), active mines (WA DNR; USGS topo pits in ID), well nitrate (WA DNR, Spokane Co., Idaho DEQ), and listing text: HOA, covenants, no manufactured homes, "not buildable", line easements (`dealbreakers.py`, `remarks.red_flags`) |
-| **Is the price fair?** | Spokane County vacant-land sales within 3–6 miles, similar size, last 3 years, plus the assessed land value (`comps.py`); Idaho doesn't publish sale prices |
+| **Is the price fair?** | Spokane County: county-recorded vacant-land sales within 3–6 miles, similar size, last 3 years, plus the assessed land value (`comps.py`). Stevens, Lincoln, Pend Oreille, Whitman: recent MLS land sales (`--sold-csv`, `sold_comps.py`). Kootenai: the assessor's market value (Idaho hides sale prices) |
+| **Listings covering several parcels** | Touching parcels with the same owner (Spokane and Kootenai assessor data) are analysed together when they add up to the listed acres (`assemble.py`); a pin on a parcel of the wrong size moves to the size-matching parcel within 150 m |
 | **Financing** | your credit score (default 801) sets the rate: land loan priced by lot type (improved / partly improved / raw, from 2026 lender surveys) and a 30-yr construction-to-permanent mortgage for land + house (Freddie Mac average + premium); shows monthly payment with tax, down payment and total interest. Update `RATES` in `app/app_template.html` when rates move |
 | **Cell service** | Ookla mobile speed tests (Esri Living Atlas) |
-| **Zoning outside Spokane County** | WA Zoning Atlas (Stevens, Lincoln, Pend Oreille, towns) and Bonner County; Kootenai County's server was down |
+| **Zoning outside Spokane County** | WA Zoning Atlas (Stevens, Lincoln, Pend Oreille, and every town including Spokane County's cities), Bonner County, Kootenai County plus Coeur d'Alene and Post Falls; rural Whitman (unmapped) gets the 40-acre Agriculture District rule; Benewah publishes no zoning |
 | **County rules** | setbacks, permit offices, well-water limits (`county_rules.py`) |
 | **Aerial photo** | USDA NAIP via USGS, with the parcel line and house site (`--photos MILES`, needs Pillow) |
 | **Listing photo** | The listing's main photo from its listing site, with a link to the full set (`--listing-photos DIR`, needs Pillow; CSV columns `Photo URL`, `Photo Count`). Photos belong to the listing broker. |
@@ -76,7 +77,7 @@ How a refresh works (for Claude or anyone maintaining it):
 1. Read the app's `requests` collection (ArtifactData `list`) and write the
    pending ones to `requests.json` as `[{"id", "text", "price", "note"}]`.
 2. Save the current `chunks` collection (ArtifactData `list` with `out_dir: prev`)
-   and run `python -m spokane_land --csv <exports> --requests requests.json --previous prev --db-export dbx`.
+   and run `python -m spokane_land --csv <exports> --sold-csv <land sales> --requests requests.json --previous prev --db-export dbx`.
    `--previous` marks listings that are new since the last refresh, records
    price cuts (`price_history`), and lists listings that disappeared
    (`meta.refresh`). Duplicate listings of the same parcel are merged.

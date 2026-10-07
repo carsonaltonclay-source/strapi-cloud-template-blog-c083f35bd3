@@ -1431,7 +1431,7 @@ function currentSearch() {
 }
 function passes(r, st) {
   const q = (st.q || "").toLowerCase(), f = st.f || {};
-  if (q && ![r.address, r.city, r.parcel_id, r.zip, r.county, r.mls].join(" ").toLowerCase().includes(q)) return false;
+  if (q && ![r.address, r.city, r.parcel_id, ...(r.parcel_ids_more || []), r.zip, r.county, r.mls].join(" ").toLowerCase().includes(q)) return false;
   if (r.price != null && (r.price < (st.min_price || 0) || (st.max_price != null && r.price > st.max_price))) return false;
   if (st.min_acres && r.acres != null && r.acres < st.min_acres) return false;
   if (f.water && !has(r.water, ["well", "public", "shared_well", "public_area"])) return false;
@@ -1711,7 +1711,7 @@ function card(r, i) {
       </div>
       ${r.remarks ? `<blockquote class="quote">“${esc(r.remarks)}”<cite>Listing description</cite></blockquote>` : ""}
       <div class="facts-line">
-        ${r.parcel_id ? `<span>Parcel <b class="mono">${esc(r.parcel_id)}</b>${r.parcel_match && r.parcel_match !== "map pin inside parcel" ? ` (${esc(r.parcel_match)})` : ""}</span>` : ""}
+        ${r.parcel_id ? `<span>Parcel <b class="mono">${esc(r.parcel_id)}</b>${(r.parcel_ids_more || []).length ? ` + <b class="mono">${r.parcel_ids_more.map(esc).join(", ")}</b>` : ""}${r.parcel_match && r.parcel_match !== "map pin inside parcel" ? ` (${esc(r.parcel_match)})` : ""}</span>` : ""}
         ${r.zoning ? `<span>Zoning <b>${esc(r.zoning)}</b></span>` : ""}
         ${daysListed(r) != null ? `<span><b>${daysListed(r)}</b> days on market</span>` : ""}
       </div>
@@ -1792,11 +1792,11 @@ function pricePanel(r) {
       <div class="pc-leg"><span>Most sold for ${kmoney(c.low)}–${kmoney(c.high)}</span><span>typical ${kmoney(c.est_value)} · asking <b>${kmoney(r.price)}</b></span></div>
       <p class="src" style="margin:6px 0 0">${c.n} vacant-land sales of a similar size within ${c.radius_mi} miles in the last ${c.years} years, ${c.by === "lot" ? `median sale ${kmoney(c.est_value)} (small lots sell per lot, not per acre)` : `median ${kmoney(c.median_ppa)}/acre`}.${c.varied ? " These sales vary widely, so they can't say whether this price is high or low." : ""}</p>`;
   } else if (c) body += `<p class="src" style="margin:0">Only ${c.n} similar vacant-land sale${c.n === 1 ? "" : "s"} within ${c.radius_mi} miles in the last 3 years — not enough to judge the price.</p>`;
-  if (c?.examples?.length) body += `<table class="pc-ex"><thead><tr><th>Sold</th><th>Price</th><th>Acres</th><th>$/acre</th><th>Away</th></tr></thead><tbody>${c.examples.map(e => `<tr><td>${esc(e.date.slice(0, 7))}</td><td>${kmoney(e.price)}</td><td>${e.acres}</td><td>${kmoney(e.price / e.acres)}</td><td>${e.mi != null ? e.mi + " mi" : "—"}</td></tr>`).join("")}</tbody></table>`;
-  if (a) body += `<p style="margin:8px 0 0;font-size:13px">County assessed land value: <b>${money(a.land_value)}</b>${a.year ? ` (${a.year} assessment)` : ""}${pc?.vs_assessed ? ` — asking is ${pc.vs_assessed.toFixed(2)}× that` : ""}.</p>`;
+  if (c?.examples?.length) body += `<table class="pc-ex"><thead><tr><th>Sold</th><th>Price</th><th>Acres</th><th>$/acre</th><th>Away</th></tr></thead><tbody>${c.examples.map(e => `<tr><td>${esc(e.date.slice(0, 7))}</td><td>${kmoney(e.price)}</td><td>${e.acres}</td><td>${kmoney(e.price / e.acres)}</td><td>${e.mi != null ? e.mi + " mi" : "—"}${e.url ? ` <a href="${esc(e.url)}" target="_blank" rel="noopener" aria-label="See this sale">↗</a>` : ""}</td></tr>`).join("")}</tbody></table>`;
+  if (a) body += `<p style="margin:8px 0 0;font-size:13px">${a.market ? "County assessed market value (Idaho assesses at market value; it includes any buildings)" : "County assessed land value"}: <b>${money(a.land_value)}</b>${a.year ? ` (${a.year} assessment)` : ""}${pc?.vs_assessed ? ` — asking is ${pc.vs_assessed.toFixed(2)}× that` : ""}.</p>`;
   if (pc?.negotiate?.length) body += `<div class="neg"><b>Room to negotiate:</b> ${esc(pc.negotiate.join("; "))}.</div>`;
   const tone = pc?.ratio == null ? "unk" : pc.ratio <= 0.95 ? "good" : pc.ratio <= 1.1 ? "ok" : "bad";  // no ratio when sales vary too much
-  return `<section class="evc wide"><header>${icon("_tag")}<b>Is the price fair?</b>${pc?.label ? `<span class="pill ${tone}">${esc(pc.label)}</span>` : ""}<span class="tag">Spokane County sales records</span></header>${body}</section>`;
+  return `<section class="evc wide"><header>${icon("_tag")}<b>Is the price fair?</b>${pc?.label ? `<span class="pill ${tone}">${esc(pc.label)}</span>` : ""}<span class="tag">${esc(c?.source || (a?.market ? "Kootenai County Assessor" : "Spokane County sales records"))}</span></header>${body}</section>`;
 }
 function checksPanel(r) {
   const cs = r.checks || [];

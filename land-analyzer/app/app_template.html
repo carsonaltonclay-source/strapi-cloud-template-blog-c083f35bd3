@@ -1431,7 +1431,7 @@ function currentSearch() {
 }
 function passes(r, st) {
   const q = (st.q || "").toLowerCase(), f = st.f || {};
-  if (q && ![r.address, r.city, r.parcel_id, r.zip, r.county, r.mls].join(" ").toLowerCase().includes(q)) return false;
+  if (q && ![r.address, r.city, r.parcel_id, ...(r.parcel_ids_more || []), r.zip, r.county, r.mls].join(" ").toLowerCase().includes(q)) return false;
   if (r.price != null && (r.price < (st.min_price || 0) || (st.max_price != null && r.price > st.max_price))) return false;
   if (st.min_acres && r.acres != null && r.acres < st.min_acres) return false;
   if (f.water && !has(r.water, ["well", "public", "shared_well", "public_area"])) return false;
@@ -1711,7 +1711,7 @@ function card(r, i) {
       </div>
       ${r.remarks ? `<blockquote class="quote">“${esc(r.remarks)}”<cite>Listing description</cite></blockquote>` : ""}
       <div class="facts-line">
-        ${r.parcel_id ? `<span>Parcel <b class="mono">${esc(r.parcel_id)}</b>${r.parcel_match && r.parcel_match !== "map pin inside parcel" ? ` (${esc(r.parcel_match)})` : ""}</span>` : ""}
+        ${r.parcel_id ? `<span>Parcel <b class="mono">${esc(r.parcel_id)}</b>${(r.parcel_ids_more || []).length ? ` + <b class="mono">${r.parcel_ids_more.map(esc).join(", ")}</b>` : ""}${r.parcel_match && r.parcel_match !== "map pin inside parcel" ? ` (${esc(r.parcel_match)})` : ""}</span>` : ""}
         ${r.zoning ? `<span>Zoning <b>${esc(r.zoning)}</b></span>` : ""}
         ${daysListed(r) != null ? `<span><b>${daysListed(r)}</b> days on market</span>` : ""}
       </div>
