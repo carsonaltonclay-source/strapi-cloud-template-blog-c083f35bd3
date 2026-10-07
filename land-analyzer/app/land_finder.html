@@ -1488,7 +1488,9 @@ function plat(r) {
 
 // Days on market today, from the listing date (days_on_market is frozen at the download day).
 function daysListed(r) {
-  if (r.first_seen) { const t = Date.parse(r.first_seen + "T00:00:00"); if (!isNaN(t)) return Math.max(0, Math.floor((Date.now() - t) / 864e5)); }
+  // "listed" = refresh day minus days on market; older data only has first_seen, which equals it on a first run.
+  const when = "listed" in r ? r.listed : S.meta?.refresh?.first_run === false ? null : r.first_seen;
+  if (when) { const t = Date.parse(when + "T00:00:00"); if (!isNaN(t)) return Math.max(0, Math.floor((Date.now() - t) / 864e5)); }
   return r.days_on_market != null && r.days_on_market >= 0 ? r.days_on_market : null;
 }
 function eyebrow(r) {
@@ -1505,7 +1507,7 @@ function badges(r) {
   if (r.zoning_check?.status === "splittable") out.push(`<span class="bdg big">${icon("_zone")}Could split</span>`);
   const st = S.marks[r._doc]?.status;
   if (st) out.unshift(`<span class="st-pill ${st}">${esc(STATUS_LABEL[st] || st)}</span>`);
-  if (r.price_check?.ratio != null ? r.price_check.ratio <= 0.85 : v && v.ratio <= 0.6) out.push(`<span class="bdg value">${r.price_check?.ratio != null ? "Below recent sales" : "Great value"}</span>`);
+  if (!r.comps?.varied && (r.price_check?.ratio != null ? r.price_check.ratio <= 0.85 : v && v.ratio <= 0.6)) out.push(`<span class="bdg value">${r.price_check?.ratio != null ? "Below recent sales" : "Great value"}</span>`);
   if (t && t.position === "hilltop") out.push(`<span class="bdg views">${icon("_terrain")}Hilltop views</span>`);
   if (r.acres >= 20) out.push(`<span class="bdg big">Big acreage</span>`);
   if (daysListed(r) >= 365) out.push(`<span class="bdg stale">On market 1+ yr</span>`);
@@ -1804,7 +1806,7 @@ function buildPanel(r) {
   if (site) row("_build", "Room to build", (site.parent_acres
       ? `Not measured for this ${r.acres}-acre lot: it's part of a ${site.parent_acres}-acre county parcel, of which about <b>${site.buildable_pct}%</b> is buildable. Check this lot's own setbacks and slope on the plat`
       : `<b>${site.buildable_acres} of ${site.parcel_acres ?? r.acres ?? "?"} acres</b> are buildable (${site.buildable_pct}%)`) +
-    (site.lost_to && Object.keys(site.lost_to).length ? ` — lost to ${Object.entries(site.lost_to).map(([k, a]) => `${{ setback: "setbacks", hazard: "wetland/flood/slide/stream areas", steep: "slopes over 30%" }[k] || k} ${a} ac`).join(", ")}.` : ".")
+    (!site.parent_acres && site.lost_to && Object.keys(site.lost_to).length ? ` — lost to ${Object.entries(site.lost_to).map(([k, a]) => `${{ setback: "setbacks", hazard: "wetland/flood/slide/stream areas", steep: "slopes over 30%" }[k] || k} ${a} ac`).join(", ")}.` : ".")
     + (site.site ? ` Best house site: ${site.site.slope_pct ?? "?"}% slope, ${site.site.driveway_ft != null ? site.site.driveway_ft.toLocaleString() + " ft from the road" : "distance to road unknown"} (red dot on the sketch).` : ""));
   // legal access + driveway/grading
   const accCheck = (r.checks || []).find(x => x.key === "access");
@@ -1832,7 +1834,8 @@ function buildPanel(r) {
   if (r.wildfire) row("_fire", "Wildfire", `<span class="pill ${FIRE_TONE(r.wildfire.class)}">${esc(r.wildfire.label)}</span>${r.wildfire.class >= 4 && r.wildfire.class <= 5 ? "Plan defensible space; ask the county whether wildland-urban-interface building rules apply; insurance may cost more." : ""}`);
   const extra = [r.drive_min != null ? `about ${r.drive_min} min drive to downtown Spokane (routing estimate — often runs 10–25% long on rural highways)` : "", r.school_district ? esc(r.school_district) : ""].filter(Boolean).join(" · ");
   if (extra) row("_car", "Location", extra);
-  if (r.first_seen || r.price_history?.length > 1) row("_bell", "History", `On the market since about ${esc(r.first_seen || "?")}${r.price_history?.length > 1 ? ". Price " + r.price_history.map(h => `${kmoney(h.price)} (${esc(h.date)})`).join(" → ") : ""}.`);
+  const since = r.listed || r.first_seen;
+  if (since || r.price_history?.length > 1) row("_bell", "History", `${r.listed || !r.first_seen ? "On the market since about" : "First seen here"} ${esc(since || "?")}${r.price_history?.length > 1 ? ". Price " + r.price_history.map(h => `${kmoney(h.price)} (${esc(h.date)})`).join(" → ") : ""}.`);
   if (r.also_listed_as?.length) row("_build", "Also listed as", esc(r.also_listed_as.join("; ")));
   const head = v ? `<div class="br-head ${v.level}"><div><b>${esc(v.label)}</b>${v.reasons?.length ? `<ul>${v.reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</div></div>` : "";
   return `<section class="evc wide"><header>${icon("_build")}<b>Is it actually buildable?</b></header>${head}<table class="br"><tbody>${rows.join("")}</tbody></table></section>`;
@@ -2300,8 +2303,17 @@ $("costForm").addEventListener("input", e => { const i = e.target.closest("[data
 $("costForm").addEventListener("submit", e => {
   e.preventDefault();
   const c = { ...S.costs };
-  $("costForm").querySelectorAll("[data-ck]").forEach(i => { const v = parseFloat(i.value.replace(/[^0-9.]/g, "")); if (!isNaN(v) && v >= 0) c[i.dataset.ck] = v; });
-  setCosts(c); $("costModal").hidden = true; toast("All-in estimates updated");
+  // Allowed ranges; 0 means "set automatically" for the loan overrides.
+  const LIMITS = { credit_score: [300, 850], land_rate: [0, 25], mortgage_rate: [0, 25], land_down_pct: [0, 100], mortgage_down_pct: [0, 100],
+                   land_term_yrs: [0, 40], tax_wa_pct: [0, 5], tax_id_pct: [0, 5] };
+  const rejected = [];
+  $("costForm").querySelectorAll("[data-ck]").forEach(i => {
+    const raw = i.value.replace(/[$,\s]/g, ""), v = /^\d*\.?\d+$/.test(raw) ? parseFloat(raw) : NaN, [lo, hi] = LIMITS[i.dataset.ck] || [0, 1e7];
+    if (isNaN(v) || v < lo || v > hi) { if (raw !== String(S.costs[i.dataset.ck])) rejected.push(i.closest("label").firstChild.textContent.trim() + (LIMITS[i.dataset.ck] ? ` (${lo}–${hi})` : " (needs a number)")); return; }
+    c[i.dataset.ck] = v;
+  });
+  setCosts(c); $("costModal").hidden = true;
+  toast(rejected.length ? `Kept the old value for: ${rejected.join(", ")}` : "All-in estimates updated");
 });
 $("costForm").addEventListener("click", e => { if (e.target.id === "costReset") { setCosts({ ...COST_DEFAULTS }); openCosts(); } });
 $("costClose").addEventListener("click", () => { $("costModal").hidden = true; });
@@ -2375,16 +2387,20 @@ drawTopo(); drawBase(); render(); fitRadius();
     "median_ppa", "est_value", "low", "high", "mi", "land_value", "year", "ratio", "vs_assessed", "down_mbps", "typical_mbps", "tests",
     "tiles", "min_acres", "front", "side", "hydric_pct", "total", "improvements", "well_ft", "power_ft", "site_slope",
     "open", "issued_2023", "front_ft", "side_ft", "parent_acres", "listing_buildable_acres"]);
+  const ENUM_KEYS = new Set(["level", "status", "slope_class", "position", "outlook", "key", "by", "tone"]);
   const clean = (v, k) => {
     if (NUM_KEYS.has(k)) return typeof v === "number" && isFinite(v) ? v : null;
     if (k === "url" || k === "website") return typeof v === "string" && /^https?:\/\//i.test(v) ? v : "";
     if (k === "path") return typeof v === "string" && /^[MLZ0-9.,\- ]*$/.test(v) ? v : "";
+    // Code words that end up in class attributes: letters, digits and _ only.
+    if (ENUM_KEYS.has(k) && typeof v !== "number") return typeof v === "string" && /^\w*$/.test(v) ? v : "";
     if (Array.isArray(v)) return v.map(x => typeof x === "number" ? (isFinite(x) ? x : 0) : clean(x, k === "shape" || k === "xy" || k === "site" || k === "rings" ? "_n" : ""));
     if (k === "_n") return typeof v === "number" ? v : Array.isArray(v) ? clean(v, "_n") : 0;
     if (v && typeof v === "object") { const o = {}; for (const [kk, vv] of Object.entries(v)) o[kk] = clean(vv, kk); return o; }
     return v;
   };
-  const sanitize = r => clean(r, "");
+  // A listing's own "status" is sale wording ("Lot / Land for sale"), not a code word; it is only shown escaped.
+  const sanitize = r => ({ ...clean(r, ""), status: typeof r?.status === "string" ? r.status : "" });
   const merge = () => {
     S.loaded = true; S.listings = [...bulk, ...single];
     byId.clear(); S.listings.forEach(r => { byId.set(r.id, r); r._terrain = { status: r.terrain?.slope_class || "unknown" }; });
@@ -2413,7 +2429,9 @@ drawTopo(); drawBase(); render(); fitRadius();
     }
   });
   db.collection("marks").onSnapshot(snap => {
-    S.marks = Object.fromEntries(snap.docs.map(d => [d.id, d.data()])); liveRender();
+    S.marks = Object.fromEntries(snap.docs.map(d => { const m = d.data() || {};
+      return [d.id, { star: m.star === true, note: typeof m.note === "string" ? m.note : "", status: STATUS_LABEL[m.status] ? m.status : "" }]; }));
+    liveRender();
   });
   db.collection("searches").onSnapshot(snap => {
     S.searches = snap.docs.map(d => ({ ...d.data(), _id: d.id })).sort((a, b) => String(a.created).localeCompare(String(b.created)));
