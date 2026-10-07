@@ -612,6 +612,7 @@ a { color: var(--accent); }
 .chk i { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--f-body); font-style: normal; margin-top: 1px; }
 .chk.bad i { background: var(--bad-bg); color: var(--bad); } .chk.warn i { background: var(--warn-bg); color: var(--warn); } .chk.ok i { background: var(--good-bg); color: var(--good); }
 .chk.ok { color: var(--muted); }
+.chk.info i { background: var(--soft); color: var(--muted); }
 /* H5 tracking + photo */
 .st-pill { display: inline-flex; align-items: center; gap: 5px; font: 600 11px/1 var(--f-body); padding: 4px 9px; border-radius: 999px; background: var(--ink); color: var(--panel); }
 .st-pill.passed { background: var(--soft); color: var(--muted); text-decoration: line-through; }
@@ -975,7 +976,7 @@ const COST_DEFAULTS = {
 const COST_FIELDS = [
   ["water", "Water", [["well_per_ft", "Well drilling", "$/ft"], ["well_system", "Pump, tank & trench", "$"], ["default_well_ft", "Well depth if no nearby logs", "ft"],
     ["water_hookup", "Public water hookup", "$"], ["shared_well", "Shared-well hookup", "$"]]],
-  ["electric", "Power", [["power_service", "Service from the road", "$"], ["power_per_ft", "Line extension past 150 ft", "$/ft"], ["offgrid_solar", "Off-grid solar", "$"]]],
+  ["electric", "Power", [["power_service", "Service from the road", "$"], ["power_per_ft", "Line extension per ft (past the service drop)", "$/ft"], ["offgrid_solar", "Off-grid solar", "$"]]],
   ["septic", "Septic", [["septic_standard", "Standard septic", "$"], ["septic_conventional", "Septic with approved design", "$"],
     ["septic_pressure", "Pressure septic (gravelly / rocky soils)", "$"], ["septic_engineered", "Mound / engineered septic", "$"], ["sewer_hookup", "Sewer hookup", "$"]]],
   ["access", "Access & driveway", [["driveway_base", "Driveway approach + culvert", "$"], ["driveway_per_ft", "Gravel driveway", "$/ft"],
@@ -1485,16 +1486,21 @@ function plat(r) {
          `<text class="north" x="36" y="68" text-anchor="middle" style="font-weight:500">${ft >= 5280 ? (ft / 5280).toFixed(1) + " mi" : ft.toLocaleString() + " ft"}</text></svg>`;
 }
 
+// Days on market today, from the listing date (days_on_market is frozen at the download day).
+function daysListed(r) {
+  if (r.first_seen) { const t = Date.parse(r.first_seen + "T00:00:00"); if (!isNaN(t)) return Math.max(0, Math.floor((Date.now() - t) / 864e5)); }
+  return r.days_on_market != null && r.days_on_market >= 0 ? r.days_on_market : null;
+}
 function eyebrow(r) {
   const town = (r.city || r.county || "").toUpperCase();
-  const d = r.days_on_market;
+  const d = daysListed(r);
   const age = d == null ? "" : d <= 1 ? "Listed today" : d < 60 ? `Listed ${d} days ago` : d < 365 ? `Listed ${Math.round(d / 30)} months ago` : `On market ${(d / 365).toFixed(d < 730 ? 1 : 0)} yrs`;
   return `<div class="c-eyebrow">${esc(town)}${town && age ? " · " : ""}${age ? `<span class="${d <= 14 ? "fresh" : ""}">${esc(age)}</span>` : ""}</div>`;
 }
 function badges(r) {
   const out = [], v = valueRatio(r), t = r.terrain;
   if (r.is_new) out.push(`<span class="bdg fresh2">New since last refresh</span>`);
-  else if (r.days_on_market != null && r.days_on_market <= 14) out.push(`<span class="bdg new">New listing</span>`);
+  else if (daysListed(r) != null && daysListed(r) <= 14) out.push(`<span class="bdg new">New listing</span>`);
   if (r.price_cut) out.push(`<span class="bdg cut">Price cut −${kmoney(r.price_cut)}</span>`);
   if (r.zoning_check?.status === "splittable") out.push(`<span class="bdg big">${icon("_zone")}Could split</span>`);
   const st = S.marks[r._doc]?.status;
@@ -1502,7 +1508,7 @@ function badges(r) {
   if (r.price_check?.ratio != null ? r.price_check.ratio <= 0.85 : v && v.ratio <= 0.6) out.push(`<span class="bdg value">${r.price_check?.ratio != null ? "Below recent sales" : "Great value"}</span>`);
   if (t && t.position === "hilltop") out.push(`<span class="bdg views">${icon("_terrain")}Hilltop views</span>`);
   if (r.acres >= 20) out.push(`<span class="bdg big">Big acreage</span>`);
-  if (r.days_on_market >= 365) out.push(`<span class="bdg stale">On market 1+ yr</span>`);
+  if (daysListed(r) >= 365) out.push(`<span class="bdg stale">On market 1+ yr</span>`);
   return out.length ? `<div class="badges">${out.join("")}</div>` : "";
 }
 const SEVERE = /landlocked|flood|failed|no water wells|steep ground|conflicting/i;
@@ -1695,7 +1701,7 @@ function card(r, i) {
       <div class="facts-line">
         ${r.parcel_id ? `<span>Parcel <b class="mono">${esc(r.parcel_id)}</b>${r.parcel_match && r.parcel_match !== "map pin inside parcel" ? ` (${esc(r.parcel_match)})` : ""}</span>` : ""}
         ${r.zoning ? `<span>Zoning <b>${esc(r.zoning)}</b></span>` : ""}
-        ${r.days_on_market != null ? `<span><b>${r.days_on_market}</b> days on market</span>` : ""}
+        ${daysListed(r) != null ? `<span><b>${daysListed(r)}</b> days on market</span>` : ""}
       </div>
       ${S.db && S.canWrite ? `<div class="trackbox" role="group" aria-label="Tracking status"><span class="tl">My status</span>${STATUSES.map(([k, l]) => `<button data-status="${k}" data-doc="${esc(r._doc)}" aria-pressed="${mark.status === k}">${l}</button>`).join("")}</div>` : ""}
       <div class="actions">
@@ -1740,18 +1746,18 @@ function pricePanel(r) {
     const lo = Math.min(c.low, r.price) * 0.85, hi = Math.max(c.high, r.price) * 1.1, x = v => ((v - lo) / (hi - lo) * 100).toFixed(1);
     body += `<div class="pc-bar" aria-hidden="true"><span class="rng" style="left:${x(c.low)}%;width:${(x(c.high) - x(c.low)).toFixed(1)}%"></span><span class="med" style="left:${x(c.est_value)}%"></span><span class="ask" style="left:${x(r.price)}%" title="Asking ${money(r.price)}"></span></div>
       <div class="pc-leg"><span>Most sold for ${kmoney(c.low)}–${kmoney(c.high)}</span><span>typical ${kmoney(c.est_value)} · asking <b>${kmoney(r.price)}</b></span></div>
-      <p class="src" style="margin:6px 0 0">${c.n} vacant-land sales of a similar size within ${c.radius_mi} miles in the last ${c.years} years, median ${kmoney(c.median_ppa)}/acre.</p>`;
+      <p class="src" style="margin:6px 0 0">${c.n} vacant-land sales of a similar size within ${c.radius_mi} miles in the last ${c.years} years, ${c.by === "lot" ? `median sale ${kmoney(c.est_value)} (small lots sell per lot, not per acre)` : `median ${kmoney(c.median_ppa)}/acre`}.${c.varied ? " These sales vary widely, so they can't say whether this price is high or low." : ""}</p>`;
   } else if (c) body += `<p class="src" style="margin:0">Only ${c.n} similar vacant-land sale${c.n === 1 ? "" : "s"} within ${c.radius_mi} miles in the last 3 years — not enough to judge the price.</p>`;
   if (c?.examples?.length) body += `<table class="pc-ex"><thead><tr><th>Sold</th><th>Price</th><th>Acres</th><th>$/acre</th><th>Away</th></tr></thead><tbody>${c.examples.map(e => `<tr><td>${esc(e.date.slice(0, 7))}</td><td>${kmoney(e.price)}</td><td>${e.acres}</td><td>${kmoney(e.price / e.acres)}</td><td>${e.mi != null ? e.mi + " mi" : "—"}</td></tr>`).join("")}</tbody></table>`;
   if (a) body += `<p style="margin:8px 0 0;font-size:13px">County assessed land value: <b>${money(a.land_value)}</b>${a.year ? ` (${a.year} assessment)` : ""}${pc?.vs_assessed ? ` — asking is ${pc.vs_assessed.toFixed(2)}× that` : ""}.</p>`;
   if (pc?.negotiate?.length) body += `<div class="neg"><b>Room to negotiate:</b> ${esc(pc.negotiate.join("; "))}.</div>`;
-  const tone = pc?.ratio == null ? "unk" : pc.ratio <= 0.95 ? "good" : pc.ratio <= 1.1 ? "ok" : "bad";
+  const tone = pc?.ratio == null ? "unk" : pc.ratio <= 0.95 ? "good" : pc.ratio <= 1.1 ? "ok" : "bad";  // no ratio when sales vary too much
   return `<section class="evc wide"><header>${icon("_tag")}<b>Is the price fair?</b>${pc?.label ? `<span class="pill ${tone}">${esc(pc.label)}</span>` : ""}<span class="tag">Spokane County sales records</span></header>${body}</section>`;
 }
 function checksPanel(r) {
   const cs = r.checks || [];
   if (!cs.length) return "";
-  const order = { bad: 0, warn: 1, ok: 2 }, mark = { bad: "!", warn: "?", ok: "✓" };
+  const order = { bad: 0, warn: 1, info: 2, ok: 3 }, mark = { bad: "!", warn: "?", info: "i", ok: "✓" };
   const rows = [...cs].sort((a, b) => order[a.level] - order[b.level]).map(c => `<li class="chk ${c.level}"><i>${mark[c.level]}</i><span><b>${esc(c.label)}</b>${c.detail ? ` — ${esc(c.detail)}` : ""}${c.source ? `<span class="tag">${esc(c.source)}</span>` : ""}</span></li>`).join("");
   const bad = cs.filter(c => c.level === "bad").length, warn = cs.filter(c => c.level === "warn").length;
   return `<section class="evc wide"><header>${icon("_shield")}<b>Deal-breaker check</b><span class="pill ${bad ? "bad" : warn ? "ok" : "good"}">${bad ? `${bad} deal-breaker${bad > 1 ? "s" : ""}` : warn ? `${warn} to check` : "Nothing found"}</span></header><ul>${rows}</ul></section>`;
@@ -1795,7 +1801,9 @@ function buildPanel(r) {
   const sb = site?.setbacks_ft;
   row("_zone", "Zoning & setbacks", (z ? `<span class="pill ${{ ok: "good", splittable: "good", undersized: "bad", not_residential: "bad", urban: "ok" }[z.status] || "unk"}">${esc(z.zone || "Zone")}</span>${esc(z.detail)}` : r.zoning ? `Zoned ${esc(r.zoning)}.` : `Zoning not available for ${esc(r.county || "this")} County — ask the county planning office.`)
     + (sb ? ` Setbacks used: ${sb.front} ft from the road right-of-way, ${sb.side} ft from other lot lines <span class="tag">${esc(sb.source)}</span>` : ""));
-  if (site) row("_build", "Room to build", `<b>${site.buildable_acres} of ${site.parcel_acres ?? r.acres ?? "?"} acres</b> are buildable (${site.buildable_pct}%)` +
+  if (site) row("_build", "Room to build", (site.parent_acres
+      ? `Not measured for this ${r.acres}-acre lot: it's part of a ${site.parent_acres}-acre county parcel, of which about <b>${site.buildable_pct}%</b> is buildable. Check this lot's own setbacks and slope on the plat`
+      : `<b>${site.buildable_acres} of ${site.parcel_acres ?? r.acres ?? "?"} acres</b> are buildable (${site.buildable_pct}%)`) +
     (site.lost_to && Object.keys(site.lost_to).length ? ` — lost to ${Object.entries(site.lost_to).map(([k, a]) => `${{ setback: "setbacks", hazard: "wetland/flood/slide/stream areas", steep: "slopes over 30%" }[k] || k} ${a} ac`).join(", ")}.` : ".")
     + (site.site ? ` Best house site: ${site.site.slope_pct ?? "?"}% slope, ${site.site.driveway_ft != null ? site.site.driveway_ft.toLocaleString() + " ft from the road" : "distance to road unknown"} (red dot on the sketch).` : ""));
   // legal access + driveway/grading
@@ -1810,7 +1818,7 @@ function buildPanel(r) {
   row("septic", "Septic / perc", `${cost("septic")}${pill(sp)}${esc(item("septic")?.[2] || "")}.${soil && !has(sp, ["sewer", "installed"]) ? ` USDA soils: ${esc(soil.rating.toLowerCase())}${soil.hard_limits?.length ? " (" + esc(soil.hard_limits.join(", ").toLowerCase()) + ")" : ""}${soil.drainage ? ", " + esc(soil.drainage.toLowerCase()) : ""}.` : ""}${!has(sp, ["sewer", "installed", "approved"]) ? " A perc test / soil log by a designer is the first step." : ""}`);
   // flood / drainage
   const fl = (r.checks || []).find(x => x.key === "flood");
-  if (fl) row("water", "Flood & drainage", `<span class="pill ${{ bad: "bad", warn: "ok", ok: "good" }[fl.level]}">${esc(fl.label)}</span>${esc(fl.detail || "")}`);
+  if (fl) row("water", "Flood & drainage", `<span class="pill ${{ bad: "bad", warn: "ok", ok: "good", info: "unk" }[fl.level] || "unk"}">${esc(fl.label)}</span>${esc(fl.detail || "")}`);
   // cell, internet
   if (r.cell) row(`<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg>`, "Cell service", `<span class="pill ${{ good: "good", ok: "ok", poor: "bad", none: "bad" }[r.cell.class]}">${esc(r.cell.label)}</span>${esc(r.cell.detail || "")}`);
   if (r.internet) row("_net", "Internet", r.internet.down_mbps ? `Fastest home connection measured within a mile: <b>${r.internet.down_mbps} Mbps</b>${r.internet.typical_mbps ? ` (typical ${r.internet.typical_mbps})` : ""}.` : "No home speed tests within a mile — ask providers.");
@@ -1821,8 +1829,8 @@ function buildPanel(r) {
   if (off.building || off.septic || pm || (rules.notes || []).length)
     row("_doc", "Permits & county rules", [off.building ? `Building permit: ${offLink(off.building)}.` : "", off.septic ? `Septic permit: ${offLink(off.septic)}.` : "",
       ...(rules.notes || []).map(esc), rules.wria ? `Watershed: WRIA ${esc(rules.wria)}.` : "", pm ? esc(pm.summary) : ""].filter(Boolean).join(" "));
-  if (r.wildfire) row("_fire", "Wildfire", `<span class="pill ${FIRE_TONE(r.wildfire.class)}">${esc(r.wildfire.label)}</span>${r.wildfire.class >= 4 && r.wildfire.class <= 5 ? "Defensible-space rules and higher insurance." : ""}`);
-  const extra = [r.drive_min != null ? `${r.drive_min} min drive to downtown Spokane` : "", r.school_district ? esc(r.school_district) : ""].filter(Boolean).join(" · ");
+  if (r.wildfire) row("_fire", "Wildfire", `<span class="pill ${FIRE_TONE(r.wildfire.class)}">${esc(r.wildfire.label)}</span>${r.wildfire.class >= 4 && r.wildfire.class <= 5 ? "Plan defensible space; ask the county whether wildland-urban-interface building rules apply; insurance may cost more." : ""}`);
+  const extra = [r.drive_min != null ? `about ${r.drive_min} min drive to downtown Spokane (routing estimate — often runs 10–25% long on rural highways)` : "", r.school_district ? esc(r.school_district) : ""].filter(Boolean).join(" · ");
   if (extra) row("_car", "Location", extra);
   if (r.first_seen || r.price_history?.length > 1) row("_bell", "History", `On the market since about ${esc(r.first_seen || "?")}${r.price_history?.length > 1 ? ". Price " + r.price_history.map(h => `${kmoney(h.price)} (${esc(h.date)})`).join(" → ") : ""}.`);
   if (r.also_listed_as?.length) row("_build", "Also listed as", esc(r.also_listed_as.join("; ")));
@@ -2184,7 +2192,7 @@ function openCompare() {
   const statusRow = (c, name) => `<tr><th scope="row">${name}</th>${rs.map(r => `<td><span class="pill ${tone(r[c])}">${esc(r[c]?.label || "Unknown")}</span></td>`).join("")}</tr>`;
   $("cmpBody").innerHTML = `<table class="cmp-t"><thead><tr><th></th>${rs.map(r => `<th scope="col">${plat(r)}<div class="price" style="font-size:20px;margin-top:6px">${money(r.price)}</div><div class="src">${esc([r.address, r.city].filter(Boolean).join(", "))}</div></th>`).join("")}</tr></thead><tbody>
     ${row("Buildable?", rs.map(r => r.buildable?.label), v => esc(v || "—"))}
-    ${row("Buildable area", rs.map(r => r.site?.buildable_acres), v => v != null ? v + " ac" : "—", { best: true })}
+    ${row("Buildable area", rs.map(r => r.site?.parent_acres ? null : r.site?.buildable_acres), v => v != null ? v + " ac" : "—", { best: true })}
     ${row("Score", rs.map(r => r.score), v => `${v} / 100`, { best: true })}
     ${row("Acres", rs.map(r => r.acres), v => v ?? "—", { best: true })}
     ${row("Price per acre", rs.map(r => r.price_per_acre), v => kmoney(v), { best: true, low: true })}
@@ -2199,7 +2207,7 @@ function openCompare() {
     ${row("Wildfire hazard", rs.map(r => r.wildfire?.label), v => esc(v || "—"))}
     ${row("Internet nearby", rs.map(r => r.internet?.down_mbps), v => v ? v + " Mbps" : "—", { best: true })}
     ${row("Zoning", rs.map(r => r.zoning_check?.label), v => esc(v || "—"))}
-    ${row("Days on market", rs.map(r => r.days_on_market), v => v ?? "—")}
+    ${row("Days on market", rs.map(r => daysListed(r)), v => v ?? "—")}
     ${row("Warnings", rs.map(r => r.flags?.length || 0), v => v ? `${v}` : "None", { best: true, low: true })}
     <tr><th scope="row"></th>${rs.map(r => `<td>${r.url ? `<a class="act primary" target="_blank" rel="noopener" href="${esc(r.url)}">Open listing</a>` : ""}</td>`).join("")}</tr>
   </tbody></table>`;
@@ -2249,7 +2257,7 @@ async function downloadReport(r) {
 <style>body{font:14px/1.5 system-ui,sans-serif;max-width:820px;margin:24px auto;padding:0 16px;color:#1d2420}h1{font-size:22px;margin:0}h2{font-size:16px;margin:22px 0 6px;border-bottom:2px solid #1d2420;padding-bottom:3px}h3{font-size:14px;margin:12px 0 2px}small,i{color:#5c665f}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:4px 8px 4px 0;border-bottom:1px solid #dde3dd;vertical-align:top}th{width:40%;font-weight:500;color:#5c665f}.bad{color:#b03d33}.warn{color:#94640a}@media print{body{margin:0}}</style></head><body>
 <h1>${esc(loc)}</h1><p>${money(r.price)} · ${r.acres ?? "?"} acres · ${esc(r.county || "")} County · parcel ${esc(r.parcel_id || "—")} · score ${r.score}/100 (${esc(r.rating)})<br>${r.url ? `<a href="${esc(r.url)}">${esc(r.url)}</a>` : ""}</p>
 ${r.buildable ? `<h2>Is it buildable? ${esc(r.buildable.label)}</h2><ul>${(r.buildable.reasons || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
-${r.site ? `<p>${r.site.buildable_acres} of ${r.site.parcel_acres ?? r.acres} acres buildable after setbacks (${r.site.setbacks_ft.front} ft front / ${r.site.setbacks_ft.side} ft sides, ${esc(r.site.setbacks_ft.source)}), slopes over 30% and mapped hazards.${r.site.site ? ` Best house site: ${r.site.site.slope_pct ?? "?"}% slope, ${r.site.site.driveway_ft ?? "?"} ft from the road (${r.site.site.lat}, ${r.site.site.lon}).` : ""}</p>` : ""}
+${r.site ? `<p>${r.site.parent_acres ? `Not measured for this lot (part of a ${r.site.parent_acres}-acre county parcel, ${r.site.buildable_pct}% of which is` : `${r.site.buildable_acres} of ${r.site.parcel_acres ?? r.acres} acres`} buildable${r.site.parent_acres ? ")" : ""} after setbacks (${r.site.setbacks_ft.front} ft front / ${r.site.setbacks_ft.side} ft sides, ${esc(r.site.setbacks_ft.source)}), slopes over 30% and mapped hazards.${r.site.site ? ` Best house site: ${r.site.site.slope_pct ?? "?"}% slope, ${r.site.site.driveway_ft ?? "?"} ft from the road (${r.site.site.lat}, ${r.site.site.lon}).` : ""}</p>` : ""}
 <h2>Money</h2><table>${row("Asking price", money(r.price))}${c.items.map(([k, v, lab]) => row(lab, money(v))).join("")}${row("All-in estimate", "<b>" + money(c.total) + "</b>")}
 ${(() => { const f = financing(r); if (!f) return ""; const L = f.land, B = f.build;
   return row(`Land loan (credit ${f.score})`, `${money(L.total)}/mo incl. tax — ${L.rate}%, ${L.term} yrs, ${L.down_pct}% down (${money(L.down)}); interest over the loan ${money(L.interest)}`)
@@ -2366,7 +2374,7 @@ drawTopo(); drawBase(); render(); fitRadius();
     "above_surroundings_ft", "buildable_acres", "buildable_pct", "parcel_acres", "slope_pct", "driveway_ft", "n", "radius_mi", "years",
     "median_ppa", "est_value", "low", "high", "mi", "land_value", "year", "ratio", "vs_assessed", "down_mbps", "typical_mbps", "tests",
     "tiles", "min_acres", "front", "side", "hydric_pct", "total", "improvements", "well_ft", "power_ft", "site_slope",
-    "open", "issued_2023", "front_ft", "side_ft"]);
+    "open", "issued_2023", "front_ft", "side_ft", "parent_acres", "listing_buildable_acres"]);
   const clean = (v, k) => {
     if (NUM_KEYS.has(k)) return typeof v === "number" && isFinite(v) ? v : null;
     if (k === "url" || k === "website") return typeof v === "string" && /^https?:\/\//i.test(v) ? v : "";
