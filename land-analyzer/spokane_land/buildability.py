@@ -169,7 +169,7 @@ def internet(lat, lon, state):
     tests = sum(int(t.get("Tests") or 0) for t in tiles)
     cls = "fast" if best >= 100 else "ok" if best >= 25 else "slow"
     label = {"fast": "Fast internet nearby", "ok": "Moderate internet nearby", "slow": "Slow internet nearby"}[cls]
-    return {"label": label, "class": cls, "down_mbps": round(best), "typical_mbps": round(typical), "tests": tests,
+    return {"label": label, "class": cls, "down_mbps": round(best) if best >= 1 else round(best, 1), "typical_mbps": round(typical), "tests": tests,
             "source": "Ookla speed tests via WA State Broadband Office"}
 
 
@@ -343,7 +343,7 @@ def internet_ookla(lat, lon):
     best, typical = downs[int(len(downs) * 0.9)] if len(downs) >= 10 else downs[-1], downs[len(downs) // 2]
     cls = "fast" if best >= 100 else "ok" if best >= 25 else "slow"
     return {"label": {"fast": "Fast internet nearby", "ok": "Moderate internet nearby", "slow": "Slow internet nearby"}[cls],
-            "class": cls, "down_mbps": round(best), "typical_mbps": round(typical),
+            "class": cls, "down_mbps": round(best) if best >= 1 else round(best, 1), "typical_mbps": round(typical),
             "tests": sum(int(t.get("Tests") or 0) for t in tiles), "source": src}
 
 

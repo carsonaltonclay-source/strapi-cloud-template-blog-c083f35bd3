@@ -82,7 +82,11 @@ CENSUS_GEOCODER = "https://geocoding.geo.census.gov/geocoder/locations/onelinead
 REDFIN_CSV = "https://www.redfin.com/stingray/api/gis-csv"
 
 # Analysis thresholds.
-ROAD_FRONTAGE_TOLERANCE_M = 20      # road centerline this close to the parcel edge = frontage
+ROAD_FRONTAGE_TOLERANCE_M = 20      # road centerline this close to the parcel edge = clearly fronts it
+# A lot fronts a road at its right-of-way line, not the centerline: half a typical 60-80 ft county
+# right-of-way plus mapping slop is ~30 m; highways have 100-300 ft rights-of-way.
+FRONTAGE_LOCAL_M = 30
+FRONTAGE_HIGHWAY_M = 45
 ROAD_SEARCH_RADIUS_M = 800          # how far to look for the nearest road
 NEIGHBOR_SEARCH_RADIUS_M = 800      # how far to look for addressed structures (power proxy)
 WELL_SEARCH_RADIUS_M = 1609         # 1 mile, for nearby-well depth / yield stats

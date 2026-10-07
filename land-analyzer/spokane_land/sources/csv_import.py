@@ -36,6 +36,12 @@ def _norm(h):
     return re.sub(r"\s+", " ", (h or "").strip().lower().replace("_", " "))
 
 
+def _dom(v):
+    """Days on market; sites use -1 for 'unknown'."""
+    d = parse_int(v)
+    return d if d is not None and d >= 0 else None
+
+
 def parse_float(v):
     if v is None:
         return None
@@ -107,7 +113,7 @@ def load_csv(path, source_name=None):
                 url=get("url"),
                 mls=get("id"),
                 status=get("status"),
-                days_on_market=parse_int(get("days_on_market")),
+                days_on_market=_dom(get("days_on_market")),
                 parcel_id=get("parcel_id"),
                 remarks=get("remarks"),
                 water_source=get("water_source"),

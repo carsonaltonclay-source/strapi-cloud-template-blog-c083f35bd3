@@ -21,6 +21,7 @@ from .http import HttpError
 YEARS = 3
 SIZE_BAND = (0.4, 2.5)
 MIN_COMPS = 4
+VARIED_SPREAD = 3.5
 
 
 def _sales(lat, lon, radius_m, since):
@@ -70,14 +71,23 @@ def comparable_sales(lat, lon, acres, parcel_id=None, today=None):
         return {"n": len(comps), "radius_mi": radius_mi, "est_value": None, "examples": _examples(comps, lat, lon)}
     ppa = [d["price"] / d["acres"] for d in comps]
     med = statistics.median(ppa)
+    if acres < 1:
+        # Small lots sell per lot, not per acre: compare sale prices directly.
+        prices = [d["price"] for d in comps]
+        est, low, high, by = statistics.median(prices), _pct(prices, 0.25), _pct(prices, 0.75), "lot"
+    else:
+        est, low, high, by = med * acres, _pct(ppa, 0.25) * acres, _pct(ppa, 0.75) * acres, "acre"
     return {
         "n": len(comps),
         "radius_mi": radius_mi,
         "years": YEARS,
+        "by": by,
         "median_ppa": round(med),
-        "est_value": round(med * acres, -2),
-        "low": round(_pct(ppa, 0.25) * acres, -2),
-        "high": round(_pct(ppa, 0.75) * acres, -2),
+        "est_value": round(est, -2),
+        "low": round(low, -2),
+        "high": round(high, -2),
+        # Middle half of sales spans more than 3.5x: too scattered to call a price high or low.
+        "varied": bool(low and high / low > VARIED_SPREAD),
         "examples": _examples(comps, lat, lon),
     }
 
@@ -125,7 +135,9 @@ def price_verdict(price, comps, assessed, days_on_market, price_cut):
     if not price:
         return None
     out = {}
-    if comps and comps.get("est_value"):
+    if comps and comps.get("est_value") and comps.get("varied"):
+        out["label"] = "Nearby sales vary too much to judge"
+    elif comps and comps.get("est_value"):
         ratio = price / comps["est_value"]
         out["ratio"] = round(ratio, 2)
         out["label"] = ("Well below recent sales" if ratio <= 0.8 else "Below recent sales" if ratio <= 0.95

@@ -1,9 +1,11 @@
 """Turn listing text + GIS facts into a verdict per category and a score."""
 
 import math
+import re
 
 from . import buildability, cost, geo, remarks
-from .config import ROAD_FRONTAGE_TOLERANCE_M, SPOKANE_LAT, SPOKANE_LON
+
+from .config import FRONTAGE_HIGHWAY_M, FRONTAGE_LOCAL_M, ROAD_FRONTAGE_TOLERANCE_M, SPOKANE_LAT, SPOKANE_LON
 from .models import HIGH, LOW, MEDIUM, Evidence, Finding, conf_rank
 
 # status -> (label, points out of 25). Order = precedence when confidence ties.
@@ -220,17 +222,24 @@ def gis_evidence(listing, facts):
     if rd is not None:
         roads = rd["roads"]
         src = "Road centerlines vs. parcel boundary"
-        tol = ROAD_FRONTAGE_TOLERANCE_M if rd["has_shape"] else 60
-        touching = [r for r in roads if r["dist_m"] <= tol]
+        def tol(r):
+            if not rd["has_shape"]:
+                return 60
+            highway = re.search(r"\b(SR|Hwy|Highway|US|I-\d+|Interstate|State\s+Route)\b", r["name"] or "", re.I) \
+                or "highway" in (r.get("class") or "").lower()
+            return FRONTAGE_HIGHWAY_M if highway else FRONTAGE_LOCAL_M
+        touching = sorted((r for r in roads if r["dist_m"] <= tol(r)), key=lambda r: r["dist_m"])
         conf = MEDIUM if rd["has_shape"] else LOW
         if touching:
             pub = [r for r in touching if r["public"]]
             if pub:
                 r = pub[0]
                 j = r.get("jurisdiction")
+                near = r["dist_m"] <= ROAD_FRONTAGE_TOLERANCE_M
                 ev["access"].append(Evidence(
-                    "public_road", HIGH if (j and rd["has_shape"]) else conf,
-                    f"Fronts {r['name']} ({j or r['class']})", src))
+                    "public_road", HIGH if (j and rd["has_shape"] and near) else conf,
+                    f"Fronts {r['name']} ({j or r['class']})" + ("" if near else
+                    f"; the lot line is ~{r['dist_m'] / FT:,.0f} ft from the road's centerline, within a typical right-of-way"), src))
             else:
                 r = touching[0]
                 if r["class"] == "Easement":
@@ -425,6 +434,10 @@ def derived_checks(findings, zcheck, facts, listed_acres=None):
                     "source": "parcel shape"})
     elif site and site.get("buildable_acres") is not None:
         ba = site["buildable_acres"]
+        if listed_acres and site.get("parcel_acres") and site["parcel_acres"] > 1.6 * listed_acres:
+            # A lot being split from a bigger county parcel: scale the share that's buildable to this lot.
+            site["parent_acres"] = site["parcel_acres"]
+            ba = site["listing_buildable_acres"] = round(listed_acres * site["buildable_pct"] / 100, 2)
         lost = ", ".join(f"{k} {v} ac" for k, v in (site.get("lost_to") or {}).items())
         # On sewer + public water only the house needs room; otherwise also a well and a drainfield.
         utilities = (findings["septic"].status in ("sewer", "sewer_area")

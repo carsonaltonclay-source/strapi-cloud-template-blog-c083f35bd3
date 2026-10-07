@@ -78,6 +78,7 @@ def apply(results, previous, today=None):
             r["is_new"] = False
         else:
             dom = r.get("days_on_market")
+            dom = dom if dom is not None and dom >= 0 else None
             listed = (datetime.date.fromisoformat(today) - datetime.timedelta(days=dom)).isoformat() if dom is not None else today
             r["first_seen"] = listed if first_run else today
             r["price_history"] = [{"date": r["first_seen"], "price": r["price"]}] if r.get("price") is not None else []

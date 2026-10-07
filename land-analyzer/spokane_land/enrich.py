@@ -11,7 +11,7 @@ import statistics
 from . import arcgis, buildability, comps, county_rules, dealbreakers, geo, homesite
 from .config import (
     CENSUS_GEOCODER, LAYERS, NEIGHBOR_SEARCH_RADIUS_M, POINT_PARCEL_SNAP_M,
-    ROAD_FRONTAGE_TOLERANCE_M, ROAD_SEARCH_RADIUS_M, WELL_SEARCH_RADIUS_M,
+    FRONTAGE_HIGHWAY_M, ROAD_FRONTAGE_TOLERANCE_M, ROAD_SEARCH_RADIUS_M, WELL_SEARCH_RADIUS_M,
 )
 from .http import HttpError, get_json
 from .models import Parcel
@@ -384,7 +384,7 @@ class Enricher:
         # Look tight first (frontage), then wider only if nothing touches, so
         # dense neighbourhoods don't hit the server's record cap.
         found = []
-        for radius in (ROAD_FRONTAGE_TOLERANCE_M + 15 if shape else 75, ROAD_SEARCH_RADIUS_M):
+        for radius in (FRONTAGE_HIGHWAY_M + 10 if shape else 75, ROAD_SEARCH_RADIUS_M):
             found = self._road_candidates(target, radius, state, facts)
             for r in found:
                 if shape:
@@ -427,7 +427,7 @@ class Enricher:
     def _apply_road_log(self, shape, roads, facts):
         """The county road log says whether a road is County, City or Private."""
         log = self._q(facts, "sc_road_log", geometry=shape,
-                      distance_m=ROAD_FRONTAGE_TOLERANCE_M + 15, out_fields="RoadName,JurDesc")
+                      distance_m=FRONTAGE_HIGHWAY_M + 10, out_fields="RoadName,JurDesc")
         # Segments of one road can differ (county road with a private extension). All of these
         # touch the parcel, so a public segment means public frontage.
         jur = {}
