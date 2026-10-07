@@ -343,6 +343,7 @@ def analyze(listing, facts):
         flags.append(f"{fire['label']} wildfire hazard (USFS): defensible space and fire-safe building rules apply")
 
     parcel = facts.get("parcel")
+    split = _split_lot(listing, parcel)
     acres = listing.lot_acres or (parcel.acres if parcel else None)
     dist = (geo.miles_between(SPOKANE_LAT, SPOKANE_LON, listing.lat, listing.lon)
             if listing.lat is not None and listing.lon is not None else None)
@@ -391,7 +392,8 @@ def analyze(listing, facts):
         "rules": facts.get("rules"),
         "permits": facts.get("permits"),
         "comps": facts.get("comps"),
-        "assessed": facts.get("assessed"),
+        # A lot pinned on a parcel 10x its size: the parcel's assessed value isn't this lot's.
+        "assessed": None if split and listing.lot_acres and split > 10 * listing.lot_acres else facts.get("assessed"),
         "flags": flags,
         "errors": facts.get("errors", []),
         "notes": facts.get("notes", []),

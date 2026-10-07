@@ -60,7 +60,7 @@ RULES = {
         ("easement", HIGH, r"\b(deeded|recorded|legal|access|ingress|egress|private)\s+(access\s+)?easement\b|\beasement\s+(access|road|in\s+place|recorded)\b|\baccess\s+(is\s+)?(via|by|through)\s+(an?\s+)?(recorded\s+|deeded\s+)?easement\b"),
         ("private_road", MEDIUM, r"\bprivate\s+(road|drive|lane)\b|\broad\s+maintenance\s+agreement\b|\bshared\s+(road|driveway)\b"),
         ("seasonal", MEDIUM, r"\bseasonal\s+(access|road)\b|\bnot\s+(plowed|maintained)\b|\b(4x4|4wd|atv)\s+(only\s+)?access\b"),
-        ("public_road", HIGH, r"\b(county|paved|state|public|city)\s+(maintained\s+)?(road|street|rd|hwy|highway)\b|\b(road|street)\s+frontage\b|\bfrontage\s+on\b|\bfronts\s+(on\s+)?(a\s+)?[\w.]+\s+(road|rd|street|st|hwy|highway|ave|avenue|ln|lane)\b"),
+        ("public_road", HIGH, r"\b(county|paved|state|public|city)\s+(maintained\s+)?(road|street|rd|hwy|highway)\b|\b(road|street)\s+frontage\b|\bfrontage\s+on\s+(a\s+|the\s+)?[\w.' ]{1,30}?\s(road|rd|street|st|hwy|highway|ave|avenue|ln|lane|drive|dr|way)\b|\bfronts\s+(on\s+)?(a\s+)?[\w.]+\s+(road|rd|street|st|hwy|highway|ave|avenue|ln|lane)\b"),
         ("public_road", LOW, r"\b(gravel|paved)\s+(road\s+)?access\b|\byear" + _W + r"round\s+access\b|\beasy\s+access\b"),
     ],
 }

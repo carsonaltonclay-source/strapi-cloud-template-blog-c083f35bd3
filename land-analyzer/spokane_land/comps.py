@@ -36,12 +36,38 @@ def _sales(lat, lon, radius_m, since):
         if not a.get("acreage"):
             continue
         key = a.get("excise_nbr") or a["PID_NUM"]
-        d = deals.setdefault(key, {"price": a["gross_sale_price"], "acres": 0.0, "pids": [],
+        d = deals.setdefault(key, {"price": a["gross_sale_price"], "acres": 0.0, "pids": [], "excise": a.get("excise_nbr"),
                                    "date": datetime.date.fromtimestamp(a["document_date"] / 1000).isoformat(),
                                    "lat": None, "lon": None})
         d["acres"] += a["acreage"]
         d["pids"].append(a["PID_NUM"])
-    return list(deals.values())
+    return _whole_deals(deals)
+
+
+def _whole_deals(deals):
+    """A deed can cover parcels outside the search circle or with buildings on them. Look up every
+    parcel in each multi-parcel sale: use the full acreage, and drop sales that included buildings."""
+    keys = [k for k in deals if deals[k].get("excise")]
+    for i in range(0, len(keys), 80):
+        batch = keys[i:i + 80]
+        try:
+            feats = arcgis.query(LAYERS["sc_property"], where="excise_nbr IN (" + ",".join(f"'{k}'" for k in batch) + ")",
+                                 out_fields="PID_NUM,acreage,prop_use_desc,excise_nbr")
+        except HttpError:
+            continue
+        seen = {}
+        for f in feats:
+            a = f["attributes"]
+            seen.setdefault(a["excise_nbr"], []).append(a)
+        for k, parcels in seen.items():
+            d = deals.get(k)
+            if not d:
+                continue
+            if any((p.get("prop_use_desc") or "") != "Vacant Land" for p in parcels):
+                d["mixed"] = True
+            d["acres"] = sum(p.get("acreage") or 0 for p in parcels) or d["acres"]
+            d["pids"] = sorted({p["PID_NUM"] for p in parcels} | set(d["pids"]))
+    return [d for d in deals.values() if not d.get("mixed") and d["acres"]]
 
 
 def _pct(vals, q):

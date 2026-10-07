@@ -192,8 +192,7 @@ class Enricher:
             facts["aquifer"] = bool(self._q(facts, "sc_aquifer", geometry=target, out_fields="OBJECTID"))
             facts["flood"] = self._names(self._q(facts, "sc_flood", geometry=target, where="SFHA_TF = 'T'",
                                                  out_fields="FLD_ZONE"), "FLD_ZONE")
-            facts["zoning"] = self._names(self._q(facts, "sc_zoning", geometry=target,
-                                                  out_fields="ZONECLASS,ZONEDESC"), "ZONEDESC")
+            facts["zoning"] = self._zones(facts, target, shape)
             facts["neighbors"] = self.address_points(listing, parcel, facts)
         elif state == "ID":
             facts["water_district"] = self._names(self._q(
@@ -255,6 +254,16 @@ class Enricher:
         self._extra(facts, "site", homesite.building_site, shape, (facts.get("roads") or {}).get("roads"),
                     county_rules.setbacks(county, state, zone), state, in_spokane)
         return facts
+
+    def _zones(self, facts, target, shape):
+        """Zones covering a real share of the parcel (a zone that only touches the edge doesn't apply)."""
+        feats = self._q(facts, "sc_zoning", geometry=target, out_fields="ZONECLASS,ZONEDESC", return_geometry=bool(shape))
+        if shape and len(feats) > 1:
+            from .dealbreakers import _share
+            shares = [(_share(shape["rings"], [f]), f) for f in feats]
+            keep = [f for sh, f in shares if sh >= 0.05] or [max(shares, key=lambda x: x[0])[1]]
+            feats = keep
+        return self._names(feats, "ZONEDESC")
 
     @staticmethod
     def _extra(facts, key, fn, *args):

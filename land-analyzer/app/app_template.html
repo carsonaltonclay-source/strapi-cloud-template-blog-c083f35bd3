@@ -612,6 +612,7 @@ a { color: var(--accent); }
 .chk i { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--f-body); font-style: normal; margin-top: 1px; }
 .chk.bad i { background: var(--bad-bg); color: var(--bad); } .chk.warn i { background: var(--warn-bg); color: var(--warn); } .chk.ok i { background: var(--good-bg); color: var(--good); }
 .chk.ok { color: var(--muted); }
+.chk.info i { background: var(--soft); color: var(--muted); }
 /* H5 tracking + photo */
 .st-pill { display: inline-flex; align-items: center; gap: 5px; font: 600 11px/1 var(--f-body); padding: 4px 9px; border-radius: 999px; background: var(--ink); color: var(--panel); }
 .st-pill.passed { background: var(--soft); color: var(--muted); text-decoration: line-through; }
@@ -1756,7 +1757,7 @@ function pricePanel(r) {
 function checksPanel(r) {
   const cs = r.checks || [];
   if (!cs.length) return "";
-  const order = { bad: 0, warn: 1, ok: 2 }, mark = { bad: "!", warn: "?", ok: "✓" };
+  const order = { bad: 0, warn: 1, info: 2, ok: 3 }, mark = { bad: "!", warn: "?", info: "i", ok: "✓" };
   const rows = [...cs].sort((a, b) => order[a.level] - order[b.level]).map(c => `<li class="chk ${c.level}"><i>${mark[c.level]}</i><span><b>${esc(c.label)}</b>${c.detail ? ` — ${esc(c.detail)}` : ""}${c.source ? `<span class="tag">${esc(c.source)}</span>` : ""}</span></li>`).join("");
   const bad = cs.filter(c => c.level === "bad").length, warn = cs.filter(c => c.level === "warn").length;
   return `<section class="evc wide"><header>${icon("_shield")}<b>Deal-breaker check</b><span class="pill ${bad ? "bad" : warn ? "ok" : "good"}">${bad ? `${bad} deal-breaker${bad > 1 ? "s" : ""}` : warn ? `${warn} to check` : "Nothing found"}</span></header><ul>${rows}</ul></section>`;
@@ -1817,7 +1818,7 @@ function buildPanel(r) {
   row("septic", "Septic / perc", `${cost("septic")}${pill(sp)}${esc(item("septic")?.[2] || "")}.${soil && !has(sp, ["sewer", "installed"]) ? ` USDA soils: ${esc(soil.rating.toLowerCase())}${soil.hard_limits?.length ? " (" + esc(soil.hard_limits.join(", ").toLowerCase()) + ")" : ""}${soil.drainage ? ", " + esc(soil.drainage.toLowerCase()) : ""}.` : ""}${!has(sp, ["sewer", "installed", "approved"]) ? " A perc test / soil log by a designer is the first step." : ""}`);
   // flood / drainage
   const fl = (r.checks || []).find(x => x.key === "flood");
-  if (fl) row("water", "Flood & drainage", `<span class="pill ${{ bad: "bad", warn: "ok", ok: "good" }[fl.level]}">${esc(fl.label)}</span>${esc(fl.detail || "")}`);
+  if (fl) row("water", "Flood & drainage", `<span class="pill ${{ bad: "bad", warn: "ok", ok: "good", info: "unk" }[fl.level] || "unk"}">${esc(fl.label)}</span>${esc(fl.detail || "")}`);
   // cell, internet
   if (r.cell) row(`<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg>`, "Cell service", `<span class="pill ${{ good: "good", ok: "ok", poor: "bad", none: "bad" }[r.cell.class]}">${esc(r.cell.label)}</span>${esc(r.cell.detail || "")}`);
   if (r.internet) row("_net", "Internet", r.internet.down_mbps ? `Fastest home connection measured within a mile: <b>${r.internet.down_mbps} Mbps</b>${r.internet.typical_mbps ? ` (typical ${r.internet.typical_mbps})` : ""}.` : "No home speed tests within a mile — ask providers.");
@@ -1829,7 +1830,7 @@ function buildPanel(r) {
     row("_doc", "Permits & county rules", [off.building ? `Building permit: ${offLink(off.building)}.` : "", off.septic ? `Septic permit: ${offLink(off.septic)}.` : "",
       ...(rules.notes || []).map(esc), rules.wria ? `Watershed: WRIA ${esc(rules.wria)}.` : "", pm ? esc(pm.summary) : ""].filter(Boolean).join(" "));
   if (r.wildfire) row("_fire", "Wildfire", `<span class="pill ${FIRE_TONE(r.wildfire.class)}">${esc(r.wildfire.label)}</span>${r.wildfire.class >= 4 && r.wildfire.class <= 5 ? "Defensible-space rules and higher insurance." : ""}`);
-  const extra = [r.drive_min != null ? `${r.drive_min} min drive to downtown Spokane` : "", r.school_district ? esc(r.school_district) : ""].filter(Boolean).join(" · ");
+  const extra = [r.drive_min != null ? `about ${r.drive_min} min drive to downtown Spokane (routing estimate — often runs 10–25% long on rural highways)` : "", r.school_district ? esc(r.school_district) : ""].filter(Boolean).join(" · ");
   if (extra) row("_car", "Location", extra);
   if (r.first_seen || r.price_history?.length > 1) row("_bell", "History", `On the market since about ${esc(r.first_seen || "?")}${r.price_history?.length > 1 ? ". Price " + r.price_history.map(h => `${kmoney(h.price)} (${esc(h.date)})`).join(" → ") : ""}.`);
   if (r.also_listed_as?.length) row("_build", "Also listed as", esc(r.also_listed_as.join("; ")));

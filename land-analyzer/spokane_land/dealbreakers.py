@@ -119,6 +119,17 @@ def flood(shape, lat, lon, soil):
     if feats is None:
         return None
     dr = (soil or {}).get("drainage")
+    # No hazard polygons can mean "minimal hazard" (zone X) or "never mapped": ask which.
+    try:
+        zones = {f["attributes"].get("FLD_ZONE") for f in arcgis.query(
+            LAYERS["fema_flood"], geometry=_target(shape, lat, lon), distance_m=None if shape else 60, out_fields="FLD_ZONE")}
+    except HttpError:
+        zones = None
+    if zones is not None and not (zones - {"D", None}):
+        return {"key": "flood", "level": "info",
+                "label": "Flood risk not studied (FEMA zone D)" if "D" in zones else "No FEMA flood map for this area",
+                "detail": "no official flood zones here — look for creeks, ponds and low ground, and ask the county"
+                          + (f"; soils {dr.lower()}" if dr else ""), "source": src}
     return {"key": "flood", "level": "ok", "label": "Not in a FEMA flood zone",
             "detail": f"soils {dr.lower()}" if dr else "", "source": src}
 
