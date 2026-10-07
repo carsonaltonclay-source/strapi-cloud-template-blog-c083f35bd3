@@ -341,6 +341,9 @@ class AuditRegressionTests(unittest.TestCase):
         self.assertEqual(statuses("Power in the area.", "electric"), ["at_road"])
         self.assertEqual(statuses("No perc test done yet, buyer to verify.", "septic"), ["needed"])
         self.assertEqual(statuses("Perc test failed in 2019", "septic"), ["failed"])
+        self.assertIn("approved", statuses("road cut in, perc tests for septic have been done", "septic"))
+        self.assertIn("well", statuses("60 GPM WELL- owner financing", "water"))
+        self.assertNotIn("approved", statuses("No perc test has been done", "septic"))
 
     def test_structured_negations(self):
         f = remarks.from_structured(Listing(source="t", id="n", water_source="No Well", sewer="No Sewer", electric="No Power"))

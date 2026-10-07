@@ -6,6 +6,8 @@ uses the same defaults and lets you change them (app/app_template.html,
 COST_DEFAULTS) — keep the two in sync.
 """
 
+import math
+
 DEFAULTS = {
     "well_per_ft": 75,          # drilling + casing, $/ft
     "well_system": 10000,       # pump, pressure tank, trench to house
@@ -28,6 +30,11 @@ DEFAULTS = {
     "prep_flat": 3000, "prep_rolling": 7000, "prep_steep": 20000, "prep_very_steep": 35000,
 }
 
+def _round(x):
+    """Round half up, like the app's Math.round (Python's round() rounds half to even)."""
+    return int(math.floor(x + 0.5))
+
+
 POWER_DISTANCE_GUESS = {"likely_near": 600, "possible": 1500, "far": 3000}
 
 
@@ -42,7 +49,7 @@ def _water(r, wells, d):
     if st == "public_area":
         return d["water_hookup"], "Water-district hookup (if a main reaches the lot)"
     depth = (wells or {}).get("median_depth_ft") or d["default_well_ft"]
-    return round(depth * d["well_per_ft"] + d["well_system"]), f"Drill a well (~{depth:.0f} ft like nearby wells)"
+    return _round(depth * d["well_per_ft"] + d["well_system"]), f"Drill a well (~{depth:.0f} ft like nearby wells)"
 
 
 def _power(r, neighbors, d):
@@ -55,7 +62,7 @@ def _power(r, neighbors, d):
         return d["offgrid_solar"], "Off-grid solar system"
     dist = (neighbors or {}).get("nearest_ft") or POWER_DISTANCE_GUESS.get(st, 1500)
     extra = max(0, dist - 150)
-    return round(d["power_service"] + extra * d["power_per_ft"]), f"Extend power ~{dist:,.0f} ft"
+    return _round(d["power_service"] + extra * d["power_per_ft"]), f"Extend power ~{dist:,.0f} ft"
 
 
 def _septic(r, soil, d):
@@ -85,14 +92,14 @@ def _access(r, site, d):
     measured = ((site or {}).get("site") or {}).get("driveway_ft") is not None
     what = f"{ft:,.0f} ft driveway to the best house site" if measured else f"Driveway (~{ft:,.0f} ft assumed)"
     if st == "landlocked":
-        return round(d["landlocked_access"] + drive), "Buy an access easement + build a road (very uncertain)"
+        return _round(d["landlocked_access"] + drive), "Buy an access easement + build a road (very uncertain)"
     if st == "easement":
-        return round(drive + d["easement_extra"]), what + " + easement paperwork"
+        return _round(drive + d["easement_extra"]), what + " + easement paperwork"
     if st == "seasonal":
-        return round(drive * 1.5), what + " + road improvements"
+        return _round(drive * 1.5), what + " + road improvements"
     if st == "private_road":
-        return round(drive * 1.15), what + " off a private road"
-    return round(drive), what
+        return _round(drive * 1.15), what + " off a private road"
+    return _round(drive), what
 
 
 def _prep(terrain, site, d):

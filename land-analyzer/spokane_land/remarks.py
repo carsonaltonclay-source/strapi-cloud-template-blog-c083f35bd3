@@ -11,7 +11,7 @@ from .models import HIGH, MEDIUM, LOW, Evidence
 
 _W = r"[\s\-]*"
 # "well" the noun, not the adverb: skip "well-drained", "well-kept" and "as well (in)".
-WELL = r"(?<!\bas\s)well(?!-)"
+WELL = r"(?<!\bas\s)well(?!-\w)"
 
 RULES = {
     "water": [
@@ -50,6 +50,7 @@ RULES = {
         ("installed", HIGH, r"\bseptic\s+(system\s+)?(is\s+)?(installed|in\s+place|existing|already\s+in)\b|\bexisting\s+septic\b"),
         ("approved", HIGH, r"\bseptic\s+(design(ed)?|permit(ted)?|approv(al|ed)|site\s+(evaluation|approved))\b|\bapproved\s+(septic|drainfield|drain\s+field)\b"),
         ("approved", HIGH, r"\b(perc|percolation)\s+(test\s+)?(passed|approved|done|completed|on\s+file|in\s+hand)\b|\b(perc|percolation)\s+tested\b|\bhas\s+(a\s+)?perc\b|\bperc(ed|'d)\b"),
+        ("approved", HIGH, r"\b(perc|percolation|soil)\s+(tests?|logs?)\b[^.]{0,40}?\b(has|have)\s+been\s+(successfully\s+)?(done|completed|approved|passed)\b"),
         ("approved", HIGH, r"\bsoil\s+(log|logs|test|tests|evaluation)s?\s+(done|completed|on\s+file|approved|passed|available)\b|\bsoil\s+logs?\s+(have\s+been\s+)?(done|completed)\b"),
         ("needed", MEDIUM, r"\b(no|without)\s+(a\s+)?(perc|percolation|soil\s+logs?)(\s+tests?)?\b|\b(perc|soil\s+logs?|septic)\s+(test\s+)?(needed|required|not\s+(done|completed|yet))\b|\bbuyer\s+to\s+(do|obtain|complete|verify)\s+(perc|septic|soil)"),
         ("mentioned", LOW, r"\b(septic|drain\s*field|perc)\b"),

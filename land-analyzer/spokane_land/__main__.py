@@ -35,6 +35,8 @@ def build_parser():
     p.add_argument("--min-acres", type=float, help="drop listings smaller than this")
     p.add_argument("--out", default="output", help="output directory (default ./output)")
     p.add_argument("--workers", type=int, default=4, help="parallel GIS lookups (default 4)")
+    p.add_argument("--source-name", metavar="TEXT",
+                   help='label for --csv listings shown in the app, e.g. "Zillow land search, Oct 6 2026"')
     p.add_argument("--previous", metavar="FILE",
                    help="last run's land_report.json: marks new listings, price cuts and removed listings")
     p.add_argument("--photos", type=float, metavar="MILES",
@@ -64,12 +66,12 @@ def main(argv=None):
         got = load_csv(path)
         print(f"{path}: {len(got)} rows", file=sys.stderr)
         listings += got
-        sources.append(f"CSV {path}")
+        sources.append(args.source_name or f"CSV file {os.path.basename(path)}")
     for path in args.parcels:
         got = load_parcel_ids(path)
         print(f"{path}: {len(got)} parcels", file=sys.stderr)
         listings += got
-        sources.append(f"Parcels {path}")
+        sources.append(f"Parcel list {os.path.basename(path)}")
 
     if args.requests:
         got = load_requests(args.requests)

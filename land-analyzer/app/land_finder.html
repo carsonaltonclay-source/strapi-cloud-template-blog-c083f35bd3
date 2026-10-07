@@ -1683,7 +1683,8 @@ function outline(r) {
 S.photoDocs = {};
 async function loadPhoto(doc) {
   S.photoDocs[doc] = null;
-  try { const d = await S.db.doc("photos/" + doc).get(); S.photoDocs[doc] = d.exists ? d.data().imgs || {} : {}; }
+  try { const d = await S.db.doc("photos/" + doc).get(); S.photoDocs[doc] = Object.fromEntries(Object.entries(d.exists ? d.data().imgs || {} : {})
+    .filter(([, v]) => typeof v === "string" && /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(v))); }
   catch (e) { S.photoDocs[doc] = {}; }
   liveRender();
 }
@@ -1841,7 +1842,7 @@ function render() {
 const GLANCE_CATS = [...CATS, ["_terrain", "Terrain"]];
 function renderGlance(list) {
   if (!S.listings.length) { $("glance").innerHTML = GLANCE_CATS.map(([c, n]) => `<div class="g-row"><span class="g-k">${icon(c)}${n}</span><div class="g-bar"></div><div class="g-leg">&nbsp;</div></div>`).join(""); return; }
-  const base = S.glance ? list : list; // bars always describe what's shown
+  const base = list; // bars always describe what's shown
   $("glance").innerHTML = GLANCE_CATS.map(([c, name]) => {
     const total = base.length || 1;
     const groups = GROUPS[c].map(([key, label, t, st]) => ({ key, label, t, n: base.filter(r => has(r[c], st)).length }));
@@ -2059,7 +2060,7 @@ function priceLabel() {
 }
 function priceHist() {
   const pool = S.listings.filter(r => r.miles_from_spokane == null || r.miles_from_spokane <= S.radius);
-  const counts = PSTEPS.slice(0, -1).map((lo, i) => pool.filter(r => r.price >= lo && r.price < PSTEPS[i + 1]).length);
+  const counts = PSTEPS.slice(0, -1).map((lo, i) => pool.filter(r => r.price != null && r.price >= lo && r.price < PSTEPS[i + 1]).length);
   const max = Math.max(1, ...counts), a = +$("pMin").value, b = +$("pMax").value, W = 100 / counts.length;
   $("prHist").setAttribute("viewBox", "0 0 100 20");
   $("prHist").innerHTML = counts.map((c, i) => `<rect class="${i >= a && i < b ? "in" : ""}" x="${(i * W + 0.4).toFixed(2)}" y="${(20 - c / max * 19).toFixed(2)}" width="${(W - 0.8).toFixed(2)}" height="${(c / max * 19).toFixed(2)}"/>`).join("");
@@ -2299,28 +2300,48 @@ drawTopo(); drawBase(); render(); fitRadius();
   if (user && (await user.can("data.write")) === false) { S.canWrite = false; $("addPanel").hidden = true; }
   // Market listings arrive in bundles ("chunks"); hand-added ones one per doc ("listings").
   let bulk = [], single = [];
+  // Documents are written by viewers and by refreshes: never trust their shape before they reach innerHTML.
+  const NUM_KEYS = new Set(["price", "acres", "price_per_acre", "miles_from_spokane", "score", "lat", "lon", "days_on_market",
+    "drive_min", "price_cut", "points", "slope_mean_pct", "slope_mean_deg", "slope_max_deg", "flat_pct", "elevation_ft", "relief_ft",
+    "above_surroundings_ft", "buildable_acres", "buildable_pct", "parcel_acres", "slope_pct", "driveway_ft", "n", "radius_mi", "years",
+    "median_ppa", "est_value", "low", "high", "mi", "land_value", "year", "ratio", "vs_assessed", "down_mbps", "typical_mbps", "tests",
+    "tiles", "min_acres", "front", "side", "hydric_pct", "total", "improvements", "well_ft", "power_ft", "site_slope",
+    "open", "issued_2023", "front_ft", "side_ft"]);
+  const clean = (v, k) => {
+    if (NUM_KEYS.has(k)) return typeof v === "number" && isFinite(v) ? v : null;
+    if (k === "url" || k === "website") return typeof v === "string" && /^https?:\/\//i.test(v) ? v : "";
+    if (k === "path") return typeof v === "string" && /^[MLZ0-9.,\- ]*$/.test(v) ? v : "";
+    if (Array.isArray(v)) return v.map(x => typeof x === "number" ? (isFinite(x) ? x : 0) : clean(x, k === "shape" || k === "xy" || k === "site" || k === "rings" ? "_n" : ""));
+    if (k === "_n") return typeof v === "number" ? v : Array.isArray(v) ? clean(v, "_n") : 0;
+    if (v && typeof v === "object") { const o = {}; for (const [kk, vv] of Object.entries(v)) o[kk] = clean(vv, kk); return o; }
+    return v;
+  };
+  const sanitize = r => clean(r, "");
   const merge = () => {
     S.loaded = true; S.listings = [...bulk, ...single];
     byId.clear(); S.listings.forEach(r => { byId.set(r.id, r); r._terrain = { status: r.terrain?.slope_class || "unknown" }; });
     computeMedians(); liveRender();
   };
   db.collection("chunks").limit(500).onSnapshot(snap => {
-    bulk = snap.docs.flatMap(d => (d.data().items || []).map(r => ({ ...r, _doc: docId(r.id) })));
+    bulk = snap.docs.flatMap(d => (d.data().items || []).map(r => ({ ...sanitize(r), _doc: docId(r.id) })));
     merge();
   }, merge);
   db.collection("listings").limit(1000).onSnapshot(snap => {
-    single = snap.docs.map(d => ({ ...d.data(), _doc: d.id }));
+    single = snap.docs.map(d => ({ ...sanitize(d.data()), _doc: d.id }));
     merge();
   }, merge);
   db.doc("meta/info").onSnapshot(d => {
-    const m = d.exists ? d.data() : null; S.meta = m;
+    const m = d.exists ? clean(d.data(), "") : null; S.meta = m;
+    for (const cr of Object.values(m?.county_rules || {}))
+      for (const o of Object.values(cr.offices || {})) if (Array.isArray(o) && !/^https?:\/\//i.test(o[1] || "")) o[1] = "";
     if (m) {
       const rf = m.refresh && !m.refresh.first_run ? m.refresh : null;
       $("updated").textContent = `Updated ${m.generated}` + (rf ? ` · ${rf.new} new, ${rf.price_cuts} price cut${rf.price_cuts === 1 ? "" : "s"}, ${rf.removed} gone since last refresh` : "");
       setMaxRadius(m.radius_miles ?? 25);
-      const src = (m.sources || [])[0] || "";
+      const src = String((m.sources || [])[0] || "");
+      const name = (src.match(/^[A-Za-z][\w .&'-]*?(?= land search| download| feed| export|,|\(|:|$)/) || ["listings"])[0].trim();
       const when = (src.match(/[A-Z][a-z]{2} \d{1,2},? \d{4}/) || [""])[0];
-      $("sources").firstElementChild.textContent = `Listings: Zillow${when ? ", " + when : ""}`;
+      $("sources").firstElementChild.textContent = `Listings: ${name}${when ? ", " + when : ""}`;
     }
   });
   db.collection("marks").onSnapshot(snap => {
