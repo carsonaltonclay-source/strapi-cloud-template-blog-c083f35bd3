@@ -337,8 +337,10 @@ class Enricher:
             steps += [("comps", comps.comparable_sales, (lat, lon, acres, [parcel.parcel_id] + parcel.also)),
                       ("assessed", comps.assessed_value, ([parcel.parcel_id] + parcel.also,)),
                       ("permits", county_rules.permits_nearby, (lat, lon))]
-        else:
+        if not in_spokane or not facts.get("zoning"):
+            # Outside Spokane County, or inside a city (the county zoning layer stops at city limits).
             steps.append(("zoning_other", buildability.zoning_elsewhere, (lat, lon, county, state, acres)))
+        if not in_spokane:
             if state == "WA" and self.sales:
                 steps.append(("comps", sold_comps.comparable, (lat, lon, acres, self.sales, listing.mls)))
             if county == "Kootenai" and parcel:

@@ -260,6 +260,19 @@ CITY_NO_HOMES = {"LM", "M", "I", "HI"}
 CITY_HOMES = re.compile(r"^(R-|MH-|RM|RMHP)")
 
 
+# Unincorporated Whitman County isn't mapped; nearly all of it is the Agriculture District
+# (Whitman County Code 19.11, Table 19.11.010-1: 40 acres per new lot; small lots only by exception).
+WHITMAN_AG = {"status": "unknown", "zone": "Agriculture District (most of rural Whitman County)", "min_acres": 40,
+              "label": "Likely Agriculture District: 40 ac per new lot",
+              "detail": "Rural Whitman County is almost all Agriculture District, where new lots need 40 acres "
+                        "(WCC 19.11); existing lots of record can usually get a permit. Confirm with Whitman County Planning, 509-397-6206.",
+              "county": "Whitman County"}
+BENEWAH = {"status": "unknown", "zone": "Not published", "min_acres": None, "label": "Zoning not published online",
+           "detail": "Benewah County doesn't publish a zoning map; much of the rural county is lightly zoned. Ask Benewah "
+                     "County Planning & Zoning, 208-967-4232 (on the Coeur d'Alene Reservation, tribal rules may also apply).",
+           "county": "Benewah County"}
+
+
 def _kootenai(lat, lon, acres):
     for layer, city in (("cda_zoning", "Coeur d'Alene"), ("postfalls_zoning", "Post Falls")):
         try:
@@ -313,8 +326,12 @@ def zoning_elsewhere(lat, lon, county, state, acres):
         return None
     try:
         if state == "WA":
-            feats = arcgis.query(LAYERS["wa_zoning_atlas"], geometry=(lon, lat),
-                                 out_fields="ZoneID,ZoneName,WAZAZoneGeneral,DenMinLotSizeSqFt,Jurisdiction")
+            fields = "ZoneID,ZoneName,WAZAZoneGeneral,DenMinLotSizeSqFt,Jurisdiction"
+            feats = arcgis.query(LAYERS["wa_zoning_atlas"], geometry=(lon, lat), out_fields=fields)
+            if not feats:  # town zoning is drawn lot by lot and skips the streets a pin often lands on
+                feats = arcgis.query(LAYERS["wa_zoning_atlas"], geometry=(lon, lat), distance_m=40, out_fields=fields)
+            if not feats and county == "Whitman":
+                return WHITMAN_AG
             if not feats:
                 return None
             a = feats[0]["attributes"]
@@ -341,6 +358,8 @@ def zoning_elsewhere(lat, lon, county, state, acres):
                     "detail": f"Zoned {z} in {where}; no minimum lot size on file — ask the county.", "county": where}
         if county == "Kootenai":
             return _kootenai(lat, lon, acres)
+        if county == "Benewah":
+            return BENEWAH
         if county == "Bonner":
             feats = arcgis.query(LAYERS["bonner_zoning"], geometry=(lon, lat), out_fields="zonedesc")
             if not feats:
